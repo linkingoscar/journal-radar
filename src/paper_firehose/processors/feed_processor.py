@@ -198,4 +198,14 @@ class FeedProcessor:
                 self.db.save_feed_entry(entry, display_name, entry_id)
         
         logger.info(f"Saved all processed entries to deduplication database")
-    
+
+    def prune_old_feed_entries(self) -> int:
+        """Delete entries from all_feed_entries.db older than the configured time window.
+
+        Keeps the dedup database bounded to the same age horizon used at
+        ingestion (``defaults.time_window_days``, default 365 days), so entries
+        older than that window are removed rather than accumulating forever.
+        Returns the number of rows deleted.
+        """
+        return self.db.delete_all_feeds_older_than(self.time_delta.days)
+

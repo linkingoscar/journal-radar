@@ -723,7 +723,33 @@ class DatabaseManager:
             )
             deleted_count = cursor.rowcount
             logger.info(f"Purged {deleted_count} entries from papers.db")
-    
+
+    def delete_all_feeds_older_than(self, days: int) -> int:
+        """Delete entries from all_feed_entries.db older than `days` days.
+
+        Removes rows whose publication date is strictly older than
+        ``today - days`` (based on YYYY-MM-DD ``published_date``). Rows with a
+        missing/blank ``published_date`` are left untouched. Returns the number
+        of rows deleted.
+        """
+        cutoff_date = (datetime.datetime.now().date() - datetime.timedelta(days=days)).isoformat()
+        logger.info(f"Deleting all_feed_entries older than {cutoff_date} (> {days} days)")
+
+        with self.get_connection('all_feeds', row_factory=False) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                DELETE FROM feed_entries
+                WHERE published_date IS NOT NULL
+                  AND TRIM(published_date) != ''
+                  AND DATE(published_date) < DATE(?)
+                """,
+                (cutoff_date,),
+            )
+            deleted_count = cursor.rowcount
+            logger.info(f"Deleted {deleted_count} old entries from all_feed_entries.db")
+        return deleted_count
+
     def _extract_authors(self, entry: Dict[str, Any]) -> str:
         """Extract authors string from entry."""
         authors = entry.get('authors', [])

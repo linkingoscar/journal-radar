@@ -1,6 +1,6 @@
-Metadata-Version: 2.4
-Name: paper_firehose
-Version: 0.3.5
+Metadata-Version: 2.1
+Name: paper-firehose
+Version: 0.4.2
 Summary: Filter, rank, and summarize research-paper RSS feeds.
 Author: Peter Nemes-Incze
 License: MIT License
@@ -36,23 +36,9 @@ Classifier: Programming Language :: Python :: 3.12
 Classifier: Topic :: Scientific/Engineering :: Information Analysis
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
-License-File: LICENSE
-Requires-Dist: feedparser==6.0.12
-Requires-Dist: PyYAML==6.0.3
-Requires-Dist: click==8.3.1
-Requires-Dist: sentence-transformers==5.3.0
-Requires-Dist: requests==2.32.5
-Requires-Dist: openai==2.29.0
-Requires-Dist: paper-qa==2026.3.18
-Requires-Dist: Pillow==12.1.1
 Provides-Extra: dev
-Requires-Dist: pytest==9.0.2; extra == "dev"
-Requires-Dist: pytest-cov==7.1.0; extra == "dev"
 Provides-Extra: docs
-Requires-Dist: sphinx==9.0.4; extra == "docs"
-Requires-Dist: sphinx-autodoc-typehints==3.6.1; extra == "docs"
-Requires-Dist: furo==2025.12.19; extra == "docs"
-Dynamic: license-file
+License-File: LICENSE
 
 # Paper Firehose
 
@@ -154,8 +140,41 @@ Commands
 - `purge (--days N | --all)`
   - Remove entries by date from databases, or clear all and reinitialize schemas (`--all`).
 
-- `status`
-  - Validate configuration and list available topics, enabled feeds, and database paths.
+- `query [--history | --all-feeds] [--topic TOPIC] [--min-rank FLOAT] [--since DATE] [--until DATE] [--search TEXT] [--fuzzy TEXT] [--rerank QUERY] [--status STATUS] [--has-doi] [--has-abstract] [--sort rank|date|title] [--limit N] [--offset N] [--json] [--count] [--fields FIELDS]`
+  - Query any of the three databases for entries. Defaults to `papers.db` (current run); `--history` queries the historical archive, `--all-feeds` queries all RSS entries ever seen.
+  - `--fuzzy`: Typo-tolerant text search using FTS5 trigram matching (min 3 chars). Searches across title, summary, abstract, and authors. Mutually exclusive with `--search`.
+  - `--rerank`: Re-score and re-sort results by semantic similarity to the given query using sentence-transformer embeddings (title + abstract). Adds a `rerank_score` column to output. Can be combined with any filter including `--fuzzy`.
+  - Examples:
+    ```bash
+    # Top 10 highest-ranked entries from the current run
+    paper-firehose query --limit 10
+
+    # Search history for papers about graphene with rank >= 0.7
+    paper-firehose query --history --search graphene --min-rank 0.7
+
+    # Fuzzy search (tolerates typos/partial words)
+    paper-firehose query --history --fuzzy "graphen"
+
+    # Semantic reranking — find the most relevant papers to a research question
+    paper-firehose query --history --rerank "perovskite solar cell efficiency"
+
+    # Combine fuzzy + rerank: fuzzy narrows candidates, rerank scores by meaning
+    paper-firehose query --history --fuzzy "perovsk" --rerank "halide perovskite photovoltaics"
+
+    # Count entries matched in March 2026
+    paper-firehose query --history --since 2026-03-01 --until 2026-03-31 --count
+
+    # JSON output for a specific topic (useful for scripts and LLM agents)
+    paper-firehose query --history --topic perovskites --json --limit 5
+
+    # Browse all feeds by date, paginated
+    paper-firehose query --all-feeds --sort date --limit 20 --offset 40
+    ```
+
+- `status [--json]`
+  - Validate configuration, warn about unrecognised config keys, and list available topics, enabled feeds, and database paths.
+  - Shows database freshness: entry counts, pipeline stage breakdown (`new`/`filtered`/`ranked`/`summarized`), file sizes, and latest timestamps.
+  - `--json` outputs structured JSON for programmatic use (e.g., by LLM agents checking whether today's pipeline has run).
 
 ## Python API
 
@@ -163,7 +182,7 @@ Import functions directly from the package for programmatic workflows:
 
 ```python
 from paper_firehose import (
-    filter, rank, abstracts, pqa_summary, email, purge, status, html, export_recent,
+    filter, rank, abstracts, pqa_summary, email, purge, status, html, export_recent, query,
 )
 
 # Run steps
@@ -185,6 +204,12 @@ pqa_summary(arxiv=["2501.12345", "https://arxiv.org/abs/2501.12345v2"], summariz
 
 # Email digest
 email(limit=10, dry_run=True)
+
+# Query databases
+query(history=True, topic="perovskites", min_rank=0.5, json=True, limit=10)
+query(history=True, search="graphene", count=True)
+query(history=True, fuzzy="graphen")  # typo-tolerant search
+query(history=True, rerank="perovskite solar cells", limit=10)  # semantic reranking
 
 # Maintenance
 purge(days=7)
@@ -243,8 +268,48 @@ HTML
 Email
 - Requires `email.smtp` config: `host`, `port`, `username`, and either `password` or `password_file`. Uses SSL.
 
-## Future dev
-- Run ranking on the historic database, with a unique query. To search for specific papers.
+## Claude Code skill
+
+The `claude-skills/` directory contains a [Claude Code](https://claude.ai/claude-code) slash command (`/paper-firehose`) that turns the CLI into an interactive research assistant.
+
+### Install
+
+Copy the skill file into a Claude Code commands directory. You can install it at project level, or globally so it works from any working directory:
+
+```bash
+# Option A: project-level (works when Claude Code is started from the repo)
+mkdir -p .claude/commands
+cp claude-skills/paper-firehose.md .claude/commands/
+
+# Option B: global (works from any directory)
+# Find your home-directory project key under ~/.claude/projects/
+# It is typically: -Users-<username>
+mkdir -p ~/.claude/projects/-Users-$(whoami)/commands
+cp claude-skills/paper-firehose.md ~/.claude/projects/-Users-$(whoami)/commands/
+```
+
+You can install in both locations — Claude Code will pick up whichever matches the current session.
+
+### Usage
+
+Type `/paper-firehose` in a Claude Code session. With no arguments it shows a status summary and offers next actions. You can also pass a request directly:
+
+```
+/paper-firehose                              # status + offer next actions
+/paper-firehose what papers came in today?   # show today's pipeline results
+/paper-firehose papers about graphene STM    # search history DB with semantic ranking
+/paper-firehose run the pipeline             # run filter -> rank -> abstracts
+/paper-firehose summarize paper #3           # Paper-QA summary (arXiv only, needs OPENAI_API_KEY)
+```
+
+### What it does
+
+- Checks pipeline freshness via `status --json`
+- Offers to run `filter -> rank -> abstracts` if data is stale
+- Searches the history database (25k+ matched entries) using keyword + semantic reranking
+- Presents results with titles, scores, dates, journals, and links
+- Supports drill-down ("tell me about #3"), pagination ("show more"), and Paper-QA summaries
+- Falls back to the all-feeds database if history returns too few results
 
 ## Final notes
 

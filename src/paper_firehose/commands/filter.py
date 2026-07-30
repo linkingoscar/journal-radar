@@ -107,7 +107,11 @@ def run(
         # Save ALL processed entries to deduplication database
         if all_processed_entries:
             feed_processor.save_all_entries_to_dedup_db(all_processed_entries)
-        
+
+        # Prune entries older than the configured time window (defaults.time_window_days)
+        # so all_feed_entries.db stays bounded instead of growing indefinitely.
+        feed_processor.prune_old_feed_entries()
+
         # Close database connections
         db_manager.close_all_connections()
         
