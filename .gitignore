@@ -19,6 +19,8 @@ archive/
 paper_firehose/system/models/*
 .paper_firehose/*
 docs/_build/
+dist/
+build/
 ARCHITECTURE_INDEX.md
 ARCHITECTURE_SUMMARY.txt
 ARCHITECTURE.md
