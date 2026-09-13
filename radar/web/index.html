@@ -53,6 +53,18 @@
 <dialog id="reader"><div class="dialog-head"><span>文章速览</span><button class="close" aria-label="关闭文章速览">✕</button></div><div id="reader-content"></div></dialog>
 <dialog id="settings"><div class="dialog-head"><span>期刊与数据源</span><button class="close" aria-label="关闭期刊管理">✕</button></div><p>勾选期刊可加入「我的选刊」。后台仍收集全部启用的期刊。新增清单通过项目配置接入。</p><p class="hint">绿色表示本次来源请求完成；黄色表示部分来源失败。请求成功不代表已核实完整覆盖。</p><div id="journal-settings"></div><div class="source-links"><a href="https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and" target="_blank" rel="noopener noreferrer">FT50 名单依据 ↗</a><a href="https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php" target="_blank" rel="noopener noreferrer">UTD24 官方名单 ↗</a></div></dialog>
 <dialog id="help"><div class="dialog-head"><span>安装到 Windows 桌面</span><button class="close" aria-label="关闭安装说明">✕</button></div><p>用 Microsoft Edge 打开本站，在右上角「…」菜单中选择「应用」→「将此站点作为应用安装」。安装后可固定到桌面或任务栏，使用独立窗口阅读。</p><p>如果已经安装，可直接通过 Windows 开始菜单打开「期刊雷达」。</p></dialog>
-<dialog id="translation-options"><div class="dialog-head"><span>摘要翻译</span><button class="close" aria-label="关闭翻译设置">✕</button></div><label class="translation-setting"><input type="checkbox" id="auto-translate" checked>打开文章时自动翻译摘要</label><p>使用 MyMemory 免费在线翻译，将英文摘要发送给翻译服务；译文缓存在当前浏览器，保留英文原文对照。机器翻译仅供阅读参考。</p><p>匿名免费额度约 5,000 字符/天，通常只够几篇长摘要。不会自动翻译全部历史文章。超额或服务不可用时保留原文；已缓存译文不消耗额度。</p><p>关闭自动翻译后，仍可在文章中点击“翻译摘要”。没有摘要的文章无法生成译文。</p><a class="translation-settings-link" href="https://mymemory.translated.net/doc/usagelimits.php" target="_blank" rel="noopener noreferrer">查看免费额度说明 ↗</a></dialog>
+<dialog id="translation-options"><div class="dialog-head"><span>摘要翻译</span><button class="close" aria-label="关闭翻译设置">✕</button></div>
+<label class="translation-setting"><input type="checkbox" id="auto-translate" checked>打开文章时自动翻译摘要</label>
+<p>使用 MyMemory 免费在线翻译，将英文摘要发送给翻译服务；译文缓存在本机，保留英文原文对照。</p>
+<form id="translation-email-form">
+  <label for="translation-email">MyMemory 联系邮箱</label>
+  <input id="translation-email" type="email" maxlength="254" autocomplete="email" placeholder="填写有效邮箱，启用每日 50,000 字符额度" aria-describedby="translation-email-help translation-email-status">
+  <p id="translation-email-help">邮箱只保存在当前浏览器，翻译时会随英文摘要发送给 MyMemory，用于服务联系；不会写入公开仓库或阅读记录备份。桌面版与网页版需分别设置。</p>
+  <div class="translation-email-actions"><button type="submit">保存邮箱</button><button type="button" id="clear-translation-email">移除邮箱</button></div>
+  <p id="translation-email-status" role="status"></p>
+</form>
+<p>有效邮箱版约 50,000 字符/天；留空时匿名版约 5,000 字符/天。本机按近 24 小时保守限制请求量，实际可用额度以服务返回为准。更换或移除邮箱不重置用量，已有缓存继续复用。</p>
+<p>关闭自动翻译后，仍可手动点击“翻译摘要”。缺少摘要时无法翻译。机器翻译仅供阅读参考；超额或服务不可用时保留原文。</p>
+<a class="translation-settings-link" href="https://mymemory.translated.net/doc/usagelimits.php" target="_blank" rel="noopener noreferrer">查看免费额度说明 ↗</a></dialog>
 <div id="toast" role="status" hidden></div>
 </body></html>

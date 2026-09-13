@@ -1,6 +1,7 @@
 'use strict';
 const JournalTranslation = (() => {
-  const PROVIDER='MyMemory', LIMIT=5000, MAX_BYTES=450;
+  const PROVIDER='MyMemory', LIMIT=5000, EMAIL_LIMIT=50000, MAX_BYTES=450;
+  function normalizeEmail(value){const email=String(value||'').trim();if(email&&(email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))throw new Error('请输入有效的联系邮箱，或留空使用匿名翻译。');return email;}
   const encoder=new TextEncoder();
   function splitText(text,maxBytes=MAX_BYTES) {
     const chunks=[];let rest=text;
@@ -22,7 +23,7 @@ const JournalTranslation = (() => {
   }
   function decode(text){return text.replace(/&(?:amp|lt|gt|quot|apos|#39);/g,s=>({'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&apos;':"'",'&#39;':"'"}[s]));}
   class Engine {
-    constructor({store,fetcher=(url,options)=>fetch(url,options),clock=Date.now}={}){this.store=store||browserStore();this.fetcher=fetcher;this.clock=clock;this.queue=Promise.resolve();}
+    constructor({store,fetcher=(url,options)=>fetch(url,options),clock=Date.now,getEmail=()=>''}={}){this.store=store||browserStore();this.fetcher=fetcher;this.clock=clock;this.getEmail=getEmail;this.queue=Promise.resolve();}
     translate(text,options={}){
       const execute=()=>typeof navigator!=='undefined'&&navigator.locks?navigator.locks.request('journal-radar-free-translation',()=>this.run(text,options)):this.run(text,options);
       const result=this.queue.then(execute);this.queue=result.catch(()=>{});return result;
@@ -33,12 +34,13 @@ const JournalTranslation = (() => {
       signal?.throwIfAborted();
       const key='mymemory-en-zh-v1:'+await digest(text);
       const cached=await this.store.get(key);if(cached?.text)return {...cached,cached:true};
+      const email=normalizeEmail(this.getEmail()),limit=email?EMAIL_LIMIT:LIMIT;
       const chunks=splitText(text),parts=[];
       const keys=await Promise.all(chunks.map(c=>digest(c).then(h=>'segment-en-zh-v1:'+h)));
       const stored=await Promise.all(keys.map(k=>this.store.get(k)));
       let usage=(await this.store.get('usage')||[]).filter(x=>x.at>this.clock()-86400000);
       const needed=chunks.reduce((sum,c,i)=>sum+(stored[i]?.text?0:c.length),0);
-      if(usage.reduce((sum,x)=>sum+x.chars,0)+needed>LIMIT)throw new Error('本机近 24 小时免费翻译额度不足（约 5,000 英文字符）。已缓存的译文仍可阅读，请稍后再试。');
+      if(usage.reduce((sum,x)=>sum+x.chars,0)+needed>limit)throw new Error(`本机近 24 小时免费翻译额度不足（${email?'邮箱版约 50,000':'匿名版约 5,000'} 英文字符）。已缓存的译文仍可阅读，请稍后再试。`);
       for(let i=0;i<chunks.length;i++){
         signal?.throwIfAborted();onProgress(i,chunks.length);
         if(stored[i]?.text){parts.push(stored[i].text);continue;}
@@ -46,7 +48,8 @@ const JournalTranslation = (() => {
         usage.push({at:this.clock(),chars:chunks[i].length});await this.store.put('usage',usage);
         const timeout=AbortSignal.timeout(25000),requestSignal=signal?AbortSignal.any([signal,timeout]):timeout;
         let response;
-        try{response=await this.fetcher('https://api.mymemory.translated.net/get?'+new URLSearchParams({q:chunks[i],langpair:'en|zh-CN'}),{signal:requestSignal,credentials:'omit',referrerPolicy:'no-referrer'});}
+        const params=new URLSearchParams({q:chunks[i],langpair:'en|zh-CN'});if(email)params.set('de',email);
+        try{response=await this.fetcher('https://api.mymemory.translated.net/get?'+params,{signal:requestSignal,credentials:'omit',referrerPolicy:'no-referrer'});}
         catch(error){if(signal?.aborted)throw error;throw new Error('暂时无法连接免费翻译服务，请稍后重试。原文已保留。');}
         if(!response.ok)throw new Error('免费翻译服务暂时不可用（HTTP '+response.status+'），请稍后重试。');
         const result=await response.json();
@@ -61,6 +64,6 @@ const JournalTranslation = (() => {
       await this.store.put(key,value);onProgress(chunks.length,chunks.length);return {...value,cached:false};
     }
   }
-  return {Engine,splitText,LIMIT};
+  return {Engine,splitText,LIMIT,EMAIL_LIMIT,normalizeEmail};
 })();
 if(typeof module!=='undefined')module.exports=JournalTranslation;

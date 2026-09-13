@@ -5,7 +5,9 @@ let data = null, group = 'core10', view = 'all', limit = 40, installPrompt = nul
 let state = {read:{}, saved:{}, custom:[]};
 const isDesktop=location.origin==='http://127.0.0.1:8766';
 let desktopSession=null,desktopRevision=null,migrationWindow=null,translationController=null;
-const translator=new JournalTranslation.Engine();
+const EMAIL_KEY='journal-radar:translation-email';
+function translationEmail(){try{return localStorage.getItem(EMAIL_KEY)||'';}catch{return '';}}
+const translator=new JournalTranslation.Engine({getEmail:translationEmail});
 let autoTranslate=true;
 try{autoTranslate=localStorage.getItem('journal-radar:auto-translate')!=='false';}catch{}
 try { const old = JSON.parse(localStorage.getItem(KEY)); if (old) state = validateState(old); } catch { /* Recover with an empty state. */ }
@@ -133,7 +135,18 @@ $('#more').addEventListener('click',()=>{limit+=40;render();});$('#refresh').add
 $('#reader').addEventListener('close',()=>translationController?.abort());
 $('#auto-translate').checked=autoTranslate;
 $('#auto-translate').addEventListener('change',event=>{autoTranslate=event.target.checked;try{localStorage.setItem('journal-radar:auto-translate',String(autoTranslate));}catch{toast('翻译设置未能保存。');}});
-$('#translation-settings').addEventListener('click',()=>$('#translation-options').showModal());
+function showTranslationSettings(){
+  $('#translation-email').value=translationEmail();
+  $('#translation-email-status').textContent=translationEmail()?'已启用邮箱版：约 50,000 字符/天。':'尚未配置邮箱：匿名版约 5,000 字符/天。';
+}
+$('#translation-settings').addEventListener('click',()=>{showTranslationSettings();$('#translation-options').showModal();});
+function saveTranslationEmail(value){
+  try{const email=JournalTranslation.normalizeEmail(value);if(email)localStorage.setItem(EMAIL_KEY,email);else localStorage.removeItem(EMAIL_KEY);translationController?.abort();showTranslationSettings();$('#translation-email-status').textContent=email?'已保存，后续翻译使用邮箱版（约 50,000 字符/天）。':'邮箱已移除，后续翻译使用匿名版（约 5,000 字符/天）。';}
+  catch(error){$('#translation-email-status').textContent=error.name==='QuotaExceededError'||error.name==='SecurityError'?'邮箱未能保存，请检查浏览器存储设置。':error.message;}
+}
+$('#translation-email-form').addEventListener('submit',event=>{event.preventDefault();saveTranslationEmail($('#translation-email').value);});
+$('#clear-translation-email').addEventListener('click',()=>saveTranslationEmail(''));
+window.addEventListener('storage',event=>{if(event.key===EMAIL_KEY||event.key===null){translationController?.abort();if($('#translation-options').open)showTranslationSettings();}});
 $('#manage').addEventListener('click',()=>{if(data)settings();});
 document.querySelectorAll('.close').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
 $('#backup').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({version:1,exported_at:new Date().toISOString(),...state},null,2)],{type:'application/json'}));const a=el('a');a.href=url;a.download='journal-radar-reading-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('阅读记录已导出');});

@@ -1,6 +1,6 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {Engine,splitText,LIMIT}=require('./web/translation.js');
+const {Engine,splitText,LIMIT,EMAIL_LIMIT}=require('./web/translation.js');
 const memory=()=>{const entries=new Map();return {async get(k){return structuredClone(entries.get(k));},async put(k,v){entries.set(k,structuredClone(v));}};};
 const response=(text='中文译文')=>({ok:true,status:200,json:async()=>({responseStatus:200,responseData:{translatedText:text},quotaFinished:false})});
 
@@ -55,4 +55,30 @@ test('provider quota warnings inside translatedText are never saved as translati
   await assert.rejects(engine.translate('A short abstract.'),/额度已用完/);
   assert.equal((await engine.translate('A short abstract.')).text,'正常译文');
   assert.equal(calls,2);
+});
+
+test('email mode sends de safely, preserves cache and usage across upgrades and removal',async()=>{
+  const store=memory(),clock=()=>100000000,urls=[];let email='';
+  const engine=new Engine({store,clock,getEmail:()=>email,fetcher:async url=>{urls.push(new URL(url));return response();}});
+  await engine.translate('Cached anonymous abstract.');
+  assert.equal(urls[0].searchParams.has('de'),false);
+  await store.put('usage',[{at:clock(),chars:LIMIT}]);
+  await assert.rejects(engine.translate('New abstract.'),/额度不足/);
+  email=' scholar+radar@example.org ';
+  assert.equal((await engine.translate('Cached anonymous abstract.')).cached,true);
+  await engine.translate('New abstract.');
+  assert.equal(urls.length,2);assert.equal(urls[1].searchParams.get('de'),'scholar+radar@example.org');
+  assert.equal((await store.get('usage')).reduce((n,x)=>n+x.chars,0),LIMIT+'New abstract.'.length);
+  email='';await assert.rejects(engine.translate('Another abstract.'),/匿名版约 5,000/);
+  assert.equal((await engine.translate('New abstract.')).cached,true);
+  email='scholar@example.org';await store.put('usage',[{at:clock(),chars:EMAIL_LIMIT}]);
+  await assert.rejects(engine.translate('Another abstract.'),/邮箱版约 50,000/);
+  assert.equal(urls.length,2);
+});
+
+test('invalid contact email prevents an uncached request without consuming quota',async()=>{
+  const store=memory();let calls=0;
+  const engine=new Engine({store,getEmail:()=> 'not-an-email',fetcher:async()=>{calls++;return response();}});
+  await assert.rejects(engine.translate('An abstract.'),/有效的联系邮箱/);
+  assert.equal(calls,0);assert.equal(await store.get('usage'),undefined);
 });
