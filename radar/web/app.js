@@ -83,7 +83,7 @@ function render() {
   $('#updated').textContent='数据生成于 '+new Date(data.generated_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
   const failures=journals.filter(j=>j.status==='error'||j.status==='partial');
   const pending=journals.filter(j=>j.status==='pending');
-  const stale=Date.now()-new Date(data.generated_at).getTime()>48*3600000;
+  const stale=Date.now()-new Date(data.cloud_updated_at||data.generated_at).getTime()>48*3600000;
   $('#notice').hidden=!failures.length&&!pending.length&&!stale;
   $('#notice').textContent=[failures.length?`${failures.length} 本期刊存在来源请求失败，历史文章仍可阅读。详情见「管理期刊与数据源」。`:'',pending.length?`${pending.length} 本期刊等待首次采集。`:'',stale?'数据已超过 48 小时未更新，请检查云端采集任务。':''].filter(Boolean).join(' ');
   const list=$('#articles');list.replaceChildren();

@@ -31,7 +31,7 @@ const JournalTranslation = (() => {
       text=String(text||'').trim();if(!text)throw new Error('当前文章没有可翻译的摘要');
       if(text.length>20000)throw new Error('摘要过长，请先阅读原文');
       signal?.throwIfAborted();
-      const key='mymemory-en-zh-v2:'+await digest(text);
+      const key='mymemory-en-zh-v1:'+await digest(text);
       const cached=await this.store.get(key);if(cached?.text)return {...cached,cached:true};
       const chunks=splitText(text),parts=[];
       const keys=await Promise.all(chunks.map(c=>digest(c).then(h=>'segment-en-zh-v1:'+h)));
@@ -50,9 +50,9 @@ const JournalTranslation = (() => {
         catch(error){if(signal?.aborted)throw error;throw new Error('暂时无法连接免费翻译服务，请稍后重试。原文已保留。');}
         if(!response.ok)throw new Error('免费翻译服务暂时不可用（HTTP '+response.status+'），请稍后重试。');
         const result=await response.json();
-        if(result.quotaFinished||Number(result.responseStatus)===429)throw new Error('免费翻译服务今日额度已用完。已缓存译文仍可阅读，请明天再试。');
+        if(result.quotaFinished||Number(result.responseStatus)===429||/USED ALL AVAILABLE|DAILY LIMIT|QUOTA|NEXT AVAILABLE/i.test(result.responseDetails||''))throw new Error('免费翻译服务今日额度已用完。已缓存译文仍可阅读，请明天再试。');
         const translated=result.responseData?.translatedText;
-        if(Number(result.responseStatus)!==200||typeof translated!=='string'||!translated.trim()||/^MYMEMORY WARNING/i.test(translated))throw new Error('翻译服务未返回有效译文，请稍后重试。');
+        if(Number(result.responseStatus)!==200||typeof translated!=='string'||!translated.trim()||/^MYMEMORY WARNING/i.test(translated))throw new Error('翻译服务未返回有效译文'+(result.responseDetails?'：'+String(result.responseDetails).slice(0,120):'，请稍后重试。'));
         const value={text:decode(translated),provider:PROVIDER,created_at:new Date(this.clock()).toISOString()};
         await this.store.put(keys[i],value);parts.push(value.text);
       }
