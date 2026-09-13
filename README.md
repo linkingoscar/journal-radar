@@ -23,7 +23,7 @@ Windows 可运行仓库中的 `Install-DesktopShortcut.ps1` 创建桌面图标�
 
 Crossref 按 ISSN 获取元数据，RSS 补充出版商的最新条目。DOI 去重，RSS 后续获得 DOI 时保留阅读记录标识；在线日期优先显示，正式刊期另行保留。附件类 Supplemental Material 不作为独立文章显示。普通社论、更正可能保留。
 
-首次 Crossref 回填近 90 天，RSS 可能含更早记录；后续按元数据更新时间增量抓取并回看 7 天，避免延迟登记文章因发表日期较早而遗漏。历史存放在 `data` 分支的压缩 SQLite 文件中，失败来源不会推进其同步时间或清空历史。
+首次 Crossref 回填近 90 天，RSS 可能含更早记录；后续按元数据更新时间增量抓取并回看 7 天，避免延迟登记文章因发表日期较早而遗漏。历史存放在 `radar-history` 分支的压缩 SQLite 文件中，失败来源不会推进其同步时间或清空历史。上游原有的 `data` 分支保留，不参与本应用采集。
 
 **加入清单不代表来源完整覆盖。** 摘要可能缺失，Crossref 登记可能延迟，出版商 RSS 可能只返回部分最新文章或暂时拒绝访问。“管理期刊与数据源”展示每本期刊各来源的最近成功时间和错误。HBR 使用官方综合 feed，包含 Digital Articles，并非仅杂志论文；该刊 Crossref 期刊接口不可用。MIT Sloan Management Review 也主要依赖其网站 RSS。
 

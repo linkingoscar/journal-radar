@@ -39,8 +39,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p radar-data
-          if git ls-remote --exit-code --heads origin data >/dev/null 2>&1; then
-            git fetch origin data
+          if git ls-remote --exit-code --heads origin radar-history >/dev/null 2>&1; then
+            git fetch origin radar-history
             git show FETCH_HEAD:state/history.db.gz > radar-data/history.db.gz
             python -c "import gzip,pathlib; p=pathlib.Path('radar-data'); (p/'history.db').write_bytes(gzip.decompress((p/'history.db.gz').read_bytes()))"
           fi
@@ -50,7 +50,7 @@ jobs:
         run: python radar/run.py sync --days 90 --workers 3
       - name: Validate generated data
         run: python radar/verify_site.py
-      - name: Save history to data branch
+      - name: Save history to radar-history branch
         shell: bash
         run: |
           set -euo pipefail
@@ -58,8 +58,8 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           STATE_DIR="$RUNNER_TEMP/radar-state"
-          if git ls-remote --exit-code --heads origin data >/dev/null 2>&1; then
-            git fetch origin data
+          if git ls-remote --exit-code --heads origin radar-history >/dev/null 2>&1; then
+            git fetch origin radar-history
             git worktree add --detach "$STATE_DIR" FETCH_HEAD
           else
             git worktree add --detach "$STATE_DIR" HEAD
@@ -73,7 +73,7 @@ jobs:
           git -C "$STATE_DIR" add state
           if ! git -C "$STATE_DIR" diff --cached --quiet; then
             git -C "$STATE_DIR" commit -m 'Update journal collection history'
-            git -C "$STATE_DIR" push origin HEAD:data
+            git -C "$STATE_DIR" push origin HEAD:radar-history
           fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
