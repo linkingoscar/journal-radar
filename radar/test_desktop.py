@@ -44,6 +44,10 @@ def test_loopback_api_rejects_cross_origin_rebinding_and_unauthenticated_mutatio
     url=f'http://127.0.0.1:{port}'
     try:
         assert requests.get(url+'/api/session').json()['app']=='journal-radar-desktop'
+        for cover,mime in [('cover-0001-4273.jpg','image/jpeg'),('cover-0001-8392.webp','image/webp'),('cover-1572-3097.jpeg','image/jpeg')]:
+            image=requests.get(url+'/'+cover)
+            assert image.status_code==200 and image.headers['Content-Type']==mime
+            assert image.content.startswith((b'\xff\xd8',b'RIFF'))
         assert requests.get(url+'/api/session',headers={'Origin':'https://untrusted.test'}).status_code==403
         assert requests.get(url+'/api/session',headers={'Host':f'untrusted.test:{port}'}).status_code==403
         assert requests.get(url+'/%2e%2e/radar/desktop.py').status_code==404

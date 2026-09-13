@@ -7,10 +7,10 @@
   <title>期刊雷达 · Journal Radar</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="enhancements.css">
-  <script src="translation.js" defer></script><script src="app.js" defer></script>
+  <script src="translation.js" defer></script><script src="catalog.js" defer></script><script src="app.js" defer></script>
 </head>
 <body>
-<a class="skip" href="#main">跳到文章列表</a>
+<a class="skip" href="#main">跳到主要内容</a>
 <aside class="sidebar">
   <a class="brand" href="./"><img src="icon.svg" alt="" width="42" height="42"><span>期刊雷达<small>JOURNAL RADAR</small></span></a>
   <div class="nav-label">你的研究视野</div>
@@ -35,9 +35,18 @@
 <div class="workspace">
   <header class="topbar"><span>管理学 · 组织行为 · 人力资源</span><div><span id="connection" class="status-dot">正在载入</span><button id="refresh" class="quiet">刷新文章</button></div></header>
   <main id="main">
-    <section class="hero"><div><span class="eyebrow">YOUR RESEARCH, IN FOCUS</span><h1 id="group-title">核心关注<span>的新进展</span></h1><p id="group-description">从你关心的期刊开始，发现值得细读的研究。</p></div><div class="hero-stat"><strong id="article-total">—</strong><span>篇已收录文章</span></div></section>
+    <nav class="browse-modes" aria-label="浏览方式"><a id="library-mode" href="#library=core10" aria-current="page">期刊库</a><a id="feed-mode" href="#feed=core10">文章动态</a></nav>
+    <a id="back-library" class="back-library" href="#library=core10" hidden>← 返回期刊库</a>
+    <section class="hero"><div><span class="eyebrow">YOUR RESEARCH, IN FOCUS</span><h1 id="group-title" tabindex="-1">核心关注<span>的期刊库</span></h1><p id="group-description">选一本期刊，开始阅读。</p></div><div class="hero-stat"><strong id="article-total">—</strong><span id="total-label">本关注期刊</span></div></section>
     <div id="notice" role="status" hidden></div>
     <section id="desktop-bar" class="desktop-bar" aria-label="本机采集" hidden><span id="desktop-status" role="status">正在连接本机采集组件</span><button id="sync-local">本机补采</button><button id="migrate-reading">迁移原网页版阅读记录</button></section>
+    <section id="journal-library" aria-label="期刊库">
+      <div class="catalog-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input type="search" id="catalog-search" placeholder="搜索刊名、简称、ISSN 或学科" aria-label="搜索期刊"><kbd>/</kbd></label><div class="catalog-layout" aria-label="期刊显示方式"><button data-layout="grid" aria-pressed="true">▦ 卡片</button><button data-layout="list" aria-pressed="false">☰ 列表</button></div></div>
+      <div class="result-info"><span id="catalog-count" aria-live="polite">正在读取期刊…</span><span>点击期刊，查看已收录文章</span></div>
+      <div id="catalog-cards" class="catalog-grid"></div>
+      <p class="catalog-source">封面与学科、评级资料复用自 <a href="https://github.com/linkingoscar/paper" target="_blank" rel="noopener noreferrer">paper 期刊库 ↗</a>；评级年份见标签。封面仅用于识别期刊。</p>
+    </section>
+    <div id="article-feed" hidden>
     <section class="toolbar" aria-label="筛选文章">
       <label class="search"><span aria-hidden="true">⌕</span><input type="search" id="search" placeholder="搜索标题、作者、摘要或 DOI" aria-label="搜索标题、作者、摘要或 DOI"><kbd>/</kbd></label>
       <label class="sr-only" for="journal">选择期刊</label><select id="journal"><option value="">所有期刊</option></select>
@@ -47,6 +56,7 @@
     <div class="result-info"><span id="result-count" aria-live="polite">正在读取文章…</span><span id="updated"></span></div>
     <section id="articles" aria-label="文章列表"></section>
     <button id="more" class="load-more" hidden>加载更多文章</button>
+    </div>
     <footer>标题来自出版商 RSS 和 Crossref；补全摘要另标来源。原文访问条件以出版商页面为准。<br><span>FT50：2026 年 4 月版 · UTD24：官方名单 · 收藏与已读保存在本机，可导出备份。</span></footer>
   </main>
 </div>

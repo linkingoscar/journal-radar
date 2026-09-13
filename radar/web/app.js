@@ -2,6 +2,7 @@
 const $ = s => document.querySelector(s);
 const KEY = 'journal-radar:reading:v1';
 let data = null, group = 'core10', view = 'all', limit = 40, installPrompt = null;
+let browseMode='library', journalId=null;
 let state = {read:{}, saved:{}, custom:[]};
 const isDesktop=location.origin==='http://127.0.0.1:8766';
 let desktopSession=null,desktopRevision=null,migrationWindow=null,translationController=null,abstractController=null;
@@ -36,6 +37,44 @@ function updateJournals() {
   const select=$('#journal');select.replaceChildren(new Option('所有期刊',''));
   for (const j of data.journals.filter(inGroup).sort((a,b)=>a.name.localeCompare(b.name)))select.add(new Option(j.name,j.id));
   $('#custom-count').textContent=state.custom.length;$('#all-count').textContent=data.journals.length;
+}
+function applyRoute(focus=false){
+  if(!data)return;
+  const journalRoute=/^#journal=(\d{4}-\d{3}[\dX])$/.exec(location.hash);
+  const sectionRoute=/^#(library|feed)=(core10|ft50|utd24|custom|all)$/.exec(location.hash);
+  journalId=journalRoute?.[1]||null;
+  const journal=data.journals.find(j=>j.id===journalId);
+  if(journal){
+    browseMode='journal';if(!inGroup(journal))group='all';
+    $('#search').value='';$('#period').value='all';view='all';
+  }else{
+    journalId=null;browseMode=sectionRoute?.[1]||'library';
+    if(sectionRoute)group=sectionRoute[2];
+  }
+  limit=40;updateJournals();$('#journal').value=journalId||'';render();
+  if(focus)$('#group-title').focus({preventScroll:false});
+}
+function renderCatalog(journals){
+  const q=$('#catalog-search').value.trim().toLowerCase();
+  const visible=journals.filter(j=>[j.name,j.short_name,...j.issns,JOURNAL_CATALOG[j.id]?.discipline].some(s=>(s||'').toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
+  const counts=new Map();
+  for(const a of data.articles){const c=counts.get(a.journal_id)||{total:0,unread:0};c.total++;if(!state.read[a.id])c.unread++;counts.set(a.journal_id,c);}
+  $('#catalog-count').textContent=`共 ${visible.length} 本期刊${q?' · 当前分组 '+journals.length+' 本':''}`;
+  const list=$('#catalog-cards');list.replaceChildren();
+  for(const j of visible){
+    const meta=JOURNAL_CATALOG[j.id]||{},count=counts.get(j.id)||{total:0,unread:0};
+    const card=el('a',undefined,'catalog-card');card.href='#journal='+j.id;card.setAttribute('aria-label','查看 '+j.name+' 的文章');
+    const cover=el('div',undefined,'catalog-cover');cover.setAttribute('aria-hidden','true');
+    cover.append(el('span',j.short_name||j.name,'cover-fallback'));
+    if(meta.cover){const img=el('img');img.src=meta.cover;img.alt='';img.loading='lazy';img.width=120;img.height=168;img.addEventListener('error',()=>img.remove());cover.append(img);}
+    const body=el('div',undefined,'catalog-body');body.append(el('h2',j.name),el('p',meta.discipline||j.publisher||'学术期刊','catalog-discipline'),el('p','ISSN '+j.issns.join(' / '),'catalog-issn'));
+    const tags=el('div',undefined,'catalog-tags');
+    j.groups.forEach(g=>tags.append(el('span',label(g),'catalog-tag catalog-tag-'+g)));
+    for(const r of meta.ratings||[])tags.append(el('span',`${r.catalog==='FMS(Global)'?'FMS':r.catalog} ${r.level} · ${r.year}`,'catalog-tag catalog-tag-rating'));
+    const stats=el('div',undefined,'catalog-stats');stats.append(el('span',`${count.total} 篇已收录 · ${count.unread} 篇未读`),el('span','阅读 →'));
+    body.append(tags,stats);card.append(cover,body);list.append(card);
+  }
+  if(!visible.length){const empty=el('div',undefined,'empty');empty.append(el('strong',q?'没有找到匹配的期刊':'还没有自选期刊'),el('p',q?'试试刊名、简称或 ISSN，也可以切换到「全部期刊」。':'在「管理期刊与数据源」中勾选你关注的期刊。'));list.append(empty);}
 }
 function toggle(kind,id) { const enabled=!state[kind][id];const ids=[id,...Object.entries(data?.reading_aliases||{}).filter(([,target])=>target===id).map(([alias])=>alias)];for(const key of ids){if(enabled)state[kind][key]=true;else delete state[kind][key];}persist();render(); }
 function applyReadingAliases(){for(const [oldId,id] of Object.entries(data?.reading_aliases||{})){for(const field of ['read','saved'])if(state[field][oldId])state[field][id]=true;}persist();}
@@ -111,16 +150,27 @@ function openArticle(article) {
 function render() {
   if(!data)return;
   const journals=data.journals.filter(inGroup), ids=new Set(journals.map(j=>j.id));
+  const current=data.journals.find(j=>j.id===journalId),isLibrary=browseMode==='library';
+  $('#journal-library').hidden=!isLibrary;$('#article-feed').hidden=isLibrary;
+  $('#back-library').hidden=!current;$('#back-library').href='#library='+group;
+  $('#library-mode').href='#library='+group;$('#feed-mode').href='#feed='+group;
+  for(const [id,active] of [['library-mode',browseMode!=='feed'],['feed-mode',browseMode==='feed']]){if(active)$('#'+id).setAttribute('aria-current','page');else $('#'+id).removeAttribute('aria-current');}
+  $('#groups').querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.group===group);b.setAttribute('aria-pressed',String(b.dataset.group===group));});
+  $('#views').querySelectorAll('button').forEach(b=>{b.classList.toggle('selected',b.dataset.view===view);b.setAttribute('aria-pressed',String(b.dataset.view===view));});
+  $('#journal').hidden=!!current;
   const all=data.articles.filter(a=>ids.has(a.journal_id));
   $('#article-total').textContent=all.length.toLocaleString();
   const title=$('#group-title');title.replaceChildren(document.createTextNode(label(group)),el('span','的新进展'));
   $('#group-description').textContent=group==='core10'?'从你关心的 10 本期刊开始，发现值得细读的研究。':group==='ft50'?'FT50 · 2026 年 4 月版，50 本期刊的研究动态。':group==='utd24'?'UTD24 · 跨管理、金融、营销、会计与信息系统。':group==='custom'?'在「管理期刊与数据源」中选择你想单独关注的期刊。':'全部期刊汇聚于此，重叠清单合并展示。';
-  const q=$('#search').value.trim().toLowerCase(), selected=$('#journal').value;
+  $('#total-label').textContent=isLibrary?'本关注期刊':'篇已收录文章';
+  if(isLibrary){title.replaceChildren(document.createTextNode(label(group)),el('span','的期刊库'));$('#article-total').textContent=journals.length;renderCatalog(journals);}
+  if(current){title.textContent=current.name;$('#group-description').textContent='ISSN '+current.issns.join(' / ')+' · '+current.groups.map(label).join(' · ');$('#article-total').textContent=all.filter(a=>a.journal_id===current.id).length.toLocaleString();}
+  const q=$('#search').value.trim().toLowerCase(), selected=current?.id||$('#journal').value;
   const days=$('#period').value;const cutoff=days==='all'?'':new Date(Date.now()-Number(days)*86400000).toISOString().slice(0,10);
   let articles=all.filter(a=>(!selected||a.journal_id===selected)&&withinPeriod(a,cutoff)&&(!q||[a.title,a.authors,a.abstract,a.doi].some(x=>(x||'').toLowerCase().includes(q)))&&(view!=='unread'||!state.read[a.id])&&(view!=='saved'||state.saved[a.id]));
   const sortKey=$('#sort').value==='published'?'published_date':'first_seen';
   articles.sort((a,b)=>(b[sortKey]||'').localeCompare(a[sortKey]||'')||a.id.localeCompare(b.id));
-  $('#result-count').textContent=`${articles.length.toLocaleString()} 篇文章 · ${journals.length} 本期刊`;
+  $('#result-count').textContent=`${articles.length.toLocaleString()} 篇文章 · ${selected?1:journals.length} 本期刊`;
   $('#updated').textContent='数据生成于 '+new Date(data.generated_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
   const failures=journals.filter(j=>j.status==='error'||j.status==='partial');
   const pending=journals.filter(j=>j.status==='pending');
@@ -151,7 +201,7 @@ async function load(){
     const response=await fetch('data.json?t='+Date.now(),{cache:'no-store'});
     if(!response.ok)throw new Error('HTTP '+response.status);
     const next=await response.json();if(!Array.isArray(next.articles)||!Array.isArray(next.journals))throw new Error('数据格式错误');
-    const previous=$('#journal').value;data=next;applyReadingAliases();updateJournals();if([...$('#journal').options].some(o=>o.value===previous))$('#journal').value=previous;render();
+    const firstLoad=!data,previous=$('#journal').value;data=next;applyReadingAliases();updateJournals();if([...$('#journal').options].some(o=>o.value===previous))$('#journal').value=previous;if(firstLoad)applyRoute();else render();
     $('#connection').textContent=navigator.onLine?'阅读数据已载入':'离线阅读';
     if(pendingArticleId){const article=data.articles.find(a=>a.id===pendingArticleId);pendingArticleId=null;if(article)openArticle(article);else toast('本机尚未收录这篇文章，请先运行本机补采。');}
   }catch(error){$('#connection').textContent='暂时无法更新';$('#notice').hidden=false;$('#notice').textContent='读取失败，请检查网络后重试。'+(data?' 已保留当前文章。':'');}
@@ -168,7 +218,10 @@ function settings(){
     list.append(row);
   }$('#settings').showModal();
 }
-$('#groups').addEventListener('click',event=>{const b=event.target.closest('[data-group]');if(!b||!data)return;group=b.dataset.group;limit=40;$('#groups').querySelectorAll('button').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',String(x===b));});updateJournals();render();});
+$('#groups').addEventListener('click',event=>{const b=event.target.closest('[data-group]');if(!b||!data)return;location.hash=(browseMode==='feed'?'feed':'library')+'='+b.dataset.group;});
+window.addEventListener('hashchange',()=>{if(location.hash!=='#main')applyRoute(true);});
+$('#catalog-search').addEventListener('input',()=>{if(data)renderCatalog(data.journals.filter(inGroup));});
+document.querySelector('.catalog-layout').addEventListener('click',event=>{const b=event.target.closest('[data-layout]');if(!b)return;$('#catalog-cards').classList.toggle('catalog-list',b.dataset.layout==='list');document.querySelectorAll('[data-layout]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
 $('#views').addEventListener('click',event=>{const b=event.target.closest('[data-view]');if(!b)return;view=b.dataset.view;limit=40;$('#views').querySelectorAll('button').forEach(x=>{x.classList.toggle('selected',x===b);x.setAttribute('aria-pressed',String(x===b));});render();});
 ['search','journal','period','sort'].forEach(id=>$('#'+id).addEventListener(id==='search'?'input':'change',()=>{limit=40;render();}));
 $('#more').addEventListener('click',()=>{limit+=40;render();});$('#refresh').addEventListener('click',load);
@@ -194,7 +247,7 @@ $('#restore').addEventListener('click',()=>$('#import-file').click());
 $('#import-file').addEventListener('change',async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>5e6)throw new Error('备份过大');const input=JSON.parse(await file.text());if(input.version!==1||!input.read||!input.saved||!Array.isArray(input.custom))throw new Error('格式不匹配');const restored=validateState(input);state={read:{...state.read,...restored.read},saved:{...state.saved,...restored.saved},custom:[...new Set([...state.custom,...restored.custom])]};applyReadingAliases();if(data){updateJournals();render();}toast('已合并导入阅读记录');}catch{toast('无法导入：请选择期刊雷达导出的 JSON 备份。');}event.target.value='';});
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;});
 $('#install').addEventListener('click',async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;}else $('#help').showModal();});
-document.addEventListener('keydown',event=>{if(event.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&!document.querySelector('dialog[open]')){event.preventDefault();$('#search').focus();}});
+document.addEventListener('keydown',event=>{if(event.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&!document.querySelector('dialog[open]')){event.preventDefault();$(browseMode==='library'?'#catalog-search':'#search').focus();}});
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 async function pollDesktop(){
   try{const response=await fetch('api/session',{cache:'no-store'});if(!response.ok)throw new Error();const next=await response.json();if(next.app!=='journal-radar-desktop')throw new Error();desktopSession=next;$('#sync-local').disabled=next.running;$('#desktop-status').textContent=next.phase+(next.running&&next.total?`（${next.completed}/${next.total}）`:'')+(next.error?' · '+next.error:'');if(next.data_revision!==desktopRevision){desktopRevision=next.data_revision;await load();}}

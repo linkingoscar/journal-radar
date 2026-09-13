@@ -169,7 +169,7 @@ def make_handler(app,port):
             name='index.html' if path=='/' else path[1:]
             if name not in files:return self.respond(404,{'error':'Not found'})
             suffix=Path(name).suffix
-            mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon','.webmanifest':'application/manifest+json'}.get(suffix,'application/octet-stream')
+            mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.webmanifest':'application/manifest+json'}.get(suffix,'application/octet-stream')
             return self.respond(200,(ROOT/'radar/web'/name).read_bytes(),mime)
         def do_POST(self):
             if not self.trusted() or not secrets.compare_digest(self.headers.get('X-Radar-Token',''),app.token):return self.respond(403,{'error':'无效的本机请求'})
