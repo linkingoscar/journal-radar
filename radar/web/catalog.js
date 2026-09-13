@@ -875,5 +875,353 @@ const JOURNAL_CATALOG = {
         "year": "2024"
       }
     ]
+  },
+  "0148-2963": {
+    "cover": "cover-0148-2963.jpg",
+    "discipline": "ETHICS-CSR-MAN、一般管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "B",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "3",
+        "year": "2024"
+      }
+    ]
+  },
+  "1053-4822": {
+    "cover": "cover-1053-4822.jpg",
+    "discipline": "HRM&EMP、人力资源管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "B",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "3",
+        "year": "2024"
+      }
+    ]
+  },
+  "0001-8791": {
+    "cover": "cover-0001-8791.jpg",
+    "discipline": "PSYCH (WOP-OB)、心理学",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "B",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "4",
+        "year": "2024"
+      }
+    ]
+  },
+  "0889-3268": {
+    "cover": "cover-0889-3268.jpg",
+    "discipline": "PSYCH (WOP-OB)、心理学",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "B",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "3",
+        "year": "2024"
+      }
+    ]
+  },
+  "0048-3486": {
+    "cover": "",
+    "discipline": "HRM&EMP、人力资源管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "C",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "2",
+        "year": "2024"
+      }
+    ]
+  },
+  "0142-5455": {
+    "cover": "cover-0142-5455.jpg",
+    "discipline": "HRM&EMP、人力资源管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "C",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "2",
+        "year": "2024"
+      }
+    ]
+  },
+  "1044-8004": {
+    "cover": "cover-1044-8004.jpg",
+    "discipline": "HRM&EMP",
+    "ratings": [
+      {
+        "catalog": "ABS",
+        "level": "2",
+        "year": "2024"
+      }
+    ]
+  },
+  "1367-8868": {
+    "cover": "cover-1367-8868.jpg",
+    "discipline": "HRM&EMP、人力资源管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "C",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "2",
+        "year": "2024"
+      }
+    ]
+  },
+  "1038-4111": {
+    "cover": "",
+    "discipline": "HRM&EMP、人力资源管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "C",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "2",
+        "year": "2024"
+      }
+    ]
+  },
+  "0143-7720": {
+    "cover": "cover-0143-7720.png",
+    "discipline": "HRM&EMP、人力资源管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "C",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "2",
+        "year": "2024"
+      }
+    ]
+  },
+  "0965-075X": {
+    "cover": "cover-0965-075X.jpg",
+    "discipline": "PSYCH (WOP-OB)、人力资源管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "C",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "2",
+        "year": "2024"
+      }
+    ]
+  },
+  "0025-1747": {
+    "cover": "cover-0025-1747.jpg",
+    "discipline": "ETHICS-CSR-MAN、一般管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "C",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "2",
+        "year": "2024"
+      }
+    ]
+  },
+  "2046-9012": {
+    "cover": "cover-2046-9012.jpg",
+    "discipline": "MDEV&EDU",
+    "ratings": [
+      {
+        "catalog": "ABS",
+        "level": "1",
+        "year": "2024"
+      }
+    ]
+  },
+  "2049-3983": {
+    "cover": "cover-2049-3983.jpg",
+    "discipline": "HRM&EMP",
+    "ratings": [
+      {
+        "catalog": "ABS",
+        "level": "1",
+        "year": "2024"
+      }
+    ]
+  },
+  "0019-7939": {
+    "cover": "cover-0019-7939.jpg",
+    "discipline": "HRM&EMP、人力资源管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "B",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "3",
+        "year": "2024"
+      }
+    ]
+  },
+  "0018-7267": {
+    "cover": "cover-0018-7267.jpg",
+    "discipline": "ORG STUD、组织管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "B",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "4",
+        "year": "2024"
+      }
+    ]
+  },
+  "1059-6011": {
+    "cover": "cover-1059-6011.jpg",
+    "discipline": "ORG STUD、组织管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "B",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "3",
+        "year": "2024"
+      }
+    ]
+  },
+  "0268-1072": {
+    "cover": "cover-0268-1072.jpg",
+    "discipline": "HRM&EMP、人力资源管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "B",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "3",
+        "year": "2024"
+      }
+    ]
+  },
+  "0268-3946": {
+    "cover": "cover-0268-3946.jpg",
+    "discipline": "PSYCH (WOP-OB)、心理学",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "C",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "3",
+        "year": "2024"
+      }
+    ]
+  },
+  "1362-0436": {
+    "cover": "cover-1362-0436.jpg",
+    "discipline": "HRM&EMP",
+    "ratings": [
+      {
+        "catalog": "ABS",
+        "level": "2",
+        "year": "2024"
+      }
+    ]
+  },
+  "0263-2373": {
+    "cover": "cover-0263-2373.jpg",
+    "discipline": "ETHICS-CSR-MAN、一般管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "C",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "2",
+        "year": "2024"
+      }
+    ]
+  },
+  "0217-4561": {
+    "cover": "cover-0217-4561.jpg",
+    "discipline": "IB&AREA、国际商务国际事务",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "B",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "3",
+        "year": "2024"
+      }
+    ]
+  },
+  "0959-6119": {
+    "cover": "cover-0959-6119.jpg",
+    "discipline": "SECTOR、旅游管理",
+    "ratings": [
+      {
+        "catalog": "FMS(Global)",
+        "level": "B",
+        "year": "2025"
+      },
+      {
+        "catalog": "ABS",
+        "level": "3",
+        "year": "2024"
+      }
+    ]
   }
 };

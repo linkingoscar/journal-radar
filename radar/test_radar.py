@@ -109,3 +109,13 @@ def test_registry_groups_and_identity():
     assert {g:sum(g in j['groups'] for j in journals) for g in ['core10','ft50','utd24']}=={'core10':10,'ft50':50,'utd24':24}
     hrm=next(j for j in journals if j['id']=='0090-4848');hrmj=next(j for j in journals if j['id']=='0954-5395')
     assert hrm['rss_url']!=hrmj['rss_url']
+
+
+def test_requested_hr35_journals_are_enabled_with_verified_identity():
+    registry=json.loads((Path(__file__).parent/"journals.json").read_text(encoding="utf-8"))
+    selected={j["name"]:j for j in registry["journals"] if "hr35" in j["groups"]}
+    expected={'Journal of Applied Psychology': '0021-9010', 'Personnel Psychology': '0031-5826', 'Academy of Management Journal': '0001-4273', 'Human Resource Management': '0090-4848', 'Journal of Management': '0149-2063', 'Organizational Behavior and Human Decision Processes': '0749-5978', 'Human Resource Management Journal': '0954-5395', 'International Journal of Human Resource Management': '0958-5192', 'Journal of Organizational Behavior': '0894-3796', 'Academy of Management Review': '0363-7425', 'Organization Science': '1047-7039', 'Administrative Science Quarterly': '0001-8392', 'Journal of Business Research': '0148-2963', 'Human Resource Management Review': '1053-4822', 'Journal of Vocational Behavior': '0001-8791', 'Journal of Business and Psychology': '0889-3268', 'Personnel Review': '0048-3486', 'Employee Relations': '0142-5455', 'Human Resource Development Quarterly': '1044-8004', 'Human Resource Development International': '1367-8868', 'Asia Pacific Journal of Human Resources': '1038-4111', 'International Journal of Manpower': '0143-7720', 'International Journal of Selection and Assessment': '0965-075X', 'Management Decision': '0025-1747', 'European Journal of Training and Development': '2046-9012', 'Evidence-based HRM: a Global Forum for Empirical Scholarship': '2049-3983', 'Industrial and Labor Relations Review': '0019-7939', 'Human Relations': '0018-7267', 'Group & Organization Management': '1059-6011', 'New Technology, Work and Employment': '0268-1072', 'Journal of Managerial Psychology': '0268-3946', 'Career Development International': '1362-0436', 'European Management Journal': '0263-2373', 'Asia Pacific Journal of Management': '0217-4561', 'International Journal of Contemporary Hospitality Management': '0959-6119'}
+    assert {name:j["id"] for name,j in selected.items()}==expected
+    assert all(j["enabled"] and j["crossref_identity_verified"] and j["id"] in j["issns"] for j in selected.values())
+    all_issns=[issn for j in registry["journals"] for issn in j["issns"]]
+    assert len(all_issns)==len(set(all_issns)), "Duplicate journal identities"

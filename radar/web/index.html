@@ -15,7 +15,8 @@
   <a class="brand" href="./"><img src="icon.svg" alt="" width="42" height="42"><span>期刊雷达<small>JOURNAL RADAR</small></span></a>
   <div class="nav-label">你的研究视野</div>
   <nav aria-label="期刊分组" id="groups">
-    <button data-group="core10" class="active" aria-pressed="true"><span>核心关注</span><span class="badge">10</span></button>
+    <button data-group="hr35" class="active" aria-pressed="true"><span>人力与组织</span><span class="badge">35</span></button>
+    <button data-group="core10" aria-pressed="false"><span>核心关注</span><span class="badge">10</span></button>
     <button data-group="ft50" aria-pressed="false"><span>FT50</span><span class="badge">50</span></button>
     <button data-group="utd24" aria-pressed="false"><span>UTD24</span><span class="badge">24</span></button>
     <button data-group="custom" aria-pressed="false"><span>我的选刊</span><span class="badge" id="custom-count">0</span></button>
@@ -35,9 +36,9 @@
 <div class="workspace">
   <header class="topbar"><span>管理学 · 组织行为 · 人力资源</span><div><span id="connection" class="status-dot">正在载入</span><button id="refresh" class="quiet">刷新文章</button></div></header>
   <main id="main">
-    <nav class="browse-modes" aria-label="浏览方式"><a id="library-mode" href="#library=core10" aria-current="page">期刊库</a><a id="feed-mode" href="#feed=core10">文章动态</a></nav>
-    <a id="back-library" class="back-library" href="#library=core10" hidden>← 返回期刊库</a>
-    <section class="hero"><div><span class="eyebrow">YOUR RESEARCH, IN FOCUS</span><h1 id="group-title" tabindex="-1">核心关注<span>的期刊库</span></h1><p id="group-description">选一本期刊，开始阅读。</p></div><div class="hero-stat"><strong id="article-total">—</strong><span id="total-label">本关注期刊</span></div></section>
+    <nav class="browse-modes" aria-label="浏览方式"><a id="library-mode" href="#library=hr35" aria-current="page">期刊库</a><a id="feed-mode" href="#feed=hr35">文章动态</a></nav>
+    <a id="back-library" class="back-library" href="#library=hr35" hidden>← 返回期刊库</a>
+    <section class="hero"><div><span class="eyebrow">YOUR RESEARCH, IN FOCUS</span><h1 id="group-title" tabindex="-1">人力与组织<span>的期刊库</span></h1><p id="group-description">选一本期刊，开始阅读。</p></div><div class="hero-stat"><strong id="article-total">—</strong><span id="total-label">本关注期刊</span></div></section>
     <div id="notice" role="status" hidden></div>
     <section id="desktop-bar" class="desktop-bar" aria-label="本机采集" hidden><span id="desktop-status" role="status">正在连接本机采集组件</span><button id="sync-local">本机补采</button><button id="migrate-reading">迁移原网页版阅读记录</button></section>
     <section id="journal-library" aria-label="期刊库">

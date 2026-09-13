@@ -16,10 +16,11 @@ assert all(a['journal_id'] in ids and a['title'] and a['link'].startswith(('http
 for name in ['index.html','app.js','style.css','enhancements.css','translation.js','catalog.js','sw.js','manifest.webmanifest','icon-192.png','icon-512.png']:
     assert (site/name).is_file(),name
 catalog=json.JSONDecoder().raw_decode((site/'catalog.js').read_text(encoding='utf-8').split('const JOURNAL_CATALOG = ',1)[1])[0]
+assert set(catalog)==ids,'Missing catalog metadata'
 for journal_id,entry in catalog.items():
     assert journal_id in ids,'Unknown catalog journal'
     cover=entry['cover']
-    assert Path(cover).name==cover and (site/cover).is_file(),'Missing catalog cover'
+    if cover:assert Path(cover).name==cover and (site/cover).is_file(),'Missing catalog cover'
 assert len(articles)>0,'No real articles collected'
 statuses=Counter(j['status'] for j in journals)
 enriched=sum(bool(a.get('abstract_source')) for a in articles)

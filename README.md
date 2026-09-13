@@ -6,14 +6,15 @@
 
 ## 已接入清单
 
+- 人力与组织：用户指定的 35 本期刊，作为默认期刊库入口。
 - 核心关注：用户指定的 10 本组织行为、人力资源与管理学期刊。
 - FT50：2026 年 4 月版，依据 [SMU 图书馆核验的名单与 ISSN](https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and)。此次更新加入 Academy of Management Annals、American Sociological Review、Psychological Science，移出 Human Relations、Journal of Business Ethics、Organization Studies。
 - UTD24：依据 [UT Dallas 官方名单](https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php)。
-- 三组重叠去重后共 **55 本**。完整名称、ISSN、来源和分组保存在 `radar/journals.json`。
+- 四组重叠去重后共 **78 本**。完整名称、ISSN、来源和分组保存在 `radar/journals.json`。
 
 ## 阅读
 
-默认展示核心 10 本的近 90 天文章。可按期刊、日期、关键词筛选，切换未读与收藏，打开摘要和原文；浏览器首次载入后会缓存阅读页面和文章数据。
+默认展示「人力与组织」35 本期刊的期刊库，点击卡片查看该刊文章。可按期刊、日期、关键词筛选，切换未读与收藏，打开摘要和原文；浏览器首次载入后会缓存阅读页面和文章数据。
 
 已读、收藏和“我的选刊”仅保存在当前浏览器，换设备或清除浏览器数据前请点击“导出阅读记录”。导入会合并记录。页面的“刷新文章”读取最新云端采集结果，不会立即启动一次采集。
 
@@ -74,7 +75,7 @@ python -m http.server 8767 --directory site
 
 打开 http://localhost:8767/。仅重建页面可用 `python radar/run.py build`；仅更新核心组可加 `--group core10`。本地 SQLite 位于 `radar-data/`，生成网站位于 `site/`，均不提交到主分支。
 
-新增期刊时在 `radar/journals.json` 增加一条配置：`id` 使用稳定 ISSN，填写 `name`、`issns`、`short_name`、`groups`、`rss_url`（如有）和 `enabled`。现有 55 本里挑选个人子集可直接通过页面“管理期刊与数据源”勾选；新增第 56 本及之后的采集对象仍需修改配置并提交。
+新增期刊时在 `radar/journals.json` 增加一条配置：`id` 使用稳定 ISSN，填写 `name`、`issns`、`short_name`、`groups`、`rss_url`（如有）和 `enabled`。现有 78 本里挑选个人子集可直接通过页面“管理期刊与数据源”勾选；新增第 79 本及之后的采集对象仍需修改配置并提交。
 
 Fork 后在 Settings → Pages 设置 GitHub Actions，启用本仓库 Actions。定制部署地址时同时修改 `radar/desktop.py` 中的 `CLOUD` 和 `radar/web/app.js` 中的迁移地址与来源校验；本机固定端口为 8766。工作流需要本仓库的 contents write、pages write 和部署身份权限，仅保存采集记录与发布静态站点。
 

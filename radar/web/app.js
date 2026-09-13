@@ -1,7 +1,7 @@
 'use strict';
 const $ = s => document.querySelector(s);
 const KEY = 'journal-radar:reading:v1';
-let data = null, group = 'core10', view = 'all', limit = 40, installPrompt = null;
+let data = null, group = 'hr35', view = 'all', limit = 40, installPrompt = null;
 let browseMode='library', journalId=null;
 let state = {read:{}, saved:{}, custom:[]};
 const isDesktop=location.origin==='http://127.0.0.1:8766';
@@ -28,7 +28,7 @@ function persist() { try {localStorage.setItem(KEY,JSON.stringify(state));} catc
 function el(tag, text, cls) { const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node; }
 function button(text, action, cls) { const b=el('button',text,cls);b.type='button';b.addEventListener('click',action);return b; }
 function toast(text) { $('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').hidden=true,4500); }
-function label(g) { return {core10:'核心关注',ft50:'FT50',utd24:'UTD24',custom:'我的选刊',all:'全部期刊'}[g]; }
+function label(g) { return {hr35:'人力与组织',core10:'核心关注',ft50:'FT50',utd24:'UTD24',custom:'我的选刊',all:'全部期刊'}[g]; }
 function inGroup(j) {return group==='all'||(group==='custom'?state.custom.includes(j.id):j.groups.includes(group));}
 function readableDate(s) {return s?s.slice(0,10).replaceAll('-','.'):'日期未提供';}
 function withinPeriod(a,cutoff) {const date=a.published_date||a.first_seen.slice(0,10);return !cutoff||date>=cutoff.slice(0,date.length);}
@@ -41,7 +41,7 @@ function updateJournals() {
 function applyRoute(focus=false){
   if(!data)return;
   const journalRoute=/^#journal=(\d{4}-\d{3}[\dX])$/.exec(location.hash);
-  const sectionRoute=/^#(library|feed)=(core10|ft50|utd24|custom|all)$/.exec(location.hash);
+  const sectionRoute=/^#(library|feed)=(hr35|core10|ft50|utd24|custom|all)$/.exec(location.hash);
   journalId=journalRoute?.[1]||null;
   const journal=data.journals.find(j=>j.id===journalId);
   if(journal){
@@ -161,7 +161,7 @@ function render() {
   const all=data.articles.filter(a=>ids.has(a.journal_id));
   $('#article-total').textContent=all.length.toLocaleString();
   const title=$('#group-title');title.replaceChildren(document.createTextNode(label(group)),el('span','的新进展'));
-  $('#group-description').textContent=group==='core10'?'从你关心的 10 本期刊开始，发现值得细读的研究。':group==='ft50'?'FT50 · 2026 年 4 月版，50 本期刊的研究动态。':group==='utd24'?'UTD24 · 跨管理、金融、营销、会计与信息系统。':group==='custom'?'在「管理期刊与数据源」中选择你想单独关注的期刊。':'全部期刊汇聚于此，重叠清单合并展示。';
+  $('#group-description').textContent=group==='hr35'?'你指定的 35 本期刊，涵盖人力资源、组织行为与管理研究。':group==='core10'?'从你关心的 10 本期刊开始，发现值得细读的研究。':group==='ft50'?'FT50 · 2026 年 4 月版，50 本期刊的研究动态。':group==='utd24'?'UTD24 · 跨管理、金融、营销、会计与信息系统。':group==='custom'?'在「管理期刊与数据源」中选择你想单独关注的期刊。':'全部期刊汇聚于此，重叠清单合并展示。';
   $('#total-label').textContent=isLibrary?'本关注期刊':'篇已收录文章';
   if(isLibrary){title.replaceChildren(document.createTextNode(label(group)),el('span','的期刊库'));$('#article-total').textContent=journals.length;renderCatalog(journals);}
   if(current){title.textContent=current.name;$('#group-description').textContent='ISSN '+current.issns.join(' / ')+' · '+current.groups.map(label).join(' · ');$('#article-total').textContent=all.filter(a=>a.journal_id===current.id).length.toLocaleString();}

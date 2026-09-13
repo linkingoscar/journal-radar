@@ -36,7 +36,8 @@
       "groups": [
         "core10",
         "ft50",
-        "utd24"
+        "utd24",
+        "hr35"
       ],
       "rss_url": "https://journals.aom.org/action/showFeed?type=etoc&feed=rss&jc=amj",
       "short_name": "AMJ",
@@ -59,7 +60,8 @@
       "groups": [
         "core10",
         "ft50",
-        "utd24"
+        "utd24",
+        "hr35"
       ],
       "rss_url": "https://journals.aom.org/action/showFeed?type=etoc&feed=rss&jc=amr",
       "short_name": "AMR",
@@ -122,7 +124,8 @@
       ],
       "groups": [
         "ft50",
-        "utd24"
+        "utd24",
+        "hr35"
       ],
       "id": "0001-8392",
       "enabled": true,
@@ -266,7 +269,8 @@
       ],
       "groups": [
         "core10",
-        "ft50"
+        "ft50",
+        "hr35"
       ],
       "rss_url": "https://onlinelibrary.wiley.com/feed/1099050x/most-recent",
       "short_name": "HRM",
@@ -352,7 +356,8 @@
       ],
       "groups": [
         "core10",
-        "ft50"
+        "ft50",
+        "hr35"
       ],
       "rss_url": "https://psycnet.apa.org/journals/apl.rss",
       "short_name": "JAP",
@@ -520,7 +525,8 @@
       ],
       "groups": [
         "core10",
-        "ft50"
+        "ft50",
+        "hr35"
       ],
       "rss_url": "https://journals.sagepub.com/action/showFeed?type=etoc&feed=rss&jc=joma",
       "short_name": "JOM",
@@ -818,7 +824,8 @@
       ],
       "groups": [
         "ft50",
-        "utd24"
+        "utd24",
+        "hr35"
       ],
       "id": "1047-7039",
       "enabled": true,
@@ -840,7 +847,8 @@
       ],
       "groups": [
         "core10",
-        "ft50"
+        "ft50",
+        "hr35"
       ],
       "rss_url": "https://rss.sciencedirect.com/publication/science/07495978",
       "short_name": "OBHDP",
@@ -1066,7 +1074,8 @@
         "1744-6570"
       ],
       "groups": [
-        "core10"
+        "core10",
+        "hr35"
       ],
       "rss_url": "https://onlinelibrary.wiley.com/feed/17446570/most-recent",
       "short_name": "PPsych",
@@ -1084,7 +1093,8 @@
         "1748-8583"
       ],
       "groups": [
-        "core10"
+        "core10",
+        "hr35"
       ],
       "rss_url": "https://onlinelibrary.wiley.com/feed/17488583/most-recent",
       "short_name": "HRMJ",
@@ -1102,7 +1112,8 @@
         "1466-4399"
       ],
       "groups": [
-        "core10"
+        "core10",
+        "hr35"
       ],
       "rss_url": "https://www.tandfonline.com/feed/rss/rijh20",
       "short_name": "IJHRM",
@@ -1120,7 +1131,8 @@
         "1099-1379"
       ],
       "groups": [
-        "core10"
+        "core10",
+        "hr35"
       ],
       "rss_url": "https://onlinelibrary.wiley.com/feed/10991379/most-recent",
       "short_name": "JOB",
@@ -1152,6 +1164,464 @@
       "crossref_title": "INFORMS Journal on Computing",
       "publisher": "Institute for Operations Research and the Management Sciences",
       "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Business Research",
+      "issns": [
+        "0148-2963"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0148-2963",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "JBR",
+      "sources": [
+        "https://api.crossref.org/journals/0148-2963"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Business Research",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "Human Resource Management Review",
+      "issns": [
+        "1053-4822"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "1053-4822",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "HRMR",
+      "sources": [
+        "https://api.crossref.org/journals/1053-4822"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Human Resource Management Review",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "Journal of Vocational Behavior",
+      "issns": [
+        "0001-8791",
+        "1095-9084"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0001-8791",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "JVB",
+      "sources": [
+        "https://api.crossref.org/journals/0001-8791"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Vocational Behavior",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "Journal of Business and Psychology",
+      "issns": [
+        "0889-3268",
+        "1573-353X"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0889-3268",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "JBP",
+      "sources": [
+        "https://api.crossref.org/journals/0889-3268"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Business and Psychology",
+      "publisher": "Springer-Verlag"
+    },
+    {
+      "name": "Personnel Review",
+      "issns": [
+        "0048-3486",
+        "1758-6933"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0048-3486",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "PR",
+      "sources": [
+        "https://api.crossref.org/journals/0048-3486"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Personnel Review",
+      "publisher": "Emerald (MCB UP)"
+    },
+    {
+      "name": "Employee Relations",
+      "issns": [
+        "0142-5455",
+        "1758-7069"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0142-5455",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "ER",
+      "sources": [
+        "https://api.crossref.org/journals/0142-5455"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Employee Relations The International Journal",
+      "publisher": "Emerald (MCB UP)"
+    },
+    {
+      "name": "Human Resource Development Quarterly",
+      "issns": [
+        "1044-8004",
+        "1532-1096"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "1044-8004",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "HRDQ",
+      "sources": [
+        "https://api.crossref.org/journals/1044-8004"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Human Resource Development Quarterly",
+      "publisher": "Wiley (John Wiley & Sons)"
+    },
+    {
+      "name": "Human Resource Development International",
+      "issns": [
+        "1367-8868",
+        "1469-8374"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "1367-8868",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "HRDI",
+      "sources": [
+        "https://api.crossref.org/journals/1367-8868"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Human Resource Development International",
+      "publisher": "Informa UK (Taylor & Francis)"
+    },
+    {
+      "name": "Asia Pacific Journal of Human Resources",
+      "issns": [
+        "1038-4111",
+        "1744-7941"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "1038-4111",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "APJHR",
+      "sources": [
+        "https://api.crossref.org/journals/1038-4111"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Asia Pacific Journal of Human Resources",
+      "publisher": "Wiley (Blackwell Publishing)"
+    },
+    {
+      "name": "International Journal of Manpower",
+      "issns": [
+        "0143-7720",
+        "1758-6577"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0143-7720",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "IJM",
+      "sources": [
+        "https://api.crossref.org/journals/0143-7720"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "International Journal of Manpower",
+      "publisher": "Emerald (MCB UP)"
+    },
+    {
+      "name": "International Journal of Selection and Assessment",
+      "issns": [
+        "0965-075X",
+        "1468-2389"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0965-075X",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "IJSA",
+      "sources": [
+        "https://api.crossref.org/journals/0965-075X"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "International Journal of Selection and Assessment",
+      "publisher": "Wiley (Blackwell Publishing)"
+    },
+    {
+      "name": "Management Decision",
+      "issns": [
+        "0025-1747",
+        "1758-6070"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0025-1747",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "MD",
+      "sources": [
+        "https://api.crossref.org/journals/0025-1747"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Management Decision",
+      "publisher": "Emerald (MCB UP)"
+    },
+    {
+      "name": "European Journal of Training and Development",
+      "issns": [
+        "2046-9012",
+        "2046-9020"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "2046-9012",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "EJTD",
+      "sources": [
+        "https://api.crossref.org/journals/2046-9012"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "European Journal of Training and Development",
+      "publisher": "Emerald (MCB UP)"
+    },
+    {
+      "name": "Evidence-based HRM: a Global Forum for Empirical Scholarship",
+      "issns": [
+        "2049-3983",
+        "2049-3991"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "2049-3983",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "EHGFES",
+      "sources": [
+        "https://api.crossref.org/journals/2049-3983"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Evidence-based HRM a Global Forum for Empirical Scholarship",
+      "publisher": "Emerald (MCB UP)"
+    },
+    {
+      "name": "Industrial and Labor Relations Review",
+      "issns": [
+        "0019-7939",
+        "2162-271X"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0019-7939",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "ILR Review",
+      "sources": [
+        "https://api.crossref.org/journals/0019-7939",
+        "https://www.ilr.cornell.edu/ilr-review"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "ILR Review",
+      "publisher": "SAGE Publications"
+    },
+    {
+      "name": "Human Relations",
+      "issns": [
+        "0018-7267",
+        "1741-282X"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0018-7267",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "HR",
+      "sources": [
+        "https://api.crossref.org/journals/0018-7267"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Human Relations",
+      "publisher": "SAGE Publications"
+    },
+    {
+      "name": "Group & Organization Management",
+      "issns": [
+        "1059-6011",
+        "1552-3993"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "1059-6011",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "GOM",
+      "sources": [
+        "https://api.crossref.org/journals/1059-6011"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Group & Organization Management",
+      "publisher": "SAGE Publications"
+    },
+    {
+      "name": "New Technology, Work and Employment",
+      "issns": [
+        "0268-1072",
+        "1468-005X"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0268-1072",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "NTWE",
+      "sources": [
+        "https://api.crossref.org/journals/0268-1072"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "New Technology Work and Employment",
+      "publisher": "Wiley (Blackwell Publishing)"
+    },
+    {
+      "name": "Journal of Managerial Psychology",
+      "issns": [
+        "0268-3946",
+        "1758-7778"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0268-3946",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "JMP",
+      "sources": [
+        "https://api.crossref.org/journals/0268-3946"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Managerial Psychology",
+      "publisher": "Emerald (MCB UP)"
+    },
+    {
+      "name": "Career Development International",
+      "issns": [
+        "1362-0436",
+        "1758-6003"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "1362-0436",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "CDI",
+      "sources": [
+        "https://api.crossref.org/journals/1362-0436"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Career Development International",
+      "publisher": "Emerald (MCB UP)"
+    },
+    {
+      "name": "European Management Journal",
+      "issns": [
+        "0263-2373"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0263-2373",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "EMJ",
+      "sources": [
+        "https://api.crossref.org/journals/0263-2373"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "European Management Journal",
+      "publisher": "Elsevier"
+    },
+    {
+      "name": "Asia Pacific Journal of Management",
+      "issns": [
+        "0217-4561",
+        "1572-9958"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0217-4561",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "APJM",
+      "sources": [
+        "https://api.crossref.org/journals/0217-4561"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Asia Pacific Journal of Management",
+      "publisher": "Springer-Verlag"
+    },
+    {
+      "name": "International Journal of Contemporary Hospitality Management",
+      "issns": [
+        "0959-6119",
+        "1757-1049"
+      ],
+      "groups": [
+        "hr35"
+      ],
+      "id": "0959-6119",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "IJCHM",
+      "sources": [
+        "https://api.crossref.org/journals/0959-6119"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "International Journal of Contemporary Hospitality Management",
+      "publisher": "Emerald (MCB UP)"
     }
   ]
 }
