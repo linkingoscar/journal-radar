@@ -6,7 +6,9 @@ root=Path(__file__).resolve().parents[1]
 site=root/'site'
 data=json.loads((site/'data.json').read_text(encoding='utf-8'))
 journals=data['journals'];articles=data['articles'];ids={j['id'] for j in journals}
-assert len(journals)==55 and len(ids)==55
+registry=json.loads((root/'radar/journals.json').read_text(encoding='utf-8'))
+expected={j['id'] for j in registry['journals'] if j.get('enabled',True)}
+assert ids==expected and len(journals)==len(ids),'Missing or duplicate journals'
 assert len({a['id'] for a in articles})==len(articles),'Duplicate article ids'
 dois=[a['doi'] for a in articles if a['doi']]
 assert len(set(dois))==len(dois),'Duplicate DOIs'
