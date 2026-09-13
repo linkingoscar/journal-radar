@@ -7,7 +7,7 @@
   <title>期刊雷达 · Journal Radar</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="enhancements.css">
-  <script src="translation.js" defer></script><script src="catalog.js" defer></script><script src="app.js" defer></script>
+  <script src="translation.js" defer></script><script src="catalog.js" defer></script><script src="archives.js" defer></script><script src="app.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">跳到主要内容</a>
@@ -46,6 +46,29 @@
       <div class="result-info"><span id="catalog-count" aria-live="polite">正在读取期刊…</span><span>点击期刊，查看已收录文章</span></div>
       <div id="catalog-cards" class="catalog-grid"></div>
       <p class="catalog-source">封面与学科、评级资料复用自 <a href="https://github.com/linkingoscar/paper" target="_blank" rel="noopener noreferrer">paper 期刊库 ↗</a>；评级年份见标签。封面仅用于识别期刊。</p>
+    </section>
+    <section id="journal-archive" aria-label="期刊历史目录" hidden>
+      <div class="archive-modes" aria-label="期刊内容"><button id="show-archive" aria-pressed="true">往期目录</button><button id="show-recent" aria-pressed="false">近期动态</button></div>
+      <div id="archive-content">
+        <p id="archive-range" class="archive-note">选择年份，浏览该年的卷期与文章。</p>
+        <a id="archive-local-link" class="back-library" target="_blank" rel="noopener noreferrer" hidden>在本机版打开此刊历史目录 ↗</a>
+        <div id="archive-controls">
+          <div class="archive-controls">
+            <label>历史年份 <select id="archive-years" aria-label="选择历史年份"></select></label>
+            <form id="archive-year-form"><label for="archive-year">跳转年份</label><input id="archive-year" type="number" min="1500" step="1" required><button type="submit">查看目录</button></form>
+            <button id="archive-refresh">更新本年目录</button><button id="archive-stop" hidden>停止加载</button><button id="archive-continue" hidden>继续加载</button>
+          </div>
+        </div>
+        <p id="archive-status" role="status" class="archive-note"></p>
+        <div class="archive-layout">
+          <nav id="archive-issues" aria-label="本年卷期"></nav>
+          <section class="archive-list" aria-label="历史文章目录">
+            <div class="archive-list-heading"><h3 id="archive-heading">本年目录</h3><select id="archive-reading" aria-label="历史目录阅读状态"><option value="all">全部文章</option><option value="unread">未读</option><option value="saved">收藏</option></select></div>
+            <input id="archive-search" type="search" placeholder="搜索本年已加载的标题、作者、DOI 或页码" aria-label="搜索本年历史目录">
+            <p id="archive-count" class="archive-note"></p><ol id="archive-articles"></ol>
+          </section>
+        </div>
+      </div>
     </section>
     <div id="article-feed" hidden>
     <section class="toolbar" aria-label="筛选文章">

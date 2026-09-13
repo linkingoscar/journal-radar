@@ -13,7 +13,7 @@ assert len({a['id'] for a in articles})==len(articles),'Duplicate article ids'
 dois=[a['doi'] for a in articles if a['doi']]
 assert len(set(dois))==len(dois),'Duplicate DOIs'
 assert all(a['journal_id'] in ids and a['title'] and a['link'].startswith(('http://','https://')) for a in articles)
-for name in ['index.html','app.js','style.css','enhancements.css','translation.js','catalog.js','sw.js','manifest.webmanifest','icon-192.png','icon-512.png']:
+for name in ['index.html','app.js','archives.js','style.css','enhancements.css','translation.js','catalog.js','sw.js','manifest.webmanifest','icon-192.png','icon-512.png']:
     assert (site/name).is_file(),name
 catalog=json.JSONDecoder().raw_decode((site/'catalog.js').read_text(encoding='utf-8').split('const JOURNAL_CATALOG = ',1)[1])[0]
 assert set(catalog)==ids,'Missing catalog metadata'

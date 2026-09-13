@@ -24,6 +24,14 @@ Windows 桌面增强版：运行 `Install-DesktopShortcut.ps1` 安装本机组�
 
 原网页版与本机版属于不同浏览器站点，收藏不会自动共享。首次进入本机版可点击“迁移原网页版阅读记录”，在同一浏览器内合并原有收藏、已读和自选期刊；也可使用 JSON 导出/导入。合并保留已有记录，DOI 去重时保留阅读标识。浏览器保存的 PWA 仍是网页版；需要本机补采时请使用安装脚本生成的桌面图标。
 
+## 期刊历史目录（本机版）
+
+点击期刊卡片，默认进入「往期目录」，可选择历史年份或输入年份跳转，再按卷、期浏览标题、作者、页码和原文；「近期动态」保留原有文章列表。首页不预取历史记录。进入某刊后才查询年份范围与最近年份，选中其他年份后才分页加载该年；可停止、继续或更新本年目录。查询成功的分页与进度保存在独立的 `.desktop-data/archives.db`，再次访问复用缓存；当前年也可点击「更新本年目录」获取变化。
+
+目录优先按正式出版年份归期，没有期号时按卷展示，没有卷期时归入「待归期 / Online First」。缺正式出版日期的记录说明年份依据。历史文章独立于近期动态和日常摘要补采，打开文章时才补取摘要和翻译；已读与收藏沿用原有阅读标识，可在本年目录内筛选。
+
+历史查询使用 Crossref；年份范围和查询完成不代表已与出版商完整目录逐篇核验，无记录也不代表当年未出版。无 DOI 的老文章、缺失元数据、改名前刊名与 ISSN 可能需要后续补源。接口不可用的期刊会给出说明。网页版提供本机历史目录入口和近期动态，历史查询由已安装的本机组件执行。
+
 ## 摘要补全
 
 云端每次采集后，按 DOI 从 OpenAlex 批量补全缺失摘要，并核对文章标题；成功摘要和查询记录保存在历史 SQLite 库。每天重试尚未提供摘要的记录，单轮最多检查 1,000 篇。网页版和桌面版都会收到云端补全结果。
@@ -67,7 +75,7 @@ python -m venv .venv
 # Windows: .venv\Scripts\Activate.ps1
 # Linux/macOS: source .venv/bin/activate
 python -m pip install -r radar/requirements.txt pytest==8.4.2
-python -m pytest radar/test_radar.py radar/test_desktop.py radar/test_abstracts.py -q
+python -m pytest radar/test_radar.py radar/test_desktop.py radar/test_abstracts.py radar/test_archives.py -q
 node --test radar/test_translation.cjs
 python radar/run.py sync --days 90 --workers 3
 python radar/abstracts.py --limit 1000

@@ -39,6 +39,9 @@ def test_loopback_api_rejects_cross_origin_rebinding_and_unauthenticated_mutatio
     app.pause_abstracts=lambda:True
     app.abstract_slot=threading.BoundedSemaphore(1)
     app.abstracts=SimpleNamespace(lookup=lambda article:calls.append(article['id']) or {'status':'found','abstract':'An existing abstract'})
+    app.abstracts.overlay=lambda result:result
+    app.archive_slot=threading.BoundedSemaphore(1)
+    app.archives=SimpleNamespace(overview=lambda jid:{'journal_id':jid},year=lambda jid,year,**kwargs:{'articles':[],'year':year})
     server=ThreadingHTTPServer(('127.0.0.1',0),make_handler(app,0))
     port=server.server_port;server.RequestHandlerClass=make_handler(app,port)
     thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
@@ -67,6 +70,17 @@ def test_loopback_api_rejects_cross_origin_rebinding_and_unauthenticated_mutatio
         assert requests.post(url+'/api/abstracts/pause').status_code==403
         assert requests.post(url+'/api/abstracts/pause',headers={'X-Radar-Token':app.token,'Origin':'https://untrusted.test'}).status_code==403
         assert requests.post(url+'/api/abstracts/pause',headers={'X-Radar-Token':app.token}).json()['paused']
+        archive=url+'/api/archive/0021-9010'
+        assert requests.get(archive).status_code==404
+        assert requests.post(archive).status_code==403
+        assert requests.post(archive,headers={'X-Radar-Token':app.token,'Origin':'https://untrusted.test'}).status_code==403
+        assert requests.post(archive+'?year=1980',headers={'X-Radar-Token':app.token}).json()['year']==1980
+        assert requests.post(archive+'?year=wrong',headers={'X-Radar-Token':app.token}).status_code==400
+        assert requests.post(archive+'?year=1980&year=1981',headers={'X-Radar-Token':app.token}).status_code==400
+        assert requests.post(archive+'?url=https://untrusted.test',headers={'X-Radar-Token':app.token}).status_code==400
+        app.archive_slot.acquire()
+        assert requests.post(archive,headers={'X-Radar-Token':app.token}).status_code==429
+        app.archive_slot.release()
     finally:server.shutdown();server.server_close();thread.join()
 
 
@@ -87,3 +101,12 @@ def test_sync_runs_abstract_queue_and_publishes_results(tmp_path,monkeypatch):
     app.sync()
     assert not app.status['running'] and app.status['paused'] and app.status['error'] is None
     assert json.loads((tmp_path/'abstract-progress.json').read_text(encoding='utf-8'))['paused']
+
+
+def test_cancelled_browser_request_does_not_retry_writing_to_closed_connection():
+    handler=object.__new__(make_handler(SimpleNamespace(),8766))
+    handler.send_response=lambda status:None
+    handler.send_header=lambda key,value:None
+    def closed():raise ConnectionAbortedError('Browser switched years')
+    handler.end_headers=closed
+    assert handler.respond(200,{'complete':False}) is None

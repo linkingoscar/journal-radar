@@ -10,9 +10,10 @@ from pathlib import Path
 import secrets
 import threading
 import time
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 from run import ROOT, RadarStore, collect_rss, get, now, plain, safe_url
 from abstracts import AbstractService
+from archives import ArchiveService
 
 PORT=8766
 CLOUD='https://linkingoscar.github.io/journal-radar/data.json'
@@ -52,6 +53,8 @@ class Companion:
         self.registry=json.loads((ROOT/'radar/journals.json').read_text(encoding='utf-8'))
         self.store=RadarStore(self.directory)
         self.abstracts=AbstractService(self.directory)
+        self.archives=ArchiveService(self.directory,self.registry)
+        self.archive_slot=threading.BoundedSemaphore(1)
         self.abstract_slot=threading.BoundedSemaphore(1)
         self.token=secrets.token_urlsafe(32)
         self.guard=threading.Lock()
@@ -94,7 +97,7 @@ class Companion:
     def abstract_article(self,identifier):
         with self.store.get_connection('history') as c:
             row=c.execute('SELECT entry_id AS id,title,doi,link,abstract,journal_id FROM matched_entries WHERE entry_id=?',(identifier,)).fetchone()
-        return dict(row) if row else None
+        return dict(row) if row else self.archives.article(identifier)
 
     def start_sync(self):
         with self.guard:
@@ -179,7 +182,8 @@ def make_handler(app,port):
             self.send_header('X-Content-Type-Options','nosniff')
             self.send_header('Referrer-Policy','no-referrer')
             self.send_header('Content-Security-Policy',"frame-ancestors 'none'")
-            self.end_headers();self.wfile.write(body)
+            try:self.end_headers();self.wfile.write(body)
+            except ConnectionError:pass  # Switching years can close the client after a page is cached.
         def do_GET(self):
             if not self.trusted():return self.respond(403,{'error':'仅允许本机应用访问'})
             path=urlsplit(self.path).path
@@ -196,6 +200,21 @@ def make_handler(app,port):
             path=urlsplit(self.path).path
             if path=='/api/sync':return self.respond(202,{'started':app.start_sync()})
             if path=='/api/abstracts/pause':return self.respond(202,{'paused':app.pause_abstracts()})
+            archive=re.fullmatch(r'/api/archive/(\d{4}-\d{3}[\dX])',path)
+            if archive:
+                query=parse_qs(urlsplit(self.path).query)
+                if any(k not in ('year','next','refresh') or len(v)!=1 for k,v in query.items()):return self.respond(400,{'error':'目录查询参数错误'})
+                if not app.archive_slot.acquire(blocking=False):return self.respond(429,{'error':'另一份目录正在查询，请稍后重试。'})
+                try:
+                    if 'year' in query:
+                        if not re.fullmatch(r'\d{4}',query['year'][0]):raise ValueError('年份格式错误')
+                        result=app.archives.year(archive[1],int(query['year'][0]),advance=query.get('next')==['1'],refresh=query.get('refresh')==['1'])
+                        app.abstracts.overlay(result)
+                    else:result=app.archives.overview(archive[1])
+                    return self.respond(200,result)
+                except ValueError as exc:return self.respond(400,{'error':str(exc)[:200]})
+                except Exception:return self.respond(502,{'error':'目录来源暂时不可用，已保存的历史目录仍会保留，请稍后重试。'})
+                finally:app.archive_slot.release()
             match=re.fullmatch(r'/api/abstract/([a-f0-9]{64})',path)
             if not match:return self.respond(404,{'error':'Not found'})
             article=app.abstract_article(match[1])
