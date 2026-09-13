@@ -1,0 +1,1157 @@
+{
+  "version": 1,
+  "ft50_version": "2026-04",
+  "utd24_verified_on": "2026-09-13",
+  "sources": {
+    "ft50": "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+    "utd24": "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+  },
+  "journals": [
+    {
+      "name": "Academy of Management Annals",
+      "issns": [
+        "1941-6520",
+        "1941-6067"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "1941-6520",
+      "enabled": true,
+      "rss_url": "https://journals.aom.org/action/showFeed?type=etoc&feed=rss&jc=annals",
+      "short_name": "AMA",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Academy of Management Annals",
+      "publisher": "Academy of Management"
+    },
+    {
+      "name": "Academy of Management Journal",
+      "issns": [
+        "0001-4273",
+        "1948-0989"
+      ],
+      "groups": [
+        "core10",
+        "ft50",
+        "utd24"
+      ],
+      "rss_url": "https://journals.aom.org/action/showFeed?type=etoc&feed=rss&jc=amj",
+      "short_name": "AMJ",
+      "id": "0001-4273",
+      "enabled": true,
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Academy of Management Journal",
+      "publisher": "Academy of Management",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Academy of Management Review",
+      "issns": [
+        "0363-7425",
+        "1930-3807"
+      ],
+      "groups": [
+        "core10",
+        "ft50",
+        "utd24"
+      ],
+      "rss_url": "https://journals.aom.org/action/showFeed?type=etoc&feed=rss&jc=amr",
+      "short_name": "AMR",
+      "id": "0363-7425",
+      "enabled": true,
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Academy of Management Review",
+      "publisher": "Academy of Management",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "The Accounting Review",
+      "issns": [
+        "0001-4826",
+        "1558-7967"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0001-4826",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "AR",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "The Accounting Review",
+      "publisher": "American Accounting Association"
+    },
+    {
+      "name": "Accounting, Organizations and Society",
+      "issns": [
+        "0361-3682"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0361-3682",
+      "enabled": true,
+      "rss_url": "https://rss.sciencedirect.com/publication/science/03613682",
+      "short_name": "AOS",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Accounting Organizations and Society",
+      "publisher": "Elsevier",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Administrative Science Quarterly",
+      "issns": [
+        "0001-8392",
+        "1930-3815"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0001-8392",
+      "enabled": true,
+      "rss_url": "https://journals.sagepub.com/action/showFeed?type=etoc&feed=rss&jc=asqa",
+      "short_name": "ASQ",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Administrative Science Quarterly",
+      "publisher": "SAGE Publications"
+    },
+    {
+      "name": "American Economic Review",
+      "issns": [
+        "0002-8282",
+        "1944-7981"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0002-8282",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "AER",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "American Economic Review",
+      "publisher": "American Economic Association",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "American Sociological Review",
+      "issns": [
+        "0003-1224",
+        "1939-8271"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0003-1224",
+      "enabled": true,
+      "rss_url": "https://journals.sagepub.com/action/showFeed?type=etoc&feed=rss&jc=asra",
+      "short_name": "ASR",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "American Sociological Review",
+      "publisher": "SAGE Publications",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Contemporary Accounting Research",
+      "issns": [
+        "0823-9150",
+        "1911-3846"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0823-9150",
+      "enabled": true,
+      "rss_url": "https://onlinelibrary.wiley.com/feed/19113846/most-recent",
+      "short_name": "CAR",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Contemporary Accounting Research",
+      "publisher": "Wiley (Blackwell Publishing)"
+    },
+    {
+      "name": "Econometrica",
+      "issns": [
+        "0012-9682",
+        "1468-0262"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0012-9682",
+      "enabled": true,
+      "rss_url": "https://onlinelibrary.wiley.com/feed/14680262/most-recent",
+      "short_name": "E",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Econometrica",
+      "publisher": "The Econometric Society",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Entrepreneurship Theory and Practice",
+      "issns": [
+        "1042-2587",
+        "1540-8520",
+        "1540-6520"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "1042-2587",
+      "enabled": true,
+      "rss_url": "https://journals.sagepub.com/action/showFeed?type=etoc&feed=rss&jc=etpb",
+      "short_name": "ETP",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Entrepreneurship Theory and Practice",
+      "publisher": "SAGE Publications",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Harvard Business Review",
+      "issns": [
+        "0017-8012"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0017-8012",
+      "enabled": true,
+      "rss_url": "http://feeds.harvardbusiness.org/harvardbusiness?format=xml",
+      "short_name": "HBR",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_identity_verified": false,
+      "verification_note": "Crossref journal endpoint returns 404; publisher feed used.",
+      "crossref_enabled": false,
+      "coverage_note": "HBR 官方网站最新文章 feed（Digital Articles），不覆盖杂志完整刊期；Crossref 未提供该 ISSN 的期刊接口。",
+      "site_url": "https://hbr.org/"
+    },
+    {
+      "name": "Human Resource Management",
+      "issns": [
+        "0090-4848",
+        "1099-050X"
+      ],
+      "groups": [
+        "core10",
+        "ft50"
+      ],
+      "rss_url": "https://onlinelibrary.wiley.com/feed/1099050x/most-recent",
+      "short_name": "HRM",
+      "id": "0090-4848",
+      "enabled": true,
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Human Resource Management",
+      "publisher": "Wiley (John Wiley & Sons)",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Information Systems Research",
+      "issns": [
+        "1047-7047",
+        "1526-5536"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "1047-7047",
+      "enabled": true,
+      "rss_url": "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=isre",
+      "short_name": "ISR",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Information Systems Research",
+      "publisher": "Institute for Operations Research and the Management Sciences",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Accounting and Economics",
+      "issns": [
+        "0165-4101"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0165-4101",
+      "enabled": true,
+      "rss_url": "https://rss.sciencedirect.com/publication/science/01654101",
+      "short_name": "JAE",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Journal of Accounting and Economics",
+      "publisher": "Elsevier",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Accounting Research",
+      "issns": [
+        "0021-8456",
+        "1475-679X"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0021-8456",
+      "enabled": true,
+      "rss_url": "https://onlinelibrary.wiley.com/feed/1475679x/most-recent",
+      "short_name": "JAR",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Journal of Accounting Research",
+      "publisher": "Wiley (Blackwell Publishing)",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Applied Psychology",
+      "issns": [
+        "0021-9010",
+        "1939-1854"
+      ],
+      "groups": [
+        "core10",
+        "ft50"
+      ],
+      "rss_url": "https://psycnet.apa.org/journals/apl.rss",
+      "short_name": "JAP",
+      "id": "0021-9010",
+      "enabled": true,
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Journal of Applied Psychology",
+      "publisher": "American Psychological Association",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Business Venturing",
+      "issns": [
+        "0883-9026"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0883-9026",
+      "enabled": true,
+      "rss_url": "https://rss.sciencedirect.com/publication/science/08839026",
+      "short_name": "JBV",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Journal of Business Venturing",
+      "publisher": "Elsevier",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Consumer Psychology",
+      "issns": [
+        "1057-7408",
+        "1532-7663"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "1057-7408",
+      "enabled": true,
+      "rss_url": "https://onlinelibrary.wiley.com/feed/15327663/most-recent",
+      "short_name": "JCP",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Journal of Consumer Psychology",
+      "publisher": "Wiley (John Wiley & Sons)",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Consumer Research",
+      "issns": [
+        "0093-5301",
+        "1537-5277"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0093-5301",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "JCR",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Journal of Consumer Research",
+      "publisher": "Oxford University Press",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Finance",
+      "issns": [
+        "0022-1082",
+        "1540-6261"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0022-1082",
+      "enabled": true,
+      "rss_url": "https://onlinelibrary.wiley.com/feed/15406261/most-recent",
+      "short_name": "JF",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "The Journal of Finance",
+      "publisher": "Wiley (Blackwell Publishing)",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Financial and Quantitative Analysis",
+      "issns": [
+        "0022-1090",
+        "1756-6916"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0022-1090",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "JFQA",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Financial and Quantitative Analysis",
+      "publisher": "Cambridge University Press"
+    },
+    {
+      "name": "Journal of Financial Economics",
+      "issns": [
+        "0304-405X"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0304-405X",
+      "enabled": true,
+      "rss_url": "https://rss.sciencedirect.com/publication/science/0304405X",
+      "short_name": "JFE",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Journal of Financial Economics",
+      "publisher": "Elsevier",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of International Business Studies",
+      "issns": [
+        "0047-2506",
+        "1478-6990",
+        "0047-8210"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0047-2506",
+      "enabled": true,
+      "rss_url": "https://link.springer.com/search.rss?facet-content-type=Article&facet-journal-id=41267",
+      "short_name": "JIBS",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of International Business Studies",
+      "publisher": "Springer Science and Business Media LLC"
+    },
+    {
+      "name": "Journal of Management",
+      "issns": [
+        "0149-2063",
+        "1557-1211"
+      ],
+      "groups": [
+        "core10",
+        "ft50"
+      ],
+      "rss_url": "https://journals.sagepub.com/action/showFeed?type=etoc&feed=rss&jc=joma",
+      "short_name": "JOM",
+      "id": "0149-2063",
+      "enabled": true,
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Journal of Management",
+      "publisher": "SAGE Publications",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Management Information Systems",
+      "issns": [
+        "0742-1222",
+        "1557-928X"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0742-1222",
+      "enabled": true,
+      "rss_url": "https://www.jmis-web.org/jmis.xml",
+      "short_name": "JMIS",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Journal of Management Information Systems",
+      "publisher": "Informa UK (Taylor & Francis)",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Management Studies",
+      "issns": [
+        "0022-2380",
+        "1467-6486"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0022-2380",
+      "enabled": true,
+      "rss_url": "https://onlinelibrary.wiley.com/feed/14676486/most-recent",
+      "short_name": "JMS",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Journal of Management Studies",
+      "publisher": "Wiley (Blackwell Publishing)",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Marketing",
+      "issns": [
+        "0022-2429",
+        "1547-7185"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0022-2429",
+      "enabled": true,
+      "rss_url": "https://journals.sagepub.com/action/showFeed?type=etoc&feed=rss&jc=jmxa",
+      "short_name": "JM",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Marketing",
+      "publisher": "SAGE Publications"
+    },
+    {
+      "name": "Journal of Marketing Research",
+      "issns": [
+        "0022-2437",
+        "1547-7193"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0022-2437",
+      "enabled": true,
+      "rss_url": "https://journals.sagepub.com/action/showFeed?type=etoc&feed=rss&jc=mrja",
+      "short_name": "JMR",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Marketing Research",
+      "publisher": "SAGE Publications"
+    },
+    {
+      "name": "Journal of Operations Management",
+      "issns": [
+        "0272-6963",
+        "1873-1317"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0272-6963",
+      "enabled": true,
+      "rss_url": "https://onlinelibrary.wiley.com/feed/18731317/most-recent",
+      "short_name": "JOM",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Operations Management",
+      "publisher": "Wiley (Blackwell Publishing)"
+    },
+    {
+      "name": "Journal of Political Economy",
+      "issns": [
+        "0022-3808",
+        "1537-534X"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0022-3808",
+      "enabled": true,
+      "rss_url": "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jpe",
+      "short_name": "JPE",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Journal of Political Economy",
+      "publisher": "The University of Chicago Press",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of the Academy of Marketing Science",
+      "issns": [
+        "0092-0703",
+        "1552-7824"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0092-0703",
+      "enabled": true,
+      "rss_url": "https://link.springer.com/search.rss?facet-content-type=Article&facet-journal-id=11747",
+      "short_name": "JAMS",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Journal of the Academy of Marketing Science",
+      "publisher": "Springer-Verlag",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Management Science",
+      "issns": [
+        "0025-1909",
+        "1526-5501"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0025-1909",
+      "enabled": true,
+      "rss_url": "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=mnsc",
+      "short_name": "MS",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Management Science",
+      "publisher": "Institute for Operations Research and the Management Sciences",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Manufacturing & Service Operations Management",
+      "issns": [
+        "1523-4614",
+        "1526-5498",
+        "1526-5489"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "1523-4614",
+      "enabled": true,
+      "rss_url": "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=msom",
+      "short_name": "MSOM",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Manufacturing & Service Operations Management",
+      "publisher": "Institute for Operations Research and the Management Sciences",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Marketing Science",
+      "issns": [
+        "0732-2399",
+        "1526-548X"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0732-2399",
+      "enabled": true,
+      "rss_url": "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=mksc",
+      "short_name": "MS",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Marketing Science",
+      "publisher": "Institute for Operations Research and the Management Sciences",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "MIS Quarterly",
+      "issns": [
+        "0276-7783",
+        "2162-9730"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0276-7783",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "MQ",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "MIS Quarterly",
+      "publisher": "MIS Quarterly",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "MIT Sloan Management Review",
+      "issns": [
+        "1532-9194",
+        "1532-8937"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "1532-9194",
+      "enabled": true,
+      "rss_url": "https://sloanreview.mit.edu/feed/",
+      "short_name": "MSMR",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "MIT Sloan Management Review",
+      "publisher": "MIT Sloan School of Management",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Operations Research",
+      "issns": [
+        "0030-364X",
+        "1526-5463"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0030-364X",
+      "enabled": true,
+      "rss_url": "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=opre",
+      "short_name": "OR",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Operations Research",
+      "publisher": "Institute for Operations Research and the Management Sciences",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Organization Science",
+      "issns": [
+        "1047-7039",
+        "1526-5455"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "1047-7039",
+      "enabled": true,
+      "rss_url": "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=orsc",
+      "short_name": "OS",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Organization Science",
+      "publisher": "Institute for Operations Research and the Management Sciences",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Organizational Behavior and Human Decision Processes",
+      "issns": [
+        "0749-5978",
+        "1095-9920"
+      ],
+      "groups": [
+        "core10",
+        "ft50"
+      ],
+      "rss_url": "https://rss.sciencedirect.com/publication/science/07495978",
+      "short_name": "OBHDP",
+      "id": "0749-5978",
+      "enabled": true,
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Organizational Behavior and Human Decision Processes",
+      "publisher": "Elsevier",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Production and Operations Management",
+      "issns": [
+        "1059-1478",
+        "1937-5956"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "1059-1478",
+      "enabled": true,
+      "rss_url": "https://journals.sagepub.com/action/showFeed?type=etoc&feed=rss&jc=poma",
+      "short_name": "POM",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Production and Operations Management",
+      "publisher": "SAGE Publications",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Psychological Science",
+      "issns": [
+        "0956-7976",
+        "1467-9280"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0956-7976",
+      "enabled": true,
+      "rss_url": "https://journals.sagepub.com/action/showFeed?type=etoc&feed=rss&jc=pssa",
+      "short_name": "PS",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Psychological Science",
+      "publisher": "SAGE Publications",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Quarterly Journal of Economics",
+      "issns": [
+        "0033-5533",
+        "1531-4650"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0033-5533",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "QJE",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "The Quarterly Journal of Economics",
+      "publisher": "Oxford University Press",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Research Policy",
+      "issns": [
+        "0048-7333"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0048-7333",
+      "enabled": true,
+      "rss_url": "https://rss.sciencedirect.com/publication/science/00487333",
+      "short_name": "RP",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Research Policy",
+      "publisher": "Elsevier",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Review of Accounting Studies",
+      "issns": [
+        "1380-6653",
+        "1573-7136"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "1380-6653",
+      "enabled": true,
+      "rss_url": "https://link.springer.com/search.rss?facet-content-type=Article&facet-journal-id=11142",
+      "short_name": "RAS",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Review of Accounting Studies",
+      "publisher": "Springer-Verlag",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Review of Economic Studies",
+      "issns": [
+        "0034-6527",
+        "1467-937X"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "0034-6527",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "RES",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "The Review of Economic Studies",
+      "publisher": "Oxford University Press",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Review of Finance",
+      "issns": [
+        "1572-3097",
+        "1573-692X",
+        "1875-824X"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "1572-3097",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "RF",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_title": "Review of Finance",
+      "publisher": "Oxford University Press",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Review of Financial Studies",
+      "issns": [
+        "0893-9454",
+        "1465-7368"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0893-9454",
+      "enabled": true,
+      "rss_url": null,
+      "short_name": "RFS",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Review of Financial Studies",
+      "publisher": "Oxford University Press",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Strategic Entrepreneurship Journal",
+      "issns": [
+        "1932-4391",
+        "1932-443X"
+      ],
+      "groups": [
+        "ft50"
+      ],
+      "id": "1932-4391",
+      "enabled": true,
+      "rss_url": "https://onlinelibrary.wiley.com/feed/1932443x/most-recent",
+      "short_name": "SEJ",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+      ],
+      "crossref_identity_verified": true,
+      "crossref_title": "Strategic Entrepreneurship Journal",
+      "publisher": "Wiley (John Wiley & Sons)"
+    },
+    {
+      "name": "Strategic Management Journal",
+      "issns": [
+        "0143-2095",
+        "1097-0266"
+      ],
+      "groups": [
+        "ft50",
+        "utd24"
+      ],
+      "id": "0143-2095",
+      "enabled": true,
+      "rss_url": "https://onlinelibrary.wiley.com/feed/10970266/most-recent",
+      "short_name": "SMJ",
+      "sources": [
+        "https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and",
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "Strategic Management Journal",
+      "publisher": "Wiley (John Wiley & Sons)",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Personnel Psychology",
+      "issns": [
+        "0031-5826",
+        "1744-6570"
+      ],
+      "groups": [
+        "core10"
+      ],
+      "rss_url": "https://onlinelibrary.wiley.com/feed/17446570/most-recent",
+      "short_name": "PPsych",
+      "id": "0031-5826",
+      "enabled": true,
+      "sources": [],
+      "crossref_title": "Personnel Psychology",
+      "publisher": "Wiley (Blackwell Publishing)",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Human Resource Management Journal",
+      "issns": [
+        "0954-5395",
+        "1748-8583"
+      ],
+      "groups": [
+        "core10"
+      ],
+      "rss_url": "https://onlinelibrary.wiley.com/feed/17488583/most-recent",
+      "short_name": "HRMJ",
+      "id": "0954-5395",
+      "enabled": true,
+      "sources": [],
+      "crossref_title": "Human Resource Management Journal",
+      "publisher": "Wiley (Blackwell Publishing)",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "International Journal of Human Resource Management",
+      "issns": [
+        "0958-5192",
+        "1466-4399"
+      ],
+      "groups": [
+        "core10"
+      ],
+      "rss_url": "https://www.tandfonline.com/feed/rss/rijh20",
+      "short_name": "IJHRM",
+      "id": "0958-5192",
+      "enabled": true,
+      "sources": [],
+      "crossref_title": "The International Journal of Human Resource Management",
+      "publisher": "Informa UK (Taylor & Francis)",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "Journal of Organizational Behavior",
+      "issns": [
+        "0894-3796",
+        "1099-1379"
+      ],
+      "groups": [
+        "core10"
+      ],
+      "rss_url": "https://onlinelibrary.wiley.com/feed/10991379/most-recent",
+      "short_name": "JOB",
+      "id": "0894-3796",
+      "enabled": true,
+      "sources": [],
+      "crossref_title": "Journal of Organizational Behavior",
+      "publisher": "Wiley (John Wiley & Sons)",
+      "crossref_identity_verified": true
+    },
+    {
+      "name": "INFORMS Journal on Computing",
+      "issns": [
+        "0899-1499",
+        "1526-5528",
+        "1091-9856",
+        "2326-3245"
+      ],
+      "groups": [
+        "utd24"
+      ],
+      "id": "1091-9856",
+      "enabled": true,
+      "rss_url": "https://pubsonline.informs.org/action/showFeed?type=etoc&feed=rss&jc=ijoc",
+      "short_name": "IJoC",
+      "sources": [
+        "https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+      ],
+      "crossref_title": "INFORMS Journal on Computing",
+      "publisher": "Institute for Operations Research and the Management Sciences",
+      "crossref_identity_verified": true
+    }
+  ]
+}

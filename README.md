@@ -1,275 +1,59 @@
-# Paper Firehose
+# 期刊雷达 · Journal Radar
 
-Being well read is a pillar of good science, but the volume of new papers makes it impossible to truly keep up to date. Paper-firehose is a way to filter the flood of new papers, so that it becomes a trickle, that one can go through in less than 5 minutes a day. It can check daily the RSS feeds of journals you are interested in and throw out results that are not relevant to your interests. The papers that remain get ranked by how relevant they are to keywords you specify. Our research group uses this to keep up to date with new papers that appear in our field.
+个人学术期刊追踪工具，基于 [Paper Firehose](https://github.com/zrbyte/paper-firehose) 二次开发。GitHub Actions 每日采集两次，GitHub Pages 提供阅读页面；Windows 桌面快捷方式或 PWA 以独立窗口打开。
 
-Matched papers get stored in an SQLite database. Based on this one can generate HTML pages or an email digest. Optionally full‑text (paper-qa) summaries of preprints from arXiv can also be generated. Have a look at a [demo](https://zrbyte.github.io/paper-firehose/results_perovskites_summary.html) of how the resulting list looks like, when we gather the daily new papers appearing in the field of 2D, van der Waals materials.
+**在线使用：https://linkingoscar.github.io/journal-radar/**
 
-Documentation: [zrbyte.github.io/paper-firehose](https://zrbyte.github.io/paper-firehose/index.html)
+## 已接入清单
 
-## How to use:
+- 核心关注：用户指定的 10 本组织行为、人力资源与管理学期刊。
+- FT50：2026 年 4 月版，依据 [SMU 图书馆核验的名单与 ISSN](https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and)。此次更新加入 Academy of Management Annals、American Sociological Review、Psychological Science，移出 Human Relations、Journal of Business Ethics、Organization Studies。
+- UTD24：依据 [UT Dallas 官方名单](https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php)。
+- 三组重叠去重后共 **55 本**。完整名称、ISSN、来源和分组保存在 `radar/journals.json`。
 
-### Install locally
-- `pip install paper-firehose`
-- CLI entrypoint: `paper-firehose`
-- After install, run `paper-firehose --help` for available command line options.
-- In Jupyter or a Python file: `import paper_firehose as pf`
+## 阅读
 
-Configuration is done using only YAML text files. On first run the default YAML configs are copied into your runtime data directory (defaults to `~/.paper_firehose`, override with `PAPER_FIREHOSE_DATA_DIR`) from `src/paper_firehose/system/config`. Edit those files to customize feeds and topics. To reuse the GitHub Actions config locally, run `python scripts/bootstrap_config.py` – it copies `github_actions_config/` into your data directory so you work with the same files as the scheduled GitHub Actions workflow.
+默认展示核心 10 本的近 90 天文章。可按期刊、日期、关键词筛选，切换未读与收藏，打开摘要和原文；浏览器首次载入后会缓存阅读页面和文章数据。
 
-Set up an OpenAI API key environment variable for paper-qa summarization to work.
+已读、收藏和“我的选刊”仅保存在当前浏览器，换设备或清除浏览器数据前请点击“导出阅读记录”。导入会合并记录。页面的“刷新文章”读取最新云端采集结果，不会立即启动一次采集。
 
-### Automated run using GitHub Actions
-- Fork the repo.
-- Copy `github_actions_config/topics/topic-template.yaml` to create topic files, or tweak the existing ones. See `github_actions_config/README.md` for a guided walkthrough.
-- Edit the `pages.yml` file in the `schedule.cron` part to set when the automated job runs.
-- Set up GitHub Secrets under Secrets and Variables / Actions. You don't need this step if you're only running the `filter` and `rank` commands. If you want the summarization to work setup an `OPENAI_API_KEY` environment variable. For email alert functionality, you will need `MAILING_LISTS_YAML` and `SMTP_PASSWORD` env variables.
-  - `OPENAI_API_KEY`. This is optional if you want to run the paper-qa full text summarization. Set up as a GitHub actions environment secret.
-  - `MAILING_LISTS_YAML`. This contains the emails and other config that the email alert functionality needs. Just copy the contents of your `mailing_lists.yaml` file. This is a GitHub actions secret so you don't expose user info to the outside world in the repo.
-  - `SMTP_PASSWORD`. The password for your email server. Set up as a GitHub actions secret.
+Windows 可运行仓库中的 `Install-DesktopShortcut.ps1` 创建桌面图标，或用 Edge 打开在线页面并选择“安装到桌面”。快捷方式使用 Edge 的独立应用窗口，不需要安装 Python。
 
-The `html` command in GitHub Actions (see `pages.yml`), generates HTML files (name of which is set in the YAML config) with your results. The GitHub Actions runner then pushes these generated HTML files to `https://<your GH username>.github.io/paper-firehose/<your results>.html`, where they can be accessed on the open web.
+## 数据边界
 
-## Quick Start
+Crossref 按 ISSN 获取元数据，RSS 补充出版商的最新条目。DOI 去重，RSS 后续获得 DOI 时保留阅读记录标识；在线日期优先显示，正式刊期另行保留。附件类 Supplemental Material 不作为独立文章显示。普通社论、更正可能保留。
 
-1) Seed and inspect config
-```
-paper-firehose status
-```
+首次 Crossref 回填近 90 天，RSS 可能含更早记录；后续按元数据更新时间增量抓取并回看 7 天，避免延迟登记文章因发表日期较早而遗漏。历史存放在 `data` 分支的压缩 SQLite 文件中，失败来源不会推进其同步时间或清空历史。
 
-2) Run the core pipeline for all topics
-```
-paper-firehose filter
-paper-firehose rank
-paper-firehose abstracts --mailto you@example.com --rps 1.0
-paper-firehose html           # write HTML from DB
-paper-firehose export-recent  # optional: create smaller DB for fast web loading
-```
-You can specify to run a specific topic, with the `--topic YOUR_TOPIC` option.
+**加入清单不代表来源完整覆盖。** 摘要可能缺失，Crossref 登记可能延迟，出版商 RSS 可能只返回部分最新文章或暂时拒绝访问。“管理期刊与数据源”展示每本期刊各来源的最近成功时间和错误。HBR 使用官方综合 feed，包含 Digital Articles，并非仅杂志论文；该刊 Crossref 期刊接口不可用。MIT Sloan Management Review 也主要依赖其网站 RSS。
 
-3) Optional: full‑text summaries via [paper‑qa](https://futurehouse.gitbook.io/futurehouse-cookbook/paperqa)
-```
-# Download arXiv PDFs for high‑ranked entries and summarize with paper‑qa
-paper-firehose pqa_summary
-```
-Costs are dependent on which model you use, but generally are less than 0.1 USD per run for one topic.
+## 自动更新与费用
 
-4) Email newsletter
-```
-# Send a ranked email digest (SMTP config required)
-paper-firehose email
+计划北京时间 **09:23、21:23** 更新，GitHub 调度可能延迟。在仓库 Actions → Update Journal Radar → Run workflow 可手动运行。
+
+当前使用公开仓库的标准 GitHub 托管 runner 和 Pages，不需要购买服务器、不调用付费 AI 接口。公开仓库与网站中的期刊配置和文章元数据可被访问，个人阅读记录不上传。GitHub 对长时间无仓库活动的定时任务可能自动停用，可在 Actions 重新启用；本项目每天保存采集状态产生仓库活动。平台政策以 [GitHub Actions 文档](https://docs.github.com/en/actions) 为准。
+
+## 本地开发
+
+Python 3.10+，在仓库根目录执行：
+
+```sh
+python -m venv .venv
+# Windows: .venv\Scripts\Activate.ps1
+# Linux/macOS: source .venv/bin/activate
+python -m pip install -r radar/requirements.txt pytest==8.4.2
+python -m pytest radar/test_radar.py -q
+python radar/run.py sync --days 90 --workers 3
+python radar/verify_site.py
+python -m http.server 8767 --directory site
 ```
 
-## CLI Reference
+打开 http://localhost:8767/。仅重建页面可用 `python radar/run.py build`；仅更新核心组可加 `--group core10`。本地 SQLite 位于 `radar-data/`，生成网站位于 `site/`，均不提交到主分支。
 
-Global options
-- `--config PATH` use a specific YAML config (defaults to `~/.paper_firehose/config/config.yaml`)
-- `-v/--verbose` enable debug logging
+新增期刊时在 `radar/journals.json` 增加一条配置：`id` 使用稳定 ISSN，填写 `name`、`issns`、`short_name`、`groups`、`rss_url`（如有）和 `enabled`。现有 55 本里挑选个人子集可直接通过页面“管理期刊与数据源”勾选；新增第 56 本及之后的采集对象仍需修改配置并提交。
 
-Commands
-- `filter [--topic TOPIC]`
-  - Fetch RSS feeds, dedup by title, apply per‑topic regex, write matches to databases.
-  - Backs up `all_feed_entries.db` and `matched_entries_history.db`, then clears current `papers.db` working table.
+Fork 后在 Settings → Pages 设置 GitHub Actions，启用本仓库 Actions，并将 Windows 脚本中的 URL 改为自己的地址。工作流需要本仓库的 contents write、pages write 和部署身份权限，仅保存采集记录与发布静态站点。
 
-- `rank [--topic TOPIC]`
-  - Compute `rank_score` using Sentence‑Transformers similarity to `ranking.query`.
-  - Optional boosts: per‑topic `ranking.preferred_authors` (`priority_author_boost`) and global `priority_journals` (`priority_journal_boost`).
-  - Models can be vendored under the data dir `models/`. The default alias `all-MiniLM-L6-v2` is supported.
+## 上游与许可
 
-- `abstracts [--topic TOPIC] [--mailto EMAIL] [--limit N] [--rps FLOAT]`
-  - Fetch abstracts above a rank threshold (topic `abstract_fetch.rank_threshold` or global `defaults.rank_threshold`).
-  - Uses polite rate limits; sets a descriptive arXiv/Crossref User‑Agent including your contact email.
-
-- `html [--topic TOPIC]`
-  - Generate HTML page(s) directly from `papers.db`. For a single topic, `output.filename` is used unless you override via the Python API (see below).
-
-- `export-recent [--days N] [--output PATH]`
-  - Export recent entries from `matched_entries_history.db` to a smaller database file for faster web loading.
-  - Default: creates `matched_entries_history.recent.db` with last 60 days of entries.
-  - Used by the history viewer HTML for fast initial page loads, with full archive accessible on demand.
-
-- `pqa_summary [--topic TOPIC] [--rps FLOAT] [--limit N] [--arxiv ID|URL ...] [--entry-id ID ...] [--use-history] [--history-date YYYY-MM-DD] [--history-feed-like STR] [--summarize]`
-  - Download arXiv PDFs for ranked entries (or explicit IDs/URLs) with polite rate limiting, archive them, optionally run paper‑qa, and write normalized JSON into DBs. Old PDFs are discarded from the archive. We don't do scraping.
-  - Accepts `--arxiv` values like `2501.12345`, `2501.12345v2`, `https://arxiv.org/abs/2501.12345`, or `https://arxiv.org/pdf/2501.12345.pdf`.
-
-- `email [--topic TOPIC] [--mode auto|ranked] [--limit N] [--recipients PATH] [--dry-run]`
-  - Send a compact HTML digest via SMTP (SSL). In dry‑run, writes a preview HTML to the data dir.
-  - `--recipients` points to a YAML file with per‑recipient overrides (see Configuration).
-
-- `purge (--days N | --all)`
-  - Remove entries by date from databases, or clear all and reinitialize schemas (`--all`).
-
-- `query [--history | --all-feeds] [--topic TOPIC] [--min-rank FLOAT] [--since DATE] [--until DATE] [--search TEXT] [--fuzzy TEXT] [--rerank QUERY] [--status STATUS] [--has-doi] [--has-abstract] [--sort rank|date|title] [--limit N] [--offset N] [--json] [--count] [--fields FIELDS]`
-  - Query any of the three databases for entries. Defaults to `papers.db` (current run); `--history` queries the historical archive, `--all-feeds` queries all RSS entries ever seen.
-  - `--fuzzy`: Typo-tolerant text search using FTS5 trigram matching (min 3 chars). Searches across title, summary, abstract, and authors. Mutually exclusive with `--search`.
-  - `--rerank`: Re-score and re-sort results by semantic similarity to the given query using sentence-transformer embeddings (title + abstract). Adds a `rerank_score` column to output. Can be combined with any filter including `--fuzzy`.
-  - Examples:
-    ```bash
-    # Top 10 highest-ranked entries from the current run
-    paper-firehose query --limit 10
-
-    # Search history for papers about graphene with rank >= 0.7
-    paper-firehose query --history --search graphene --min-rank 0.7
-
-    # Fuzzy search (tolerates typos/partial words)
-    paper-firehose query --history --fuzzy "graphen"
-
-    # Semantic reranking — find the most relevant papers to a research question
-    paper-firehose query --history --rerank "perovskite solar cell efficiency"
-
-    # Combine fuzzy + rerank: fuzzy narrows candidates, rerank scores by meaning
-    paper-firehose query --history --fuzzy "perovsk" --rerank "halide perovskite photovoltaics"
-
-    # Count entries matched in March 2026
-    paper-firehose query --history --since 2026-03-01 --until 2026-03-31 --count
-
-    # JSON output for a specific topic (useful for scripts and LLM agents)
-    paper-firehose query --history --topic perovskites --json --limit 5
-
-    # Browse all feeds by date, paginated
-    paper-firehose query --all-feeds --sort date --limit 20 --offset 40
-    ```
-
-- `status [--json]`
-  - Validate configuration, warn about unrecognised config keys, and list available topics, enabled feeds, and database paths.
-  - Shows database freshness: entry counts, pipeline stage breakdown (`new`/`filtered`/`ranked`/`summarized`), file sizes, and latest timestamps.
-  - `--json` outputs structured JSON for programmatic use (e.g., by LLM agents checking whether today's pipeline has run).
-
-## Python API
-
-Import functions directly from the package for programmatic workflows:
-
-```python
-from paper_firehose import (
-    filter, rank, abstracts, pqa_summary, email, purge, status, html, export_recent, query,
-)
-
-# Run steps
-filter(topic="perovskites")
-rank(topic="perovskites")
-abstracts(topic="perovskites", mailto="you@example.com", rps=1.0)
-
-# Generate HTML (single topic can override output path)
-html(topic="perovskites")
-html(topic="perovskites", output_path="results_perovskites.html")
-
-# Export recent entries for fast web loading
-export_recent(days=60)  # default
-export_recent(days=30, output_name="matched_entries_history.recent.db")
-
-# Paper‑QA download + summarize
-pqa_summary(topic="perovskites", rps=0.33, limit=10)
-pqa_summary(arxiv=["2501.12345", "https://arxiv.org/abs/2501.12345v2"], summarize=True)
-
-# Email digest
-email(limit=10, dry_run=True)
-
-# Query databases
-query(history=True, topic="perovskites", min_rank=0.5, json=True, limit=10)
-query(history=True, search="graphene", count=True)
-query(history=True, fuzzy="graphen")  # typo-tolerant search
-query(history=True, rerank="perovskite solar cells", limit=10)  # semantic reranking
-
-# Maintenance
-purge(days=7)
-info = status()
-print(info["valid"], info["topics"])  # dict with config + paths
-```
-
-## Configuration
-
-Runtime data dir
-- Default: `~/.paper_firehose` on your home folder on macOS or Linux. On Windows it's: `C:\Users\<YourUser>\.paper_firehose`.
-- Override with `PAPER_FIREHOSE_DATA_DIR` environment variable
-- First run seeds `config/`, `templates/`, and optional `models/` from the bundled `system/` directory.
-
-Files to edit
-- `config/config.yaml`: global settings (DB paths, feeds, paper‑qa, defaults, optional email/SMTP)
-- `config/topics/<topic>.yaml`: topic name/description, feeds, regex filter, ranking, abstract fetch and output filenames
-- `config/secrets/`: secret material that should not be committed. These secrets can be either stored as `*.env` files or as environment variables.
-  - `email_password.env`: SMTP password (referenced by `email.smtp.password_file`)
-  - `mailing_lists.yaml`: optional per‑recipient overrides for `email`:
-    ```yaml
-    recipients:
-      - to: person@example.com
-        topics: [perovskites, batteries]   # subset of topics for this person
-        mode: ranked                       # currently always renders ranked from DB
-        limit: 10                          # per‑recipient cap
-        min_rank_score: 0.3                # optional cutoff
-    ```
-
-Key config fields
-- `filter.pattern`: This is the regular expression that does the heavy lifting of "casting a wide net" and trying to capture papers from the RSS feeds which are related to your topic of interest. The point of using regular expressions is that they can capture the many ways in which certain terms can be written. For example: the regexp `(scan[a-z]+ tunne[a-z]+ micr[a-z]+)` will match “scanning tunneling microscopy” as well as “scanned tunneling microscopies”, as well as the British and US English spellings of 'tunnelling' and 'tunneling'. The results of the regexp match can then be ranked by similarity to the keyword list under `ranking.query`. It takes a bit of thought to set this up, but it is powerful.
-- `ranking.query`: List of keywords that are used by an embedding model to rank the results. Asking an LLM to generate regex patterns from your keywords might be an easy way to set up `filter.pattern`.
-- `feeds`: mapping of feed keys to `{name, url, enabled}`. Feed keys are referenced in topic files; `name` is stored in DBs and used in HTML.
-- `priority_journals` and `priority_journal_boost`: optional global score boost by feed key.
-- Topic `ranking`: `query`, `model`, optional `negative_queries`, `preferred_authors`, `priority_author_boost`.
-- Topic `output`: `filename`, `filename_ranked`, `archive: true|false`.
-- `paperqa`: `download_rank_threshold`, `rps` (≤ 0.33 recommended), `max_retries`, and `prompt` for JSON‑only answers.
-
-Environment variables
-- `PAPER_FIREHOSE_DATA_DIR` select/override the runtime data location
-- `OPENAI_API_KEY` for `pqa_summary`
-- `MAILTO` used for polite arXiv/Crossref User‑Agent when not specified on CLI
-
-## Data & Outputs
-
-Databases (under the data dir unless absolute paths are used)
-- `all_feed_entries.db` (table `feed_entries`): every fetched item for deduplication
-- `matched_entries_history.db` (table `matched_entries`): historical archive of matches, optional JSON summaries
-- `matched_entries_history.recent.db` (table `matched_entries`): recent entries only (default: last 60 days), used for fast initial page loads
-- `papers.db` (table `entries`): current‑run working set with `status`, `rank_score`, `paper_qa_summary`
-
-HTML
-- Generated by the `html` command from `papers.db` using templates in `templates/`. Ranked pages are produced when configured.
-- The history viewer HTML (`history_viewer_cards_pf.html`) loads the recent database by default for faster initial load, with a "Load Full Archive" button to access the complete history.
-
-Email
-- Requires `email.smtp` config: `host`, `port`, `username`, and either `password` or `password_file`. Uses SSL.
-
-## Claude Code skill
-
-The `claude-skills/` directory contains a [Claude Code](https://claude.ai/claude-code) slash command (`/paper-firehose`) that turns the CLI into an interactive research assistant.
-
-### Install
-
-Copy the skill file into a Claude Code commands directory. You can install it at project level, or globally so it works from any working directory:
-
-```bash
-# Option A: project-level (works when Claude Code is started from the repo)
-mkdir -p .claude/commands
-cp claude-skills/paper-firehose.md .claude/commands/
-
-# Option B: global (works from any directory)
-# Find your home-directory project key under ~/.claude/projects/
-# It is typically: -Users-<username>
-mkdir -p ~/.claude/projects/-Users-$(whoami)/commands
-cp claude-skills/paper-firehose.md ~/.claude/projects/-Users-$(whoami)/commands/
-```
-
-You can install in both locations — Claude Code will pick up whichever matches the current session.
-
-### Usage
-
-Type `/paper-firehose` in a Claude Code session. With no arguments it shows a status summary and offers next actions. You can also pass a request directly:
-
-```
-/paper-firehose                              # status + offer next actions
-/paper-firehose what papers came in today?   # show today's pipeline results
-/paper-firehose papers about graphene STM    # search history DB with semantic ranking
-/paper-firehose run the pipeline             # run filter -> rank -> abstracts
-/paper-firehose summarize paper #3           # Paper-QA summary (arXiv only, needs OPENAI_API_KEY)
-```
-
-### What it does
-
-- Checks pipeline freshness via `status --json`
-- Offers to run `filter -> rank -> abstracts` if data is stale
-- Searches the history database (25k+ matched entries) using keyword + semantic reranking
-- Presents results with titles, scores, dates, journals, and links
-- Supports drill-down ("tell me about #3"), pagination ("show more"), and Paper-QA summaries
-- Falls back to the all-feeds database if history returns too few results
-
-## Final notes
-
-- Python 3.11+ recommended. See `pyproject.toml` for dependencies.
-- Thank you to arXiv for use of its open access interoperability. This project links to arXiv/publisher pages and does not serve PDFs.
+GitHub fork 保留上游历史与 MIT LICENSE。基线为 Paper Firehose v0.4.2，提交 `421e956b8ec3b6e49df2a7c8a9fa5d754a61c8e1`。复用其 SQLite 历史库管理、搜索索引维护、DOI 提取及 JATS 文本清理；`radar/` 增加期刊识别、Crossref 增量同步、来源健康检查及中文阅读界面。保留原文档于 `README.upstream.md`，原工作流移至 `.github/legacy-workflows/`，避免运行其模型、邮件和发布任务。

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173e3b">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'">
+  <title>期刊雷达 · Journal Radar</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">跳到文章列表</a>
+<aside class="sidebar">
+  <a class="brand" href="./"><img src="icon.svg" alt="" width="42" height="42"><span>期刊雷达<small>JOURNAL RADAR</small></span></a>
+  <div class="nav-label">你的研究视野</div>
+  <nav aria-label="期刊分组" id="groups">
+    <button data-group="core10" class="active" aria-pressed="true"><span>核心关注</span><span class="badge">10</span></button>
+    <button data-group="ft50" aria-pressed="false"><span>FT50</span><span class="badge">50</span></button>
+    <button data-group="utd24" aria-pressed="false"><span>UTD24</span><span class="badge">24</span></button>
+    <button data-group="custom" aria-pressed="false"><span>我的选刊</span><span class="badge" id="custom-count">0</span></button>
+    <button data-group="all" aria-pressed="false"><span>全部期刊</span><span class="badge" id="all-count">—</span></button>
+  </nav>
+  <div class="sidebar-note"><span class="eyebrow">A LITTLE, EVERY DAY</span><p>让新研究来到你面前。</p><small>按期刊追踪，留出阅读的时间。</small></div>
+  <div class="sidebar-bottom">
+    <button id="manage">管理期刊与数据源 <span>↗</span></button>
+    <button id="backup">导出阅读记录 <span>↓</span></button>
+    <button id="restore">导入阅读记录 <span>↑</span></button>
+    <button id="install">安装到桌面 <span>＋</span></button>
+    <input type="file" id="import-file" accept="application/json,.json" hidden>
+    <small>基于 Paper Firehose · 个人阅读版</small>
+  </div>
+</aside>
+<div class="workspace">
+  <header class="topbar"><span>管理学 · 组织行为 · 人力资源</span><div><span id="connection" class="status-dot">正在载入</span><button id="refresh" class="quiet">刷新文章</button></div></header>
+  <main id="main">
+    <section class="hero"><div><span class="eyebrow">YOUR RESEARCH, IN FOCUS</span><h1 id="group-title">核心关注<span>的新进展</span></h1><p id="group-description">从你关心的期刊开始，发现值得细读的研究。</p></div><div class="hero-stat"><strong id="article-total">—</strong><span>篇已收录文章</span></div></section>
+    <div id="notice" role="status" hidden></div>
+    <section class="toolbar" aria-label="筛选文章">
+      <label class="search"><span aria-hidden="true">⌕</span><input type="search" id="search" placeholder="搜索标题、作者、摘要或 DOI" aria-label="搜索标题、作者、摘要或 DOI"><kbd>/</kbd></label>
+      <label class="sr-only" for="journal">选择期刊</label><select id="journal"><option value="">所有期刊</option></select>
+      <label class="sr-only" for="period">发表时间</label><select id="period"><option value="30">近 30 天</option><option value="90" selected>近 90 天</option><option value="all">全部时间</option></select>
+    </section>
+    <section class="list-header"><div id="views" class="tabs" aria-label="阅读状态"><button data-view="all" class="selected" aria-pressed="true">全部文章</button><button data-view="unread" aria-pressed="false">未读</button><button data-view="saved" aria-pressed="false">收藏</button></div><label>排序 <select id="sort"><option value="published">发表时间</option><option value="discovered">收录时间</option></select></label></section>
+    <div class="result-info"><span id="result-count" aria-live="polite">正在读取文章…</span><span id="updated"></span></div>
+    <section id="articles" aria-label="文章列表"></section>
+    <button id="more" class="load-more" hidden>加载更多文章</button>
+    <footer>标题与摘要来自出版商 RSS 和 Crossref。原文访问条件以出版商页面为准。<br><span>FT50：2026 年 4 月版 · UTD24：官方名单 · 收藏与已读保存在本机，可导出备份。</span></footer>
+  </main>
+</div>
+<dialog id="reader"><div class="dialog-head"><span>文章速览</span><button class="close" aria-label="关闭文章速览">✕</button></div><div id="reader-content"></div></dialog>
+<dialog id="settings"><div class="dialog-head"><span>期刊与数据源</span><button class="close" aria-label="关闭期刊管理">✕</button></div><p>勾选期刊可加入「我的选刊」。后台仍收集全部启用的期刊。新增清单通过项目配置接入。</p><p class="hint">绿色表示本次来源请求完成；黄色表示部分来源失败。请求成功不代表已核实完整覆盖。</p><div id="journal-settings"></div><div class="source-links"><a href="https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and" target="_blank" rel="noopener noreferrer">FT50 名单依据 ↗</a><a href="https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php" target="_blank" rel="noopener noreferrer">UTD24 官方名单 ↗</a></div></dialog>
+<dialog id="help"><div class="dialog-head"><span>安装到 Windows 桌面</span><button class="close" aria-label="关闭安装说明">✕</button></div><p>用 Microsoft Edge 打开本站，在右上角「…」菜单中选择「应用」→「将此站点作为应用安装」。安装后可固定到桌面或任务栏，使用独立窗口阅读。</p><p>如果已经安装，可直接通过 Windows 开始菜单打开「期刊雷达」。</p></dialog>
+<div id="toast" role="status" hidden></div>
+</body></html>

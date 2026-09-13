@@ -37,3 +37,8 @@ ROADMAP.md
 docs/EMAIL_DELIVERABILITY_GUIDE.md
 paper_firehose.log
 status.log
+
+# Personal journal edition: generated data stays on the data branch / Pages.
+radar-data/
+site/
+!radar/web/*.html
