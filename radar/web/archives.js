@@ -23,6 +23,7 @@ class JournalArchives {
     this.paintArticles();
   }
   async enter(journal){
+    this.paintKey=null;
     this.controller?.abort();const generation=++this.generation;this.journal=journal;this.result=null;this.issue='all';this.mode=this.desktop?'archive':'recent';
     this.$('#archive-issues').replaceChildren();this.$('#archive-articles').replaceChildren();this.$('#archive-search').value='';this.$('#archive-reading').value='all';
     if(!journal){this.sync();return;}
@@ -48,7 +49,7 @@ class JournalArchives {
   async loadYear(year,refresh=false){
     if(!this.desktop||!this.journal||!Number.isInteger(year)||year<1500||year>new Date().getFullYear()+1)return;
     this.controller?.abort();const controller=new AbortController();this.controller=controller;const generation=++this.generation,journal=this.journal;
-    if(this.result?.year!==year){this.result=null;this.issue='all';this.$('#archive-articles').replaceChildren();this.$('#archive-issues').replaceChildren();}
+    if(this.result?.year!==year){this.paintKey=null;this.result=null;this.issue='all';this.$('#archive-articles').replaceChildren();this.$('#archive-issues').replaceChildren();}
     this.$('#archive-year').value=year;this.$('#archive-years').value=String(year);this.busy(true);this.status(`正在读取 ${year} 年目录…`);
     try{
       let query=`?year=${year}${refresh?'&refresh=1':''}`;
@@ -67,32 +68,40 @@ class JournalArchives {
   key(article){return JSON.stringify([article.volume||'',article.issue||'']);}
   issueName(key){const [volume,issue]=JSON.parse(key);return volume?`第 ${volume} 卷${issue?' · 第 '+issue+' 期':''}`:issue?`第 ${issue} 期 · 卷号待补`:'待归期 / Online First';}
   paintIssues(){
-    const list=this.$('#archive-issues');list.replaceChildren();const counts=new Map();
+    const list=this.$('#archive-issues'),focusKey=list.contains(document.activeElement)?document.activeElement.dataset.archiveIssue:null;list.replaceChildren();const counts=new Map();
     for(const a of this.result?.articles||[]){const key=this.key(a);counts.set(key,(counts.get(key)||0)+1);}
     if(this.issue!=='all'&&!counts.has(this.issue))this.issue='all';
-    const add=(key,text)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.setAttribute('aria-pressed',String(this.issue===key));b.addEventListener('click',()=>{this.issue=key;this.paintIssues();this.paintArticles();});list.append(b);};
+    const add=(key,text)=>{const b=document.createElement('button');b.type='button';b.dataset.archiveIssue=key;b.textContent=text;b.setAttribute('aria-pressed',String(this.issue===key));b.addEventListener('click',()=>{this.issue=key;this.paintIssues();this.paintArticles();});list.append(b);};
     add('all',`全部卷期（${this.result?.articles.length||0}）`);
     const keys=[...counts.keys()].sort((a,b)=>b.localeCompare(a,undefined,{numeric:true}));
     for(const key of keys)add(key,`${this.issueName(key)}（${counts.get(key)}）`);
+    if(focusKey)[...list.children].find(n=>n.dataset.archiveIssue===focusKey)?.focus({preventScroll:true});
   }
   paintArticles(){
     if(!this.journal)return;
-    const list=this.$('#archive-articles');list.replaceChildren();const q=this.$('#archive-search').value.trim().toLowerCase(),reading=this.$('#archive-reading').value,state=this.reading();
+    const list=this.$('#archive-articles');const q=this.$('#archive-search').value.trim().toLowerCase(),reading=this.$('#archive-reading').value,state=this.reading();
     const rows=(this.result?.articles||[]).filter(a=>(this.issue==='all'||this.key(a)===this.issue)&&(!q||[a.title,a.authors,a.doi,a.pages].some(x=>(x||'').toLowerCase().includes(q)))&&(reading==='all'||(reading==='saved'?state.saved[a.id]:!state.read[a.id])));
     rows.sort((a,b)=>this.key(b).localeCompare(this.key(a),undefined,{numeric:true})||(a.pages||a.article_number||'').localeCompare(b.pages||b.article_number||'',undefined,{numeric:true})||a.title.localeCompare(b.title));
+    const paintKey=JSON.stringify([this.journal.id,this.result?.checked_at,this.result?.complete,this.issue,q,reading,rows.map(a=>[a.id,!!state.read[a.id],!!state.saved[a.id]])]);
+    if(paintKey===this.paintKey)return;
+    this.paintKey=paintKey;
+    const focusKey=list.contains(document.activeElement)?document.activeElement.dataset.archiveFocus:null;
+    list.replaceChildren();
     this.$('#archive-heading').textContent=this.issue==='all'?'本年目录':this.issueName(this.issue);
     this.$('#archive-count').textContent=`${rows.length} 条 · 搜索与阅读筛选仅作用于本年已加载目录`;
     const node=(tag,text,cls)=>{const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n;};
     for(const article of rows){
       const row=node('li','','archive-row'),title=node('button',article.title,'archive-title');title.type='button';title.addEventListener('click',()=>this.open(article));
+      title.dataset.archiveFocus='open:'+article.id;
       const heading=node('h4','');heading.append(title);
       const meta=[article.authors||'作者信息暂缺',this.issueName(this.key(article)),article.pages?'页码 '+article.pages:article.article_number?'文章编号 '+article.article_number:'页码未提供'];
       if(article.year_basis!=='print')meta.push('年份依据发表日期，正式刊期日期待补');
       const actions=node('div','','archive-row-actions');
-      for(const [kind,label] of [['read',state.read[article.id]?'✓ 已读':'标记已读'],['saved',state.saved[article.id]?'★ 已收藏':'☆ 收藏']]){const b=node('button',label);b.type='button';b.setAttribute('aria-pressed',String(!!state[kind][article.id]));b.setAttribute('aria-label',label+'：'+article.title);b.addEventListener('click',()=>{this.toggle(kind,article.id);this.paintArticles();});actions.append(b);}
+      for(const [kind,label] of [['read',state.read[article.id]?'✓ 已读':'标记已读'],['saved',state.saved[article.id]?'★ 已收藏':'☆ 收藏']]){const b=node('button',label);b.type='button';b.dataset.archiveFocus=kind+':'+article.id;b.setAttribute('aria-pressed',String(!!state[kind][article.id]));b.setAttribute('aria-label',label+'：'+article.title);b.addEventListener('click',()=>{this.toggle(kind,article.id);this.paintArticles();});actions.append(b);}
       const link=node('a','原文 ↗');link.href='https://doi.org/'+article.doi;link.target='_blank';link.rel='noopener noreferrer';actions.append(link);
       row.append(heading,node('p',meta.join(' · '),'archive-meta'),actions);list.append(row);
     }
     if(!rows.length)list.append(node('li',this.result?.complete?'此筛选下暂无记录；来源无记录不代表该年未出版。':'目录尚未加载完成。','archive-empty'));
+    if(focusKey){const target=[...list.querySelectorAll('[data-archive-focus]')].find(n=>n.dataset.archiveFocus===focusKey);target?.focus({preventScroll:true});}
   }
 }

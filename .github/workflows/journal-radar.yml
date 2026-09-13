@@ -38,7 +38,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verify translation caching and quota behavior
-        run: node --test radar/test_translation.cjs
+        run: node --test radar/test_translation.cjs radar/test_archives_ui.cjs
       - name: Restore durable history
         shell: bash
         run: |

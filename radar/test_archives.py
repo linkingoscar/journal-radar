@@ -94,3 +94,53 @@ def test_repeated_source_page_stops_without_discarding_cache(tmp_path,monkeypatc
     archive.year(J['id'],1980)
     with pytest.raises(ValueError,match='重复'):archive.year(J['id'],1980,advance=True)
     assert len(archive.year(J['id'],1980)['articles'])==1
+
+
+def test_refresh_removes_old_directory_members_only_after_success_and_retains_paper(tmp_path):
+    replies=[response([record()]),response([]),response([]),RuntimeError('offline'),response([])]
+    def getter(url,params):
+        value=replies.pop(0)
+        if isinstance(value,Exception):raise value
+        return value
+    archive=service(tmp_path,getter)
+    archive.year(J['id'],1980);before=archive.year(J['id'],1980,advance=True)
+    identifier=before['articles'][0]['id']
+    assert len(archive.year(J['id'],1980,refresh=True)['articles'])==1
+    with pytest.raises(RuntimeError):archive.year(J['id'],1980,advance=True)
+    assert len(archive.year(J['id'],1980)['articles'])==1
+    assert archive.year(J['id'],1980,advance=True)['articles']==[]
+    assert archive.article(identifier)['title']==record()['title'][0]
+
+
+def test_year_correction_moves_cached_paper_to_its_print_year(tmp_path):
+    changed=record(**{'published-print':{'date-parts':[[1981]]}})
+    replies=[response([record()]),response([]),response([]),response([changed])]
+    archive=service(tmp_path,lambda url,params:replies.pop(0))
+    first=archive.year(J['id'],1980);archive.year(J['id'],1980,advance=True)
+    archive.year(J['id'],1980,refresh=True)
+    assert archive.year(J['id'],1980,advance=True)['articles']==[]
+    assert archive.article(first['articles'][0]['id'])['archive_year']==1981
+
+
+def test_full_final_page_without_cursor_is_complete_when_total_confirms_end(tmp_path,monkeypatch):
+    monkeypatch.setattr('archives.PAGE_SIZE',1)
+    values=[SimpleNamespace(json=lambda:{'message':{'items':[record()],'total-results':1}}),response([])]
+    archive=service(tmp_path,lambda url,params:values.pop(0))
+    assert len(archive.year(J['id'],1980)['articles'])==1
+    assert archive.year(J['id'],1980,advance=True)['complete']
+
+
+def test_apa_alias_merge_requires_matching_identity_and_preserves_reading_aliases(tmp_path):
+    a=record('10.1037//0021-9010.65.1.1',author=[{'given':'A','family':'Researcher'}])
+    b={**a,'DOI':'10.1037/0021-9010.65.1.1','published-print':{},'published-online':{'date-parts':[[1980]]}}
+    store=RadarStore(tmp_path)
+    from run import normalize_crossref
+    store.ingest(J,[{**normalize_crossref(a,J),'entry_id':'b'*64}])
+    archive=ArchiveService(tmp_path,{'journals':[J]},lambda url,params:response([a,b]))
+    result=archive.year(J['id'],1980)
+    assert len(result['articles'])==1 and result['articles'][0]['doi']==b['DOI']
+    assert result['articles'][0]['print_date']=='1980-01'
+    assert result['reading_aliases']['b'*64]==result['articles'][0]['id']
+    from archives import merge_apa_aliases
+    different=normalize_archive({**b,'title':['An entirely different paper']},J)
+    assert len(merge_apa_aliases([normalize_archive(a,J),different])[0])==2

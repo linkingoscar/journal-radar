@@ -11,7 +11,7 @@ import secrets
 import threading
 import time
 from urllib.parse import urlsplit, parse_qs
-from run import ROOT, RadarStore, collect_rss, get, now, plain, safe_url
+from run import ROOT, RadarStore, collect_rss, collect_crossref, get, now, plain, safe_url
 from abstracts import AbstractService
 from archives import ArchiveService
 
@@ -37,10 +37,12 @@ def import_cloud(store, registry, payload):
 
 
 def effective_status(cloud, local):
-    # A working local RSS feed replaces a rejected cloud RSS request in availability.
+    # A working local source replaces a rejected cloud request in availability.
     effective={h['source']:h for h in cloud}
-    if local and (not local.get('error') or not effective.get('rss',{}).get('last_success')):
-        effective['rss']=local
+    for health in ([local] if isinstance(local,dict) else local or []):
+        source=health['source']
+        if not health.get('error') or not effective.get(source,{}).get('last_success'):
+            effective[source]=health
     values=list(effective.values())
     good=any(h.get('last_success') and not h.get('error') for h in values)
     bad=any(h.get('error') for h in values)
@@ -77,9 +79,9 @@ class Companion:
         local_health=self.store.health()
         for j in payload['journals']:
             c=cloud_journals.get(j['id'],{}).get('health',[])
-            local=local_health.get((j['id'],'rss'))
+            local=[local_health[(j['id'],source)] for source in ('rss','crossref') if (j['id'],source) in local_health]
             j['status']=effective_status(c,local)
-            j['health']=[{**h,'source':'云端 '+h['source']} for h in c]+([{**local,'source':'本机 RSS'}] if local else [])
+            j['health']=[{**h,'source':'云端 '+h['source']} for h in c]+[{**h,'source':'本机 '+('RSS' if h['source']=='rss' else 'Crossref')} for h in local]
         # Keep reading state when a cloud record and an earlier local RSS entry have different ids.
         doi_ids={a['doi']:a['id'] for a in payload['articles'] if a['doi']}
         link_ids={(a['journal_id'],a['link']):a['id'] for a in payload['articles']}
@@ -133,34 +135,41 @@ class Companion:
             stale=not cloud_stamp or (dt.datetime.now(dt.timezone.utc)-dt.datetime.fromisoformat(cloud_stamp)).total_seconds()>86400
             jobs=[]
             for j in self.registry['journals']:
-                if not j.get('enabled',True) or not j.get('rss_url'):continue
-                h=next((h for h in byid.get(j['id'],{}).get('health',[]) if h['source']=='rss'),{})
-                if cloud_failed or stale or not h.get('last_success') or h.get('error'):jobs.append(j)
-            self.status.update(phase='正在补采出版商 RSS',total=len(jobs))
+                if not j.get('enabled',True):continue
+                health={h['source']:h for h in byid.get(j['id'],{}).get('health',[])}
+                h=health.get('rss',{})
+                if j.get('rss_url') and (cloud_failed or stale or not h.get('last_success') or h.get('error')):jobs.append((j,'rss',None))
+                crossref=health.get('crossref',{})
+                if j.get('crossref_enabled',True) and crossref.get('error'):
+                    jobs.append((j,'crossref',crossref.get('last_success')))
+            self.status.update(phase='正在补采文章来源',total=len(jobs))
             attempt=now()
-            def fetch(j):
-                try:return j,collect_rss(j),None
-                except Exception as exc:return j,[],str(exc)[:200]
+            def fetch(job):
+                j,source,last_success=job
+                try:return j,source,collect_rss(j) if source=='rss' else collect_crossref(j,last_success,attempt,90),None
+                except Exception as exc:return j,source,[],str(exc)[:200]
             failed=0
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-                for j,entries,error in pool.map(fetch,jobs):
+                for j,source,entries,error in pool.map(fetch,jobs):
                     if not error:self.store.ingest(j,entries)
                     else:failed+=1
-                    self.store.record_health(j['id'],'rss',attempt,error,len(entries))
+                    self.store.record_health(j['id'],source,attempt,error,len(entries))
                     self.status['completed']+=1
             self.publish()
             payload=json.loads((self.directory/'site/data.json').read_text(encoding='utf-8'))
             def progress(report):
                 phase='正在批量查询摘要' if report['stage']=='index' else '正在补查 DOI 与出版商摘要'
                 self.status.update(abstract_stage=report['stage'],completed=report['checked'],total=report['total'],phase=f'{phase} · 已补回 {report["found"]} 篇')
-                self.status['data_revision']=now()+':abstracts:'+str(report['found'])
+                if report['found']!=self.status.get('abstract_found'):
+                    self.status['abstract_found']=report['found']
+                    self.status['data_revision']=now()+':abstracts:'+str(report['found'])
             report=self.abstracts.enrich(payload,self.abstract_stop,progress)
             temp=self.directory/'abstract-progress.json.tmp'
             temp.write_text(json.dumps(report,ensure_ascii=False),encoding='utf-8')
             temp.replace(self.directory/'abstract-progress.json')
             self.publish()
             label='已暂停，可继续补采' if report['paused'] else '补采完成'
-            self.status.update(paused=report['paused'],abstract_report=report,phase=f'{label}：补回 {report["found"]} 篇摘要，仍有 {report["remaining"]} 篇缺失；RSS {len(jobs)-failed}/{len(jobs)} 个来源成功')
+            self.status.update(paused=report['paused'],abstract_report=report,phase=f'{label}：补回 {report["found"]} 篇摘要，仍有 {report["remaining"]} 篇缺失；文章来源 {len(jobs)-failed}/{len(jobs)} 个成功')
         except Exception as exc:
             self.status.update(phase='本次补采未完成',error=str(exc)[:200])
         finally:self.status.update(running=False,abstract_stage=None,last_finished=now())

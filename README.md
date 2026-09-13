@@ -34,6 +34,8 @@ Windows 桌面增强版：运行 `Install-DesktopShortcut.ps1` 安装本机组�
 
 ## 摘要补全
 
+本机同步会重试云端失败的 Crossref 来源，并继续补采缺失或失败的 RSS 来源；数据源面板分别显示云端与本机的结果。历史目录完整刷新成功后会移除旧年份中已经撤回或改期的记录，刷新中断保留已有目录。仅在完整书目信息一致时合并可核对的 APA 双斜线 DOI 别名，并迁移已读与收藏标识。
+
 云端每次采集后，按 DOI 从 OpenAlex 批量补全缺失摘要，并核对文章标题；成功摘要和查询记录保存在历史 SQLite 库。每天重试尚未提供摘要的记录，单轮最多检查 1,000 篇。网页版和桌面版都会收到云端补全结果。
 
 桌面版后台优先处理「人力与组织」35 本期刊，先批量查询 OpenAlex，再补查缺失 DOI 和出版商网页。无 DOI 时，仅接受 Crossref 中标题一致、ISSN 匹配且唯一的论文记录；补查到的 DOI 单独缓存，保留原文章标识和阅读记录。CAR 的英法双语标题仅在同一 DOI 和指定期刊下允许英文标题前缀匹配。明显的目录、编委会和更正通知保留在文章库，但跳过逐篇网页补查。
@@ -76,7 +78,7 @@ python -m venv .venv
 # Linux/macOS: source .venv/bin/activate
 python -m pip install -r radar/requirements.txt pytest==8.4.2
 python -m pytest radar/test_radar.py radar/test_desktop.py radar/test_abstracts.py radar/test_archives.py -q
-node --test radar/test_translation.cjs
+node --test radar/test_translation.cjs radar/test_archives_ui.cjs
 python radar/run.py sync --days 90 --workers 3
 python radar/abstracts.py --limit 1000
 python radar/verify_site.py

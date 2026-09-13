@@ -110,3 +110,19 @@ def test_cancelled_browser_request_does_not_retry_writing_to_closed_connection()
     def closed():raise ConnectionAbortedError('Browser switched years')
     handler.end_headers=closed
     assert handler.respond(200,{'complete':False}) is None
+
+
+def test_desktop_retries_failed_crossref_and_exposes_local_health(tmp_path,monkeypatch):
+    from desktop import Companion
+    from run import now
+    app=Companion(tmp_path);app.registry={**app.registry,'journals':[J]}
+    cloud={'generated_at':now(),'journals':[{**J,'health':[{'source':'crossref','error':'429','last_success':now()}]}],'articles':[]}
+    monkeypatch.setattr('desktop.get',lambda _:SimpleNamespace(json=lambda:cloud))
+    calls=[]
+    monkeypatch.setattr('desktop.collect_crossref',lambda journal,last,attempt,days:calls.append((journal['id'],last)) or [])
+    monkeypatch.setattr(app.abstracts,'enrich',lambda *args:{'found':0,'remaining':0,'paused':False})
+    app.sync()
+    assert len(calls)==1 and calls[0][1]
+    payload=json.loads((tmp_path/'site/data.json').read_text(encoding='utf-8'))
+    assert payload['journals'][0]['status']=='ok'
+    assert any(h['source']=='本机 Crossref' and not h['error'] for h in payload['journals'][0]['health'])
