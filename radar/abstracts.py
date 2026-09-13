@@ -11,15 +11,16 @@ import re
 import sqlite3
 import threading
 import time
-from urllib.parse import quote, urljoin, urlsplit
+from urllib.parse import quote, urljoin, urlsplit, urlencode
 
 import requests
 
 PUBLISHERS = ('doi.org', 'apa.org', 'sciencedirect.com', 'elsevier.com', 'wiley.com',
               'aom.org', 'sagepub.com', 'springer.com', 'springernature.com', 'nature.com',
               'tandfonline.com', 'oup.com', 'informs.org', 'uchicago.edu', 'uchicagopress.com',
-              'cambridge.org', 'aeaweb.org', 'jmis-web.org', 'misq.org', 'hbr.org', 'mit.edu')
+              'cambridge.org', 'aeaweb.org', 'jmis-web.org', 'misq.org', 'hbr.org', 'mit.edu', 'emerald.com')
 API_HOSTS = ('api.openalex.org', 'api.crossref.org')
+LOOKUP_VERSION = 2
 VOID = {'meta', 'link', 'br', 'hr', 'img', 'input', 'source', 'wbr', 'area', 'base', 'embed', 'param', 'track', 'col'}
 
 
@@ -67,8 +68,21 @@ def title_matches(expected, actual):
     return bool(a and b and SequenceMatcher(None, a, b).ratio() >= .9)
 
 
+def record_matches(article, identifier, title):
+    if not doi(article.get('doi')) or doi(identifier) != doi(article.get('doi')):
+        return False
+    if title_matches(article['title'], title):
+        return True
+    # CAR's RSS joins the English and French titles without a separator.
+    # Keep this exception restricted to the same DOI in this bilingual journal.
+    if article.get('journal_id') == '0823-9150' and doi(identifier).startswith('10.1111/1911-3846.'):
+        expected, actual = (re.sub(r'[^\w]', '', clean(x).casefold()) for x in (article['title'], title))
+        return len(actual) >= 30 and expected.startswith(actual) and len(expected) > len(actual)
+    return False
+
+
 def from_openalex(record, article):
-    if doi(record.get('doi')) != doi(article.get('doi')) or not title_matches(article['title'], record.get('title')):
+    if not record_matches(article, record.get('doi'), record.get('title')):
         return ''
     index = record.get('abstract_inverted_index')
     if not isinstance(index, dict):
@@ -171,15 +185,19 @@ def allowed_url(url):
         return False
 
 
-def fetch(url):
+def fetch(url, before_request=None):
     """Bounded public HTTPS requests; every redirect stays within known source domains."""
     for _ in range(6):
         if not allowed_url(url):
             raise ValueError('来源地址不在支持范围内')
+        if before_request:
+            before_request(url)
         with requests.get(url, timeout=(5, 12), allow_redirects=False, stream=True,
                           headers={'User-Agent': 'JournalRadar/1.0 (+https://github.com/linkingoscar/journal-radar)'}) as r:
             if r.status_code in (301, 302, 303, 307, 308):
                 url = urljoin(url, r.headers.get('Location', ''))
+                if url.startswith('http://journals.aom.org/'):
+                    url = 'https://' + url[len('http://'):]
                 continue
             r.raise_for_status()
             chunks, size = [], 0
@@ -199,13 +217,57 @@ def fetch(url):
     raise ValueError('来源重定向次数过多')
 
 
+class SourceDeferred(ValueError):
+    def __init__(self, reason, retry_at):
+        self.reason, self.retry_at = reason, retry_at
+        super().__init__(reason)
+
+
+def source_host(url):
+    host = (urlsplit(url).hostname or '').lower()
+    return next((h for h in PUBLISHERS if host == h or host.endswith('.' + h)), host)
+
+
 class AbstractService:
     def __init__(self, directory, getter=fetch):
         self.path = Path(directory) / 'history.db'
         self.getter = getter
         self.lock = threading.Lock()
+        self.request_lock = threading.Lock()
+        self.last_request = 0
         with self.connection() as c:
             c.execute('CREATE TABLE IF NOT EXISTS radar_abstracts (article_id TEXT PRIMARY KEY, fingerprint TEXT, result TEXT)')
+            c.execute('CREATE TABLE IF NOT EXISTS radar_source_backoff (host TEXT PRIMARY KEY, retry_at REAL, reason TEXT)')
+
+    def request(self, url):
+        def before_request(target):
+            with self.connection() as c:
+                row = c.execute('SELECT retry_at,reason FROM radar_source_backoff WHERE host=?', (source_host(target),)).fetchone()
+            if row and row[0] > time.time():
+                raise SourceDeferred(row[1], row[0])
+            with self.request_lock:
+                time.sleep(max(0, .5 - (time.monotonic() - self.last_request)))
+                self.last_request = time.monotonic()
+        try:
+            if self.getter is fetch:
+                return fetch(url, before_request)
+            before_request(url)
+            return self.getter(url)
+        except requests.RequestException as exc:
+            response = getattr(exc, 'response', None)
+            status = response.status_code if response is not None else None
+            reason = 'access_denied' if status in (401,403) else 'rate_limited' if status == 429 else 'network_error'
+            delay = 21600 if reason == 'access_denied' else 300 if reason == 'rate_limited' else 60
+            if status == 429:
+                try: delay = max(delay, min(86400, float(response.headers.get('Retry-After', delay))))
+                except ValueError: pass
+            if status != 404:
+                target = (response.url if response is not None and response.url else None) or getattr(getattr(exc, 'request', None), 'url', None) or url
+                retry_at = time.time() + delay
+                with self.connection() as c:
+                    c.execute('INSERT OR REPLACE INTO radar_source_backoff VALUES (?,?,?)', (source_host(target), retry_at, reason))
+                raise SourceDeferred(reason, retry_at) from exc
+            raise
 
     def connection(self):
         return sqlite3.connect(self.path, timeout=30)
@@ -219,7 +281,7 @@ class AbstractService:
         return json.loads(row[0]) if row else None
 
     def save(self, article, result):
-        result = {**result, 'checked_at': time.time()}
+        result = {**result, 'checked_at': time.time(), 'version': LOOKUP_VERSION}
         with self.connection() as c:
             c.execute('BEGIN IMMEDIATE')
             old = c.execute('SELECT result FROM radar_abstracts WHERE article_id=? AND fingerprint=?', (article['id'], self.fingerprint(article))).fetchone()
@@ -234,64 +296,131 @@ class AbstractService:
         for article in payload['articles']:
             article['abstract'] = readable_abstract(article.get('abstract'))
             item = cached.get(article['id'])
+            if item and item[0] == self.fingerprint(article) and item[1].get('resolved_doi'):
+                article['resolved_doi'] = item[1]['resolved_doi']
             if not article['abstract'] and item and item[0] == self.fingerprint(article) and item[1].get('abstract'):
                 result = item[1]
                 article.update(abstract=result['abstract'], abstract_source=result['source'], abstract_url=result['source_url'])
         return payload
 
-    def lookup(self, article):
+    def resolve_doi(self, article):
+        journal = article.get('journal_id', '')
+        if not re.fullmatch(r'\d{4}-\d{3}[\dX]', journal) or len(clean(article['title'])) < 30:
+            return None
+        url = 'https://api.crossref.org/journals/' + journal + '/works?' + urlencode({'query.bibliographic': article['title'], 'rows': 5})
+        body, _ = self.request(url)
+        matches = {}
+        for record in json.loads(body).get('message', {}).get('items', []):
+            identifier = doi(record.get('DOI'))
+            title = (record.get('title') or [''])[0]
+            if (record.get('type') == 'journal-article' and re.fullmatch(r'10\.\d{4,9}/\S+', identifier)
+                    and set(record.get('ISSN', [])) & set(article.get('issns') or [journal])
+                    and re.sub(r'[^\w]', '', clean(title).casefold()) == re.sub(r'[^\w]', '', clean(article['title']).casefold())):
+                matches[identifier] = record
+        # Never choose an arbitrary top result when more than one DOI matches.
+        return next(iter(matches.values())) if len(matches) == 1 else None
+
+    def due(self, article, full=False):
+        previous = self.cached(article)
+        if not previous:
+            return True
+        if previous.get('abstract'):
+            return False
+        if previous.get('version') != LOOKUP_VERSION:
+            return True
+        if full and previous.get('attempt') != 'full':
+            return True
+        return time.time() >= previous.get('retry_at', previous['checked_at'] + 86400)
+
+    def lookup(self, article, background=False):
         # One on-demand lookup at a time also collapses simultaneous opens of the same article.
         with self.lock:
             previous = self.cached(article)
-            if previous and (previous.get('abstract') or (previous.get('attempt') == 'full' and time.time() - previous['checked_at'] < 3600)):
+            if previous and not self.due(article, full=True):
                 return {**previous, 'cached': True}
             errors = []
-            identifier = doi(article.get('doi'))
+            reasons, retries = [], []
+            original = article
+            identifier = doi(article.get('doi')) or (previous or {}).get('resolved_doi', '')
+            def failure(provider, exc):
+                reason = exc.reason if isinstance(exc, SourceDeferred) else 'network_error' if isinstance(exc, requests.RequestException) else 'unsupported_or_invalid'
+                errors.append(provider + ': ' + reason)
+                reasons.append(reason)
+                if isinstance(exc, SourceDeferred): retries.append(exc.retry_at)
+            def save(result):
+                if identifier and not original.get('doi'):
+                    result['resolved_doi'] = identifier
+                return self.save(original, result)
+            if not identifier:
+                try:
+                    record = self.resolve_doi(article)
+                    if record:
+                        identifier = doi(record['DOI'])
+                        text = valid_abstract(record.get('abstract'))
+                        if text:
+                            return save({'status': 'found', 'abstract': text, 'source': 'Crossref', 'source_url': 'https://doi.org/' + identifier})
+                except (requests.RequestException, ValueError, TypeError, KeyError) as exc:
+                    failure('DOI 检索', exc)
+            article = {**article, 'doi': identifier}
             if identifier:
                 for provider in ('OpenAlex', 'Crossref'):
+                    # The background queue already checks OpenAlex in DOI batches.
+                    if background and provider == 'OpenAlex' and previous and previous.get('version') == LOOKUP_VERSION and previous.get('index_checked_at', 0) > time.time() - 86400:
+                        continue
+                    # A current Crossref feed record with an empty abstract need not be fetched again per article.
+                    if background and provider == 'Crossref' and 'crossref' in (article.get('sources') or '').split(','):
+                        continue
                     try:
                         url = ('https://api.openalex.org/works/https://doi.org/' if provider == 'OpenAlex' else 'https://api.crossref.org/works/') + quote(identifier, safe='/')
-                        body, _ = self.getter(url)
+                        body, _ = self.request(url)
                         record = json.loads(body)
                         if provider == 'OpenAlex':
                             text = from_openalex(record, article)
                             source_url = record.get('id', '')
                         else:
                             record = record.get('message', {})
-                            text = valid_abstract(record.get('abstract')) if doi(record.get('DOI')) == identifier and title_matches(article['title'], (record.get('title') or [''])[0]) else ''
+                            text = valid_abstract(record.get('abstract')) if record_matches(article, record.get('DOI'), (record.get('title') or [''])[0]) else ''
                             source_url = 'https://doi.org/' + identifier
                         if text:
-                            return self.save(article, {'status': 'found', 'abstract': text, 'source': provider, 'source_url': source_url})
+                            return save({'status': 'found', 'abstract': text, 'source': provider, 'source_url': source_url})
                     except (requests.RequestException, ValueError, TypeError, KeyError) as exc:
-                        errors.append(provider + ': ' + type(exc).__name__)
+                        failure(provider, exc)
             try:
-                body, url = self.getter(article['link'])
+                body, url = self.request(article['link'])
                 text = from_html(body, article)
                 if text:
-                    return self.save(article, {'status': 'found', 'abstract': text, 'source': '出版商网页', 'source_url': url})
+                    return save({'status': 'found', 'abstract': text, 'source': '出版商网页', 'source_url': url})
             except (requests.RequestException, ValueError, TypeError, KeyError) as exc:
-                errors.append('出版商网页: ' + type(exc).__name__)
-            return self.save(article, {'status': 'unavailable', 'attempt': 'full', 'abstract': '',
-                                      'message': '暂未获取到可核对的摘要，来源可能尚未提供或限制访问。可打开原文查看，1 小时后可重试。', 'errors': errors})
+                failure('出版商网页', exc)
+            reason = next((r for r in ('rate_limited', 'access_denied', 'network_error', 'unsupported_or_invalid') if r in reasons), 'not_provided')
+            messages = {'rate_limited': '来源限流，已暂停该来源，稍后补采会自动重试。',
+                        'access_denied': '出版商限制自动访问，已保存记录；可打开原文查看。',
+                        'network_error': '来源暂时连接失败，稍后补采会自动重试。',
+                        'unsupported_or_invalid': '来源页面暂不支持，或摘要未通过身份与完整性核对。',
+                        'not_provided': '已检查支持的来源，暂未取得完整摘要。'}
+            return save({'status': 'unavailable', 'attempt': 'full', 'abstract': '', 'reason': reason,
+                         'retry_at': min(retries) if retries else time.time() + 86400,
+                         'index_checked_at': (previous or {}).get('index_checked_at', 0),
+                         'message': messages[reason], 'errors': errors})
 
-    def batch(self, payload, limit=500):
+    def batch(self, payload, limit=500, stop=None, progress=None):
         """Cloud-friendly DOI batches; unsuccessful lookups are retried the following day."""
         candidates = []
         for a in payload['articles']:
             if readable_abstract(a.get('abstract')) or not doi(a.get('doi')):
                 continue
-            old = self.cached(a)
-            if old and (old.get('abstract') or time.time() - old['checked_at'] < 86400):
+            if not self.due(a):
                 continue
             candidates.append(a)
         found, checked = 0, 0
         for offset in range(0, min(len(candidates), limit), 50):
+            if stop and stop.is_set():break
             batch = candidates[offset:min(offset + 50, limit)]
             identifiers = '|'.join('https://doi.org/' + doi(a['doi']) for a in batch)
             from urllib.parse import urlencode
             url = 'https://api.openalex.org/works?' + urlencode({'filter': 'doi:' + identifiers, 'select': 'id,doi,title,abstract_inverted_index', 'per_page': 100})
             try:
-                body, _ = self.getter(url)
+                body, _ = self.request(url)
                 records = {doi(r.get('doi')): r for r in json.loads(body)['results']}
             except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
                 return {'checked': checked, 'found': found, 'error': type(exc).__name__}
@@ -299,11 +428,54 @@ class AbstractService:
                 record = records.get(doi(article['doi']), {})
                 text = from_openalex(record, article)
                 self.save(article, {'status': 'found' if text else 'unavailable', 'attempt': 'index',
-                                    'abstract': text, 'source': 'OpenAlex', 'source_url': record.get('id', '')})
+                                    'abstract': text, 'source': 'OpenAlex', 'source_url': record.get('id', ''),
+                                    'index_checked_at': time.time()})
                 checked += 1
                 found += bool(text)
+            if progress:progress(checked, min(len(candidates), limit), found)
             time.sleep(1)
         return {'checked': checked, 'found': found}
+
+    def enrich(self, payload, stop, progress):
+        """Resumable local queue; every completed item is cached before advancing."""
+        self.overlay(payload)
+        journals = {j['id']: j for j in payload['journals']}
+        missing = [a for a in payload['articles'] if not readable_abstract(a.get('abstract'))]
+        missing.sort(key=lambda a: a.get('published_date') or '', reverse=True)
+        missing.sort(key=lambda a: 'hr35' not in journals[a['journal_id']]['groups'])
+        report = {'checked': 0, 'found': 0, 'total': 0, 'missing_before': len(missing), 'reasons': {}, 'paused': False}
+        def index_progress(checked, total, found):
+            progress({**report, 'stage': 'index', 'checked': checked, 'total': total, 'found': found})
+        batch = self.batch({'articles': missing}, len(missing), stop, index_progress)
+        report['found'] = batch['found']
+        if batch.get('error'):report['index_error'] = batch['error']
+        self.overlay(payload)
+        pending = []
+        for a in missing:
+            if readable_abstract(a.get('abstract')):continue
+            # Retain notices in the library; don't repeatedly scrape obvious non-research records.
+            if re.match(r'^(?:issue information|editorial board|front matter|back matter|table of contents|erratum|corrigendum|correction to|retraction notice)(?:\b|:)', a['title'], re.I):
+                report['reasons']['notice'] = report['reasons'].get('notice', 0) + 1
+                continue
+            if self.due(a, full=True):pending.append(a)
+            else:report['reasons']['cached'] = report['reasons'].get('cached', 0) + 1
+        report['total'] = len(pending)
+        progress({**report, 'stage': 'pages'})
+        for a in pending:
+            if stop.is_set():break
+            journal = journals[a['journal_id']]
+            result = self.lookup({**a, 'issns': journal['issns']}, background=True)
+            report['checked'] += 1
+            report['found'] += bool(result.get('abstract'))
+            reason = 'found' if result.get('abstract') else result.get('reason', 'not_provided')
+            report['reasons'][reason] = report['reasons'].get(reason, 0) + 1
+            progress({**report, 'stage': 'pages'})
+            if stop.wait(.1):break
+        report['paused'] = stop.is_set()
+        self.overlay(payload)
+        report['remaining'] = sum(not readable_abstract(a.get('abstract')) for a in payload['articles'])
+        report['found'] = report['missing_before'] - report['remaining']
+        return report
 
 
 if __name__ == '__main__':

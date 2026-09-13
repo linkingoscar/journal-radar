@@ -36,6 +36,7 @@ def test_loopback_api_rejects_cross_origin_rebinding_and_unauthenticated_mutatio
     calls=[]
     app=SimpleNamespace(token='test-secret',status={},directory=tmp_path,start_sync=lambda:calls.append(True) or True)
     app.abstract_article=lambda identifier:{'id':identifier} if identifier=='a'*64 else None
+    app.pause_abstracts=lambda:True
     app.abstract_slot=threading.BoundedSemaphore(1)
     app.abstracts=SimpleNamespace(lookup=lambda article:calls.append(article['id']) or {'status':'found','abstract':'An existing abstract'})
     server=ThreadingHTTPServer(('127.0.0.1',0),make_handler(app,0))
@@ -63,4 +64,26 @@ def test_loopback_api_rejects_cross_origin_rebinding_and_unauthenticated_mutatio
         assert requests.post(url+'/api/abstract/'+'c'*64,headers={'X-Radar-Token':app.token}).status_code==404
         assert requests.post(endpoint,headers={'X-Radar-Token':app.token}).json()['status']=='found'
         assert calls==[True,'a'*64]
+        assert requests.post(url+'/api/abstracts/pause').status_code==403
+        assert requests.post(url+'/api/abstracts/pause',headers={'X-Radar-Token':app.token,'Origin':'https://untrusted.test'}).status_code==403
+        assert requests.post(url+'/api/abstracts/pause',headers={'X-Radar-Token':app.token}).json()['paused']
     finally:server.shutdown();server.server_close();thread.join()
+
+
+def test_sync_runs_abstract_queue_and_publishes_results(tmp_path,monkeypatch):
+    from desktop import Companion
+    from run import now
+    app=Companion(tmp_path)
+    app.registry={**app.registry,'journals':[J]}
+    cloud={'generated_at':now(),'journals':[J],'articles':[]}
+    monkeypatch.setattr('desktop.get',lambda _:SimpleNamespace(json=lambda:cloud))
+    def enrich(payload,stop,progress):
+        assert payload['articles']==[] and not stop.is_set()
+        progress({'stage':'pages','checked':0,'total':1,'found':0})
+        assert app.pause_abstracts() and stop.is_set()
+        return {'found':0,'remaining':0,'paused':True}
+    monkeypatch.setattr(app.abstracts,'enrich',enrich)
+    app.status['running']=True
+    app.sync()
+    assert not app.status['running'] and app.status['paused'] and app.status['error'] is None
+    assert json.loads((tmp_path/'abstract-progress.json').read_text(encoding='utf-8'))['paused']

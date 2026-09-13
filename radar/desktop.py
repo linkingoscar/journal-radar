@@ -55,6 +55,7 @@ class Companion:
         self.abstract_slot=threading.BoundedSemaphore(1)
         self.token=secrets.token_urlsafe(32)
         self.guard=threading.Lock()
+        self.abstract_stop=threading.Event()
         self.status={'running':False,'phase':'等待补采','completed':0,'total':0,'last_finished':None,'error':None}
         self.cloud={}
         try:self.cloud=json.loads((self.directory/'cloud.json').read_text(encoding='utf-8'))
@@ -98,8 +99,15 @@ class Companion:
     def start_sync(self):
         with self.guard:
             if self.status['running']:return False
-            self.status.update(running=True,phase='正在读取云端文章',completed=0,total=0,error=None)
+            self.abstract_stop.clear()
+            self.status.update(running=True,phase='正在读取云端文章',completed=0,total=0,error=None,abstract_stage=None,paused=False)
         threading.Thread(target=self.sync,daemon=True,name='journal-radar-sync').start()
+        return True
+
+    def pause_abstracts(self):
+        if not self.status['running'] or not self.status.get('abstract_stage'):return False
+        self.abstract_stop.set()
+        self.status['phase']='正在保存进度并暂停摘要补全'
         return True
 
     def sync(self):
@@ -138,10 +146,21 @@ class Companion:
                     self.store.record_health(j['id'],'rss',attempt,error,len(entries))
                     self.status['completed']+=1
             self.publish()
-            self.status['phase']=f'补采完成：{len(jobs)-failed}/{len(jobs)} 个来源成功' if jobs else '云端来源正常，暂不需要补采'
+            payload=json.loads((self.directory/'site/data.json').read_text(encoding='utf-8'))
+            def progress(report):
+                phase='正在批量查询摘要' if report['stage']=='index' else '正在补查 DOI 与出版商摘要'
+                self.status.update(abstract_stage=report['stage'],completed=report['checked'],total=report['total'],phase=f'{phase} · 已补回 {report["found"]} 篇')
+                self.status['data_revision']=now()+':abstracts:'+str(report['found'])
+            report=self.abstracts.enrich(payload,self.abstract_stop,progress)
+            temp=self.directory/'abstract-progress.json.tmp'
+            temp.write_text(json.dumps(report,ensure_ascii=False),encoding='utf-8')
+            temp.replace(self.directory/'abstract-progress.json')
+            self.publish()
+            label='已暂停，可继续补采' if report['paused'] else '补采完成'
+            self.status.update(paused=report['paused'],abstract_report=report,phase=f'{label}：补回 {report["found"]} 篇摘要，仍有 {report["remaining"]} 篇缺失；RSS {len(jobs)-failed}/{len(jobs)} 个来源成功')
         except Exception as exc:
             self.status.update(phase='本次补采未完成',error=str(exc)[:200])
-        finally:self.status.update(running=False,last_finished=now())
+        finally:self.status.update(running=False,abstract_stage=None,last_finished=now())
 
 
 def make_handler(app,port):
@@ -176,6 +195,7 @@ def make_handler(app,port):
             if self.headers.get('Content-Length','0')!='0':return self.respond(400,{'error':'请求不应包含正文'})
             path=urlsplit(self.path).path
             if path=='/api/sync':return self.respond(202,{'started':app.start_sync()})
+            if path=='/api/abstracts/pause':return self.respond(202,{'paused':app.pause_abstracts()})
             match=re.fullmatch(r'/api/abstract/([a-f0-9]{64})',path)
             if not match:return self.respond(404,{'error':'Not found'})
             article=app.abstract_article(match[1])
