@@ -139,9 +139,15 @@ class RadarStore(DatabaseManager):
                         previous=conn.execute("SELECT * FROM matched_entries WHERE journal_id=? AND title_key=? AND (doi IS NULL OR doi='')",(journal['id'],key)).fetchone()
                     else:
                         previous=conn.execute('SELECT * FROM matched_entries WHERE journal_id=? AND title_key=?',(journal['id'],key)).fetchone()
-                identifier=previous['entry_id'] if previous else hashlib.sha256((doi or journal['id']+'|'+(entry['link'] or key)).encode()).hexdigest()
+                preferred=entry.get('entry_id','')
+                if not re.fullmatch(r'[a-f0-9]{64}',preferred):preferred=''
+                identifier=previous['entry_id'] if previous else preferred or hashlib.sha256((doi or journal['id']+'|'+(entry['link'] or key)).encode()).hexdigest()
                 sources=set((previous['sources'] or '').split(',')) if previous else set()
                 sources.add(entry['source']);sources.discard('')
+                discovered=now()
+                if entry.get('first_seen'):
+                    try:discovered=dt.datetime.fromisoformat(entry['first_seen']).isoformat()
+                    except (ValueError,TypeError):pass
                 if previous:
                     # Rich Crossref fields take precedence; missing new fields never erase history.
                     for field in ('title','authors','link','published_date','online_date','print_date','doi','article_type'):
@@ -162,7 +168,7 @@ class RadarStore(DatabaseManager):
                     topics=excluded.topics,online_date=excluded.online_date,print_date=excluded.print_date,
                     article_type=excluded.article_type,sources=excluded.sources,source_rank=excluded.source_rank,title_key=excluded.title_key''',
                     (identifier,journal['name'],', '.join(journal['groups']),entry['title'],entry['link'],'',entry['authors'],entry['abstract'],
-                     entry['doi'] or None,entry['published_date'],previous['matched_date'] if previous else now(),journal['id'],entry['online_date'],entry['print_date'],
+                     entry['doi'] or None,entry['published_date'],previous['matched_date'] if previous else discovered,journal['id'],entry['online_date'],entry['print_date'],
                      entry['article_type'],','.join(sorted(sources)),max(entry['source_rank'],previous['source_rank'] or 0) if previous else entry['source_rank'],normalized_title(entry['title'])))
                 inserted+=not bool(previous)
         return inserted

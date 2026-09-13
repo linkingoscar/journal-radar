@@ -17,7 +17,19 @@
 
 已读、收藏和“我的选刊”仅保存在当前浏览器，换设备或清除浏览器数据前请点击“导出阅读记录”。导入会合并记录。页面的“刷新文章”读取最新云端采集结果，不会立即启动一次采集。
 
-Windows 可运行仓库中的 `Install-DesktopShortcut.ps1` 创建桌面图标，或用 Edge 打开在线页面并选择“安装到桌面”。快捷方式使用 Edge 的独立应用窗口，不需要安装 Python。
+Windows 桌面增强版：运行 `Install-DesktopShortcut.ps1` 安装本机组件并创建图标（安装时需要 Python 3.10+ 和 PowerShell 7；本机已安装）。双击桌面图标会静默启动采集组件，并用 Edge 独立窗口打开 `http://127.0.0.1:8766/`。日常使用不需要打开终端。
+
+每次打开应用时先读取云端文章，再补采云端失败的 RSS；15 分钟内重复打开会复用现有结果，也可点击“本机补采”手动运行。电脑关机后云端继续按原计划采集，本机补采在下次打开应用时进行。本机文章历史位于 `.desktop-data/`，仅在本机合并显示，不自动上传 GitHub。后台组件只监听本机回环地址，不对局域网开放。
+
+原网页版与本机版属于不同浏览器站点，收藏不会自动共享。首次进入本机版可点击“迁移原网页版阅读记录”，在同一浏览器内合并原有收藏、已读和自选期刊；也可使用 JSON 导出/导入。合并保留已有记录，DOI 去重时保留阅读标识。浏览器保存的 PWA 仍是网页版；需要本机补采时请使用安装脚本生成的桌面图标。
+
+## 免费摘要翻译
+
+桌面版和网页版均支持打开文章时自动将已有英文摘要译为中文，保留英文原文。可在“摘要翻译设置”关闭自动翻译，改为手动点击“翻译摘要”。翻译不会补造缺失摘要，也不会批量翻译所有历史文章。
+
+默认使用 [MyMemory 官方免费 API](https://mymemory.translated.net/doc/spec.php)。英文摘要会发送给 MyMemory；译文使用 IndexedDB 缓存在当前浏览器，源摘要变化后重新翻译。长摘要按句子优先分段，每段不超过接口限制；机器翻译的术语和长句可能不准确，阅读时请对照原文。
+
+[匿名免费额度约 5,000 字符/天](https://mymemory.translated.net/doc/usagelimits.php)，通常只够几篇长摘要。本应用对当前站点近 24 小时发送量设上限，跨设备、其他站点或共享网络的服务端额度可能不同。已缓存译文不再调用服务；失败段可以重试并复用完成的分段，超额时保留原文。译文缓存不包含在阅读记录备份里，清除站点数据会清除缓存。无需 API key，不使用付费翻译接口。
 
 ## 数据边界
 
@@ -42,7 +54,8 @@ python -m venv .venv
 # Windows: .venv\Scripts\Activate.ps1
 # Linux/macOS: source .venv/bin/activate
 python -m pip install -r radar/requirements.txt pytest==8.4.2
-python -m pytest radar/test_radar.py -q
+python -m pytest radar/test_radar.py radar/test_desktop.py -q
+node --test radar/test_translation.cjs
 python radar/run.py sync --days 90 --workers 3
 python radar/verify_site.py
 python -m http.server 8767 --directory site
@@ -52,7 +65,7 @@ python -m http.server 8767 --directory site
 
 新增期刊时在 `radar/journals.json` 增加一条配置：`id` 使用稳定 ISSN，填写 `name`、`issns`、`short_name`、`groups`、`rss_url`（如有）和 `enabled`。现有 55 本里挑选个人子集可直接通过页面“管理期刊与数据源”勾选；新增第 56 本及之后的采集对象仍需修改配置并提交。
 
-Fork 后在 Settings → Pages 设置 GitHub Actions，启用本仓库 Actions，并将 Windows 脚本中的 URL 改为自己的地址。工作流需要本仓库的 contents write、pages write 和部署身份权限，仅保存采集记录与发布静态站点。
+Fork 后在 Settings → Pages 设置 GitHub Actions，启用本仓库 Actions。定制部署地址时同时修改 `radar/desktop.py` 中的 `CLOUD` 和 `radar/web/app.js` 中的迁移地址与来源校验；本机固定端口为 8766。工作流需要本仓库的 contents write、pages write 和部署身份权限，仅保存采集记录与发布静态站点。
 
 ## 上游与许可
 

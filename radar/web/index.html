@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#173e3b">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.mymemory.translated.net; object-src 'none'; base-uri 'self'">
   <title>期刊雷达 · Journal Radar</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
-  <script src="app.js" defer></script>
+  <link rel="stylesheet" href="enhancements.css">
+  <script src="translation.js" defer></script><script src="app.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">跳到文章列表</a>
@@ -25,6 +26,7 @@
     <button id="manage">管理期刊与数据源 <span>↗</span></button>
     <button id="backup">导出阅读记录 <span>↓</span></button>
     <button id="restore">导入阅读记录 <span>↑</span></button>
+    <button id="translation-settings">摘要翻译设置 <span>译</span></button>
     <button id="install">安装到桌面 <span>＋</span></button>
     <input type="file" id="import-file" accept="application/json,.json" hidden>
     <small>基于 Paper Firehose · 个人阅读版</small>
@@ -35,6 +37,7 @@
   <main id="main">
     <section class="hero"><div><span class="eyebrow">YOUR RESEARCH, IN FOCUS</span><h1 id="group-title">核心关注<span>的新进展</span></h1><p id="group-description">从你关心的期刊开始，发现值得细读的研究。</p></div><div class="hero-stat"><strong id="article-total">—</strong><span>篇已收录文章</span></div></section>
     <div id="notice" role="status" hidden></div>
+    <section id="desktop-bar" class="desktop-bar" aria-label="本机采集" hidden><span id="desktop-status" role="status">正在连接本机采集组件</span><button id="sync-local">本机补采</button><button id="migrate-reading">迁移原网页版阅读记录</button></section>
     <section class="toolbar" aria-label="筛选文章">
       <label class="search"><span aria-hidden="true">⌕</span><input type="search" id="search" placeholder="搜索标题、作者、摘要或 DOI" aria-label="搜索标题、作者、摘要或 DOI"><kbd>/</kbd></label>
       <label class="sr-only" for="journal">选择期刊</label><select id="journal"><option value="">所有期刊</option></select>
@@ -50,5 +53,6 @@
 <dialog id="reader"><div class="dialog-head"><span>文章速览</span><button class="close" aria-label="关闭文章速览">✕</button></div><div id="reader-content"></div></dialog>
 <dialog id="settings"><div class="dialog-head"><span>期刊与数据源</span><button class="close" aria-label="关闭期刊管理">✕</button></div><p>勾选期刊可加入「我的选刊」。后台仍收集全部启用的期刊。新增清单通过项目配置接入。</p><p class="hint">绿色表示本次来源请求完成；黄色表示部分来源失败。请求成功不代表已核实完整覆盖。</p><div id="journal-settings"></div><div class="source-links"><a href="https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and" target="_blank" rel="noopener noreferrer">FT50 名单依据 ↗</a><a href="https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php" target="_blank" rel="noopener noreferrer">UTD24 官方名单 ↗</a></div></dialog>
 <dialog id="help"><div class="dialog-head"><span>安装到 Windows 桌面</span><button class="close" aria-label="关闭安装说明">✕</button></div><p>用 Microsoft Edge 打开本站，在右上角「…」菜单中选择「应用」→「将此站点作为应用安装」。安装后可固定到桌面或任务栏，使用独立窗口阅读。</p><p>如果已经安装，可直接通过 Windows 开始菜单打开「期刊雷达」。</p></dialog>
+<dialog id="translation-options"><div class="dialog-head"><span>摘要翻译</span><button class="close" aria-label="关闭翻译设置">✕</button></div><label class="translation-setting"><input type="checkbox" id="auto-translate" checked>打开文章时自动翻译摘要</label><p>使用 MyMemory 免费在线翻译，将英文摘要发送给翻译服务；译文缓存在当前浏览器，保留英文原文对照。机器翻译仅供阅读参考。</p><p>匿名免费额度约 5,000 字符/天，通常只够几篇长摘要。不会自动翻译全部历史文章。超额或服务不可用时保留原文；已缓存译文不消耗额度。</p><p>关闭自动翻译后，仍可在文章中点击“翻译摘要”。没有摘要的文章无法生成译文。</p><a class="translation-settings-link" href="https://mymemory.translated.net/doc/usagelimits.php" target="_blank" rel="noopener noreferrer">查看免费额度说明 ↗</a></dialog>
 <div id="toast" role="status" hidden></div>
 </body></html>

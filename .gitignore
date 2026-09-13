@@ -42,3 +42,5 @@ status.log
 radar-data/
 site/
 !radar/web/*.html
+.desktop-data/
+.desktop-venv/
