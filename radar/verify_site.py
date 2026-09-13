@@ -17,7 +17,9 @@ for name in ['index.html','app.js','style.css','enhancements.css','translation.j
     assert (site/name).is_file(),name
 assert len(articles)>0,'No real articles collected'
 statuses=Counter(j['status'] for j in journals)
-message=f"Journal Radar: {len(journals)} journals, {len(articles)} articles; status={dict(statuses)}"
+enriched=sum(bool(a.get('abstract_source')) for a in articles)
+assert all(a.get('abstract') and a.get('abstract_url','').startswith('https://') for a in articles if a.get('abstract_source')),'Invalid abstract provenance'
+message=f"Journal Radar: {len(journals)} journals, {len(articles)} articles; {enriched} enriched abstracts; status={dict(statuses)}"
 print(message)
 if os.getenv('GITHUB_STEP_SUMMARY'):
     with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as stream:

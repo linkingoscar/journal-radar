@@ -4,7 +4,8 @@ const KEY = 'journal-radar:reading:v1';
 let data = null, group = 'core10', view = 'all', limit = 40, installPrompt = null;
 let state = {read:{}, saved:{}, custom:[]};
 const isDesktop=location.origin==='http://127.0.0.1:8766';
-let desktopSession=null,desktopRevision=null,migrationWindow=null,translationController=null;
+let desktopSession=null,desktopRevision=null,migrationWindow=null,translationController=null,abstractController=null;
+let pendingArticleId=/^#article=([a-f0-9]{64})$/.exec(location.hash)?.[1];
 const EMAIL_KEY='journal-radar:translation-email';
 function translationEmail(){try{return localStorage.getItem(EMAIL_KEY)||'';}catch{return '';}}
 const translator=new JournalTranslation.Engine({getEmail:translationEmail});
@@ -38,10 +39,15 @@ function updateJournals() {
 }
 function toggle(kind,id) { const enabled=!state[kind][id];const ids=[id,...Object.entries(data?.reading_aliases||{}).filter(([,target])=>target===id).map(([alias])=>alias)];for(const key of ids){if(enabled)state[kind][key]=true;else delete state[kind][key];}persist();render(); }
 function applyReadingAliases(){for(const [oldId,id] of Object.entries(data?.reading_aliases||{})){for(const field of ['read','saved'])if(state[field][oldId])state[field][id]=true;}persist();}
-function addTranslation(article,journal,content){
+function abstractText(article,journal){
   let text=(article.abstract||'').trim();
   if(/^Publication date[:：]/i.test(text)){const match=text.match(/\bAbstract\s*[:：]?\s+([\s\S]+)/i);text=match?match[1]:'';}
-  if(text.startsWith(journal.name+', Volume')||text.includes('-Not available-')||!/[a-zA-Z]{3}/.test(text))text='';
+  if(/^.{0,150},\s*Volume\b/i.test(text)||/not available|no abstract available/i.test(text))text='';
+  return text;
+}
+function addTranslation(article,journal,content){
+  const text=abstractText(article,journal);
+  if(!/[a-zA-Z]{3}/.test(text))return;
   if(!text)return;
   const block=el('section',undefined,'translation-block'),heading=el('div',undefined,'translation-heading'),output=el('p','点击按钮获取中文摘要。','translation-text'),note=el('p','MyMemory 免费翻译 · 译文缓存在本机 · 英文原文保留在下方','translation-note');
   output.setAttribute('role','status');
@@ -55,14 +61,47 @@ function addTranslation(article,journal,content){
   const action=button('翻译摘要',translate);heading.append(el('h3','中文摘要'),action);block.append(heading,output,note);content.append(block);
   if(autoTranslate)translate();
 }
+function renderAbstract(article,journal,content){
+  content.replaceChildren();
+  const text=abstractText(article,journal);
+  if(text){
+    addTranslation(article,journal,content);
+    content.append(el('div','英文摘要','reader-original-label'),el('p',text,'reader-abstract'));
+    if(article.abstract_source){const source=el('a','摘要来源：'+article.abstract_source,'translation-settings-link');source.href=safeLink(article.abstract_url||article.link);source.target='_blank';source.rel='noopener noreferrer';content.append(source);}
+    return;
+  }
+  const status=el('p','当前采集来源尚未提供摘要。','reader-abstract');status.setAttribute('role','status');content.append(status);
+  if(!isDesktop){
+    content.append(el('p','云端会定时尝试补全。也可先双击 Windows 桌面「期刊雷达」启动本机组件，再打开下方链接按篇补取。','translation-note'));
+    const local=el('a','在桌面版补取这篇摘要 ↗','translation-settings-link');local.href='http://127.0.0.1:8766/#article='+article.id;local.target='_blank';local.rel='noopener noreferrer';content.append(local);return;
+  }
+  const retrieve=async()=>{
+    abstractController?.abort();const controller=new AbortController();abstractController=controller;
+    action.disabled=true;status.textContent='正在查找已有摘要，可能需要等待片刻…';
+    try{
+      const signal=AbortSignal.any([controller.signal,AbortSignal.timeout(120000)]);
+      const session=await fetch('api/session',{signal,cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('本机组件未连接，请重新打开桌面应用。');return r.json();});
+      const response=await fetch('api/abstract/'+article.id,{method:'POST',headers:{'X-Radar-Token':session.token},signal});
+      const result=await response.json();if(!response.ok)throw new Error(result.error||'摘要补取失败，请稍后重试。');
+      if(controller.signal.aborted||!content.isConnected)return;
+      if(result.abstract){
+        const fields={abstract:result.abstract,abstract_source:result.source,abstract_url:result.source_url};Object.assign(article,fields);
+        const current=data.articles.find(a=>a.id===article.id);if(current)Object.assign(current,fields);
+        renderAbstract(article,journal,content);render();
+      }else{status.textContent=result.message||'来源暂未提供可核对的摘要，请打开原文查看。';action.textContent='重试补取摘要';}
+    }catch(error){if(!controller.signal.aborted&&content.isConnected){status.textContent=error.name==='TimeoutError'?'补取等待超时，请稍后重试。':error.message;action.textContent='重试补取摘要';}}
+    finally{action.disabled=false;}
+  };
+  const action=button('补取摘要',retrieve,'abstract-retrieve');content.append(action);retrieve();
+}
 function openArticle(article) {
   translationController?.abort();
+  abstractController?.abort();
   const journal=data.journals.find(j=>j.id===article.journal_id);
   const content=$('#reader-content');content.replaceChildren();
   content.append(el('div',journal.name,'eyebrow'),el('h2',article.title,'reader-title'),el('p',article.authors||'作者信息暂缺','reader-meta'));
   content.append(el('p','发表：'+readableDate(article.published_date)+(article.online_date?' · 在线发表：'+readableDate(article.online_date):'')+(article.print_date?' · 正式刊期：'+readableDate(article.print_date):''),'reader-meta'));
-  addTranslation(article,journal,content);
-  content.append(el('div','英文原文 / 来源文本','reader-original-label'),el('p',article.abstract||'当前来源未提供摘要，可以打开原文页面查看。','reader-abstract'));
+  const abstract=el('div');content.append(abstract);renderAbstract(article,journal,abstract);
   if(article.doi)content.append(el('p','DOI '+article.doi,'reader-doi'));
   const actions=el('div',undefined,'reader-buttons');
   const link=el('a','打开原文 ↗','primary');link.href=safeLink(article.link);link.target='_blank';link.rel='noopener noreferrer';
@@ -95,7 +134,7 @@ function render() {
     const j=byId.get(article.journal_id), card=el('article',undefined,'article'+(state.read[article.id]?' is-read':''));
     const top=el('div',undefined,'article-top');top.append(el('span',j.name,'journal-name'),el('time',readableDate(article.published_date),'date'));
     const heading=el('h2');heading.append(button(article.title,()=>openArticle(article)));
-    card.append(top,heading,el('p',article.authors||'作者信息暂缺','authors'),el('p',article.abstract||'当前来源未提供摘要，打开原文查看详情。','abstract-preview'));
+    card.append(top,heading,el('p',article.authors||'作者信息暂缺','authors'),el('p',abstractText(article,j)||'当前来源未提供摘要，打开文章查看补取方式。','abstract-preview'));
     const bottom=el('div',undefined,'article-bottom'),tags=el('div',undefined,'tags'),actions=el('div',undefined,'article-actions');
     j.groups.forEach(g=>tags.append(el('span',label(g),'tag')));
     if(article.article_type!=='journal-article'&&article.article_type!=='rss-entry')tags.append(el('span',article.article_type,'tag'));
@@ -114,6 +153,7 @@ async function load(){
     const next=await response.json();if(!Array.isArray(next.articles)||!Array.isArray(next.journals))throw new Error('数据格式错误');
     const previous=$('#journal').value;data=next;applyReadingAliases();updateJournals();if([...$('#journal').options].some(o=>o.value===previous))$('#journal').value=previous;render();
     $('#connection').textContent=navigator.onLine?'阅读数据已载入':'离线阅读';
+    if(pendingArticleId){const article=data.articles.find(a=>a.id===pendingArticleId);pendingArticleId=null;if(article)openArticle(article);else toast('本机尚未收录这篇文章，请先运行本机补采。');}
   }catch(error){$('#connection').textContent='暂时无法更新';$('#notice').hidden=false;$('#notice').textContent='读取失败，请检查网络后重试。'+(data?' 已保留当前文章。':'');}
   finally{$('#refresh').disabled=false;}
 }
@@ -132,7 +172,7 @@ $('#groups').addEventListener('click',event=>{const b=event.target.closest('[dat
 $('#views').addEventListener('click',event=>{const b=event.target.closest('[data-view]');if(!b)return;view=b.dataset.view;limit=40;$('#views').querySelectorAll('button').forEach(x=>{x.classList.toggle('selected',x===b);x.setAttribute('aria-pressed',String(x===b));});render();});
 ['search','journal','period','sort'].forEach(id=>$('#'+id).addEventListener(id==='search'?'input':'change',()=>{limit=40;render();}));
 $('#more').addEventListener('click',()=>{limit+=40;render();});$('#refresh').addEventListener('click',load);
-$('#reader').addEventListener('close',()=>translationController?.abort());
+$('#reader').addEventListener('close',()=>{translationController?.abort();abstractController?.abort();});
 $('#auto-translate').checked=autoTranslate;
 $('#auto-translate').addEventListener('change',event=>{autoTranslate=event.target.checked;try{localStorage.setItem('journal-radar:auto-translate',String(autoTranslate));}catch{toast('翻译设置未能保存。');}});
 function showTranslationSettings(){

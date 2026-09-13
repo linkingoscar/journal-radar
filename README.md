@@ -23,6 +23,16 @@ Windows 桌面增强版：运行 `Install-DesktopShortcut.ps1` 安装本机组�
 
 原网页版与本机版属于不同浏览器站点，收藏不会自动共享。首次进入本机版可点击“迁移原网页版阅读记录”，在同一浏览器内合并原有收藏、已读和自选期刊；也可使用 JSON 导出/导入。合并保留已有记录，DOI 去重时保留阅读标识。浏览器保存的 PWA 仍是网页版；需要本机补采时请使用安装脚本生成的桌面图标。
 
+## 摘要补全
+
+云端每次采集后，按 DOI 从 OpenAlex 批量补全缺失摘要，并核对文章标题；成功摘要和查询记录保存在历史 SQLite 库。每天重试尚未提供摘要的记录，单轮最多检查 1,000 篇。网页版和桌面版都会收到云端补全结果。
+
+桌面版打开仍缺摘要的文章时，会按篇尝试 OpenAlex、Crossref 和出版商网页。网页只提取匹配文章的摘要元数据、明确的摘要区块或结构化摘要，不用全文生成摘要，也不把刊期和作者信息当摘要。出版商访问受限时不会绕过验证；未获取到时显示说明并在 1 小时内复用失败结果，避免重复请求。
+
+成功后标明摘要来源、保存本机缓存，并按当前翻译设置自动翻译。已缓存摘要可离线阅读，后续 RSS 更新不会清掉缓存；文章身份变化会重新核对。按篇补取只在本机版提供，网页版保留原文和打开本机版对应文章的入口。
+
+摘要覆盖率仍受来源影响。OpenAlex 的摘要来自不同来源，个别记录可能带额外文本，阅读时可对照原文。[OpenAlex 摘要说明](https://help.openalex.org/data/works/attributes/)
+
 ## 免费摘要翻译
 
 桌面版和网页版均支持打开文章时自动将已有英文摘要译为中文，保留英文原文。可在“摘要翻译设置”关闭自动翻译，改为手动点击“翻译摘要”。翻译不会补造缺失摘要，也不会批量翻译所有历史文章。
@@ -54,9 +64,10 @@ python -m venv .venv
 # Windows: .venv\Scripts\Activate.ps1
 # Linux/macOS: source .venv/bin/activate
 python -m pip install -r radar/requirements.txt pytest==8.4.2
-python -m pytest radar/test_radar.py radar/test_desktop.py -q
+python -m pytest radar/test_radar.py radar/test_desktop.py radar/test_abstracts.py -q
 node --test radar/test_translation.cjs
 python radar/run.py sync --days 90 --workers 3
+python radar/abstracts.py --limit 1000
 python radar/verify_site.py
 python -m http.server 8767 --directory site
 ```

@@ -5,12 +5,14 @@ import concurrent.futures
 import datetime as dt
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import re
 from pathlib import Path
 import secrets
 import threading
 import time
 from urllib.parse import urlsplit
 from run import ROOT, RadarStore, collect_rss, get, now, plain, safe_url
+from abstracts import AbstractService
 
 PORT=8766
 CLOUD='https://linkingoscar.github.io/journal-radar/data.json'
@@ -49,6 +51,8 @@ class Companion:
         self.directory=Path(directory);self.directory.mkdir(parents=True,exist_ok=True)
         self.registry=json.loads((ROOT/'radar/journals.json').read_text(encoding='utf-8'))
         self.store=RadarStore(self.directory)
+        self.abstracts=AbstractService(self.directory)
+        self.abstract_slot=threading.BoundedSemaphore(1)
         self.token=secrets.token_urlsafe(32)
         self.guard=threading.Lock()
         self.status={'running':False,'phase':'等待补采','completed':0,'total':0,'last_finished':None,'error':None}
@@ -59,6 +63,12 @@ class Companion:
 
     def publish(self):
         payload=self.store.export(self.registry,self.directory/'site')
+        self.abstracts.overlay(payload)
+        cloud_abstracts={a.get('doi'):a for a in self.cloud.get('articles',[]) if a.get('doi') and a.get('abstract_source')}
+        for article in payload['articles']:
+            source=cloud_abstracts.get(article.get('doi'))
+            if source and source.get('abstract')==article.get('abstract'):
+                article.update(abstract_source=source['abstract_source'],abstract_url=source.get('abstract_url',''))
         cloud_journals={j['id']:j for j in self.cloud.get('journals',[])}
         local_health=self.store.health()
         for j in payload['journals']:
@@ -79,6 +89,11 @@ class Companion:
         temp.replace(self.directory/'site/data.json')
         self.status['data_revision']=payload['generated_at']
         self.status['articles']=len(payload['articles'])
+
+    def abstract_article(self,identifier):
+        with self.store.get_connection('history') as c:
+            row=c.execute('SELECT entry_id AS id,title,doi,link,abstract,journal_id FROM matched_entries WHERE entry_id=?',(identifier,)).fetchone()
+        return dict(row) if row else None
 
     def start_sync(self):
         with self.guard:
@@ -150,7 +165,7 @@ def make_handler(app,port):
             if not self.trusted():return self.respond(403,{'error':'仅允许本机应用访问'})
             path=urlsplit(self.path).path
             if path=='/api/session':return self.respond(200,{'app':'journal-radar-desktop','version':1,'token':app.token,**app.status})
-            if path=='/data.json':return self.respond(200,(app.directory/'site/data.json').read_bytes())
+            if path=='/data.json':return self.respond(200,app.abstracts.overlay(json.loads((app.directory/'site/data.json').read_text(encoding='utf-8'))))
             name='index.html' if path=='/' else path[1:]
             if name not in files:return self.respond(404,{'error':'Not found'})
             suffix=Path(name).suffix
@@ -158,9 +173,20 @@ def make_handler(app,port):
             return self.respond(200,(ROOT/'radar/web'/name).read_bytes(),mime)
         def do_POST(self):
             if not self.trusted() or not secrets.compare_digest(self.headers.get('X-Radar-Token',''),app.token):return self.respond(403,{'error':'无效的本机请求'})
-            if urlsplit(self.path).path!='/api/sync':return self.respond(404,{'error':'Not found'})
             if self.headers.get('Content-Length','0')!='0':return self.respond(400,{'error':'请求不应包含正文'})
-            return self.respond(202,{'started':app.start_sync()})
+            path=urlsplit(self.path).path
+            if path=='/api/sync':return self.respond(202,{'started':app.start_sync()})
+            match=re.fullmatch(r'/api/abstract/([a-f0-9]{64})',path)
+            if not match:return self.respond(404,{'error':'Not found'})
+            article=app.abstract_article(match[1])
+            if not article:return self.respond(404,{'error':'文章未收录，请先刷新文章'})
+            if not app.abstract_slot.acquire(blocking=False):return self.respond(429,{'error':'另一篇摘要正在补取，请稍后重试。'})
+            try:
+                result=app.abstracts.lookup(article)
+                return self.respond(200,result)
+            except Exception:
+                return self.respond(500,{'error':'摘要补取暂时失败，请稍后重试。'})
+            finally:app.abstract_slot.release()
     return Handler
 
 

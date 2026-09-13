@@ -35,6 +35,9 @@ def test_local_success_replaces_failed_cloud_rss_without_masking_crossref_failur
 def test_loopback_api_rejects_cross_origin_rebinding_and_unauthenticated_mutations(tmp_path):
     calls=[]
     app=SimpleNamespace(token='test-secret',status={},directory=tmp_path,start_sync=lambda:calls.append(True) or True)
+    app.abstract_article=lambda identifier:{'id':identifier} if identifier=='a'*64 else None
+    app.abstract_slot=threading.BoundedSemaphore(1)
+    app.abstracts=SimpleNamespace(lookup=lambda article:calls.append(article['id']) or {'status':'found','abstract':'An existing abstract'})
     server=ThreadingHTTPServer(('127.0.0.1',0),make_handler(app,0))
     port=server.server_port;server.RequestHandlerClass=make_handler(app,port)
     thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
@@ -49,4 +52,11 @@ def test_loopback_api_rejects_cross_origin_rebinding_and_unauthenticated_mutatio
         assert calls==[]
         assert requests.post(url+'/api/sync',headers={'Origin':url,'X-Radar-Token':app.token}).status_code==202
         assert calls==[True]
+        endpoint=url+'/api/abstract/'+'a'*64
+        assert requests.post(endpoint).status_code==403
+        assert requests.post(endpoint,headers={'X-Radar-Token':app.token,'Origin':'https://untrusted.test'}).status_code==403
+        assert requests.post(endpoint,headers={'X-Radar-Token':app.token},data='https://untrusted.test').status_code==400
+        assert requests.post(url+'/api/abstract/'+'c'*64,headers={'X-Radar-Token':app.token}).status_code==404
+        assert requests.post(endpoint,headers={'X-Radar-Token':app.token}).json()['status']=='found'
+        assert calls==[True,'a'*64]
     finally:server.shutdown();server.server_close();thread.join()
