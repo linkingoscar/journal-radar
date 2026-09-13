@@ -34,7 +34,7 @@ function updateJournals() {
   for (const j of data.journals.filter(inGroup).sort((a,b)=>a.name.localeCompare(b.name)))select.add(new Option(j.name,j.id));
   $('#custom-count').textContent=state.custom.length;$('#all-count').textContent=data.journals.length;
 }
-function toggle(kind,id) { if(state[kind][id])delete state[kind][id];else state[kind][id]=true;persist();render(); }
+function toggle(kind,id) { const enabled=!state[kind][id];const ids=[id,...Object.entries(data?.reading_aliases||{}).filter(([,target])=>target===id).map(([alias])=>alias)];for(const key of ids){if(enabled)state[kind][key]=true;else delete state[kind][key];}persist();render(); }
 function applyReadingAliases(){for(const [oldId,id] of Object.entries(data?.reading_aliases||{})){for(const field of ['read','saved'])if(state[field][oldId])state[field][id]=true;}persist();}
 function addTranslation(article,journal,content){
   let text=(article.abstract||'').trim();
@@ -138,7 +138,7 @@ $('#manage').addEventListener('click',()=>{if(data)settings();});
 document.querySelectorAll('.close').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
 $('#backup').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({version:1,exported_at:new Date().toISOString(),...state},null,2)],{type:'application/json'}));const a=el('a');a.href=url;a.download='journal-radar-reading-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('阅读记录已导出');});
 $('#restore').addEventListener('click',()=>$('#import-file').click());
-$('#import-file').addEventListener('change',async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>5e6)throw new Error('备份过大');const input=JSON.parse(await file.text());if(input.version!==1||!input.read||!input.saved||!Array.isArray(input.custom))throw new Error('格式不匹配');const restored=validateState(input);state={read:{...state.read,...restored.read},saved:{...state.saved,...restored.saved},custom:[...new Set([...state.custom,...restored.custom])]};persist();if(data){updateJournals();render();}toast('已合并导入阅读记录');}catch{toast('无法导入：请选择期刊雷达导出的 JSON 备份。');}event.target.value='';});
+$('#import-file').addEventListener('change',async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>5e6)throw new Error('备份过大');const input=JSON.parse(await file.text());if(input.version!==1||!input.read||!input.saved||!Array.isArray(input.custom))throw new Error('格式不匹配');const restored=validateState(input);state={read:{...state.read,...restored.read},saved:{...state.saved,...restored.saved},custom:[...new Set([...state.custom,...restored.custom])]};applyReadingAliases();if(data){updateJournals();render();}toast('已合并导入阅读记录');}catch{toast('无法导入：请选择期刊雷达导出的 JSON 备份。');}event.target.value='';});
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;});
 $('#install').addEventListener('click',async()=>{if(installPrompt){await installPrompt.prompt();installPrompt=null;}else $('#help').showModal();});
 document.addEventListener('keydown',event=>{if(event.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&!document.querySelector('dialog[open]')){event.preventDefault();$('#search').focus();}});

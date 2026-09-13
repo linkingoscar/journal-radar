@@ -48,3 +48,11 @@ test('an already cancelled reader consumes no provider quota',async()=>{
   await assert.rejects(engine.translate('An abstract.',{signal:controller.signal}),{name:'AbortError'});
   assert.equal(calls,0);assert.equal(await store.get('usage'),undefined);
 });
+
+test('provider quota warnings inside translatedText are never saved as translations',async()=>{
+  const store=memory();let calls=0;
+  const engine=new Engine({store,fetcher:async()=>response(++calls===1?'MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY. NEXT AVAILABLE IN 12 HOURS.':'正常译文')});
+  await assert.rejects(engine.translate('A short abstract.'),/额度已用完/);
+  assert.equal((await engine.translate('A short abstract.')).text,'正常译文');
+  assert.equal(calls,2);
+});
