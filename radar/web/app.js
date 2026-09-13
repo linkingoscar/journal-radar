@@ -22,6 +22,7 @@ function toast(text) { $('#toast').textContent=text;$('#toast').hidden=false;cle
 function label(g) { return {core10:'核心关注',ft50:'FT50',utd24:'UTD24',custom:'我的选刊',all:'全部期刊'}[g]; }
 function inGroup(j) {return group==='all'||(group==='custom'?state.custom.includes(j.id):j.groups.includes(group));}
 function readableDate(s) {return s?s.slice(0,10).replaceAll('-','.'):'日期未提供';}
+function withinPeriod(a,cutoff) {const date=a.published_date||a.first_seen.slice(0,10);return !cutoff||date>=cutoff.slice(0,date.length);}
 function safeLink(s) {try{const u=new URL(s);return ['https:','http:'].includes(u.protocol)?u.href:'#';}catch{return '#';}}
 function updateJournals() {
   const select=$('#journal');select.replaceChildren(new Option('所有期刊',''));
@@ -50,7 +51,7 @@ function render() {
   $('#group-description').textContent=group==='core10'?'从你关心的 10 本期刊开始，发现值得细读的研究。':group==='ft50'?'FT50 · 2026 年 4 月版，50 本期刊的研究动态。':group==='utd24'?'UTD24 · 跨管理、金融、营销、会计与信息系统。':group==='custom'?'在「管理期刊与数据源」中选择你想单独关注的期刊。':'全部期刊汇聚于此，重叠清单合并展示。';
   const q=$('#search').value.trim().toLowerCase(), selected=$('#journal').value;
   const days=$('#period').value;const cutoff=days==='all'?'':new Date(Date.now()-Number(days)*86400000).toISOString().slice(0,10);
-  let articles=all.filter(a=>(!selected||a.journal_id===selected)&&(!cutoff||a.published_date>=cutoff)&&(!q||[a.title,a.authors,a.abstract,a.doi].some(x=>(x||'').toLowerCase().includes(q)))&&(view!=='unread'||!state.read[a.id])&&(view!=='saved'||state.saved[a.id]));
+  let articles=all.filter(a=>(!selected||a.journal_id===selected)&&withinPeriod(a,cutoff)&&(!q||[a.title,a.authors,a.abstract,a.doi].some(x=>(x||'').toLowerCase().includes(q)))&&(view!=='unread'||!state.read[a.id])&&(view!=='saved'||state.saved[a.id]));
   const sortKey=$('#sort').value==='published'?'published_date':'first_seen';
   articles.sort((a,b)=>(b[sortKey]||'').localeCompare(a[sortKey]||'')||a.id.localeCompare(b.id));
   $('#result-count').textContent=`${articles.length.toLocaleString()} 篇文章 · ${journals.length} 本期刊`;

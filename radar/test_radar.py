@@ -22,7 +22,7 @@ def test_doi_merge_updates_without_losing_abstract_or_first_seen(tmp_path):
         rows=c.execute('SELECT * FROM matched_entries').fetchall()
     assert len(rows)==1 and rows[0]['title']=='An updated title'
     assert rows[0]['abstract']=='A useful abstract' and rows[0]['matched_date']==before['matched_date']
-    assert rows[0]['published_date']=='2026-08-01' and rows[0]['print_date']=='2026-10-01'
+    assert rows[0]['published_date']=='2026-08-01' and rows[0]['print_date']=='2026-10'
 
 def test_rss_promoted_to_doi_preserves_reading_identity(tmp_path):
     store=RadarStore(tmp_path)
@@ -84,6 +84,23 @@ def test_crossref_paginates_and_uses_update_window():
 def test_html_instead_of_rss_is_failure():
     class Html:content=b'<html><body>Sign in required</body></html>'
     with pytest.raises(ValueError):collect_rss({'rss_url':'https://publisher.test/rss'},lambda url:Html())
+
+
+def test_recent_deposit_with_year_only_date_and_precise_rss(tmp_path):
+    calls=[];item=paper();item['published-online']={'date-parts':[[2026]]};item.pop('published-print')
+    def getter(url,params):
+        calls.append(params['filter'])
+        return Response([] if 'from-pub-date' in params['filter'] else [item])
+    entries=collect_crossref(J,None,'2026-09-13T00:00:00+00:00',90,getter)
+    assert len(calls)==2 and 'from-created-date:2026-06-15' in calls[1]
+    assert len(entries)==1 and entries[0]['published_date']=='2026'
+    store=RadarStore(tmp_path);store.ingest(J,entries)
+    rss=normalize_rss({'title':'An example paper','doi':item['DOI'],'link':'https://publisher.test/paper'},J)
+    rss['published_date']='2026-07-29'
+    store.ingest(J,[rss]);store.ingest(J,entries)
+    with store.get_connection('history') as c:
+        row=c.execute('SELECT published_date,online_date FROM matched_entries').fetchone()
+    assert row['published_date']=='2026-07-29' and row['online_date']=='2026'
 
 def test_registry_groups_and_identity():
     registry=json.loads((Path(__file__).parent/'journals.json').read_text(encoding='utf-8'))

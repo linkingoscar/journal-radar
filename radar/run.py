@@ -50,7 +50,9 @@ def doi_of(entry):
 def date_parts(value):
     parts = (value or {}).get('date-parts', [[]])[0]
     if not parts: return ''
-    try: return dt.date(*((parts + [1,1])[:3])).isoformat()
+    try:
+        full=dt.date(*((parts + [1,1])[:3])).isoformat()
+        return full[:{1:4,2:7}.get(len(parts),10)]
     except (ValueError, TypeError): return ''
 
 
@@ -143,6 +145,10 @@ class RadarStore(DatabaseManager):
                 if previous:
                     # Rich Crossref fields take precedence; missing new fields never erase history.
                     for field in ('title','authors','link','published_date','online_date','print_date','doi','article_type'):
+                        if field.endswith('_date') and entry.get(field) and previous[field]:
+                            if entry[field].startswith(previous[field]) and len(entry[field])>len(previous[field]):continue
+                            if previous[field].startswith(entry[field]) and len(previous[field])>len(entry[field]):
+                                entry[field]=previous[field];continue
                         if not entry.get(field) or (entry['source_rank'] < (previous['source_rank'] or 0) and previous[field]):
                             entry[field]=previous[field]
                     if not entry['abstract']: entry['abstract']=previous['abstract'] or ''
@@ -212,9 +218,18 @@ def collect_crossref(journal,last_success,attempt,days,getter=get):
     end=dt.datetime.fromisoformat(attempt)
     if last_success:
         start=dt.datetime.fromisoformat(last_success)-dt.timedelta(days=7)
-        filters=f'from-update-date:{start.date()},until-update-date:{end.date()}'
+        windows=[f'from-update-date:{start.date()},until-update-date:{end.date()}']
     else:
-        filters=f'from-pub-date:{(end-dt.timedelta(days=days)).date()},until-pub-date:{end.date()}'
+        start=(end-dt.timedelta(days=days)).date()
+        # Some publishers supply only a year; publication-only backfill misses those recent deposits.
+        windows=[f'from-pub-date:{start},until-pub-date:{end.date()}',f'from-created-date:{start},until-created-date:{end.date()}']
+    unique={}
+    for filters in windows:
+        for entry in collect_crossref_window(journal,filters,getter):unique[entry['doi']]=entry
+    return list(unique.values())
+
+
+def collect_crossref_window(journal,filters,getter):
     cursor='*';entries=[]
     for _ in range(50):
         response=getter(f"https://api.crossref.org/journals/{journal['issns'][0]}/works",params={'filter':filters,'rows':100,'cursor':cursor})
