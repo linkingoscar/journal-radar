@@ -130,7 +130,9 @@ class RadarStore(DatabaseManager):
                 doi=entry['doi']
                 previous=None
                 if doi: previous=conn.execute('SELECT * FROM matched_entries WHERE doi=?',(doi,)).fetchone()
-                if not previous:
+                if not previous and entry['link']:
+                    previous=conn.execute("SELECT * FROM matched_entries WHERE journal_id=? AND link=? AND (doi IS NULL OR doi='' OR doi=?)",(journal['id'],entry['link'],doi)).fetchone()
+                if not previous and key not in {'editorial','contents','tableofcontents','frontmatter','backmatter','cover','coverimage'}:
                     if doi:
                         previous=conn.execute("SELECT * FROM matched_entries WHERE journal_id=? AND title_key=? AND (doi IS NULL OR doi='')",(journal['id'],key)).fetchone()
                     else:

@@ -38,6 +38,18 @@ def test_different_dois_with_same_title_are_not_collapsed(tmp_path):
     store=RadarStore(tmp_path)
     assert store.ingest(J,[normalize_crossref(paper(doi='10.1000/a',title='Editorial'),J),normalize_crossref(paper(doi='10.1000/b',title='Editorial'),J)])==2
 
+
+def test_generic_rss_titles_keep_separate_issues_and_link_updates(tmp_path):
+    store=RadarStore(tmp_path)
+    first=normalize_rss({'title':'Editorial','link':'https://publisher.test/issue1'},J)
+    second=normalize_rss({'title':'Editorial','link':'https://publisher.test/issue2'},J)
+    assert store.ingest(J,[first,second])==2
+    updated={**first,'title':'Editorial: updated title'}
+    assert store.ingest(J,[updated])==0
+    with store.get_connection('history') as c:
+        rows=c.execute('SELECT title FROM matched_entries').fetchall()
+    assert {r['title'] for r in rows}=={'Editorial','Editorial: updated title'}
+
 def test_reject_wrong_journal_and_ignore_reference_doi():
     wrong=paper();wrong['ISSN']=['1111-1111']
     with pytest.raises(ValueError):normalize_crossref(wrong,J)
@@ -75,7 +87,8 @@ def test_html_instead_of_rss_is_failure():
 
 def test_registry_groups_and_identity():
     registry=json.loads((Path(__file__).parent/'journals.json').read_text(encoding='utf-8'))
-    journals=registry['journals'];assert len(journals)==len({j['id'] for j in journals})==55
+    journals=registry['journals'];assert len(journals)==len({j['id'] for j in journals})
+    assert len([j for j in journals if set(j['groups']) & {'core10','ft50','utd24'}])==55
     assert {g:sum(g in j['groups'] for j in journals) for g in ['core10','ft50','utd24']}=={'core10':10,'ft50':50,'utd24':24}
     hrm=next(j for j in journals if j['id']=='0090-4848');hrmj=next(j for j in journals if j['id']=='0954-5395')
     assert hrm['rss_url']!=hrmj['rss_url']
