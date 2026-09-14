@@ -7,7 +7,7 @@
   <title>期刊雷达 · Journal Radar</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="enhancements.css">
-  <script src="translation.js" defer></script><script src="catalog.js" defer></script><script src="reading.js" defer></script><script src="archives.js" defer></script><script src="app.js" defer></script>
+  <script src="translation.js" defer></script><script src="catalog.js" defer></script><script src="reading.js" defer></script><script src="archives.js" defer></script><script src="library.js" defer></script><script src="app.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">跳到主要内容</a>
@@ -21,6 +21,7 @@
     <button data-group="custom" aria-pressed="false"><span>我的选刊</span><span class="badge" id="custom-count">0</span></button>
     <button data-group="all" aria-pressed="false"><span>全部期刊</span><span class="badge" id="all-count">—</span></button>
   </nav>
+  <div class="sidebar-library-actions"><button id="manage-groups" type="button">管理分组</button><button id="add-journal" type="button">＋ 新增期刊</button></div>
   <div class="sidebar-note"><span class="eyebrow">A LITTLE, EVERY DAY</span><p>让新研究来到你面前。</p><small>按期刊追踪，留出阅读的时间。</small></div>
   <div class="sidebar-bottom">
     <button id="manage">管理期刊与数据源 <span>↗</span></button>
@@ -87,7 +88,33 @@
   </main>
 </div>
 <dialog id="reader"><div class="dialog-head"><span>文章速览</span><button class="close" aria-label="关闭文章速览">✕</button></div><div id="reader-content"></div></dialog>
-<dialog id="settings"><div class="dialog-head"><span>期刊与数据源</span><button class="close" aria-label="关闭期刊管理">✕</button></div><p>勾选期刊可加入「我的选刊」。后台仍收集全部启用的期刊。新增清单通过项目配置接入。</p><p class="hint">绿色表示本次来源请求完成；黄色表示部分来源失败。请求成功不代表已核实完整覆盖。</p><div id="journal-settings"></div><div class="source-links"><a href="https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and" target="_blank" rel="noopener noreferrer">FT50 名单依据 ↗</a><a href="https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php" target="_blank" rel="noopener noreferrer">UTD24 官方名单 ↗</a></div></dialog>
+
+<dialog id="group-manager" aria-labelledby="group-manager-title">
+  <div class="dialog-head"><span id="group-manager-title">管理分组</span><button class="close" aria-label="关闭分组管理">✕</button></div>
+  <p class="hint">一本期刊可以属于多个个人分组。FT50、UTD24 等内置清单保持固定。</p>
+  <form id="group-form"><fieldset id="group-controls" class="library-controls">
+    <div class="library-form-row"><label for="group-editor-select">选择分组</label><select id="group-editor-select"></select><button id="new-group" type="button" class="quiet">新建分组</button></div>
+    <label for="group-name">分组名称</label><input id="group-name" maxlength="40" required placeholder="例如：消费者行为与营销">
+    <div class="library-form-row"><label for="group-member-search">选择期刊</label><span id="group-selected-count" class="hint"></span></div>
+    <input id="group-member-search" type="search" placeholder="搜索期刊名称或 ISSN">
+    <div id="group-members" class="group-members" role="group" aria-label="分组内的期刊"></div>
+    <div class="library-form-actions"><button type="submit" class="primary">保存分组</button><button type="button" id="delete-group" class="quiet">删除分组</button></div>
+    <div id="group-delete-confirm" hidden><p>删除这个分组？期刊、文章和收藏都会保留。</p><button type="button" id="confirm-delete-group" class="quiet">确认删除分组</button><button type="button" id="cancel-delete-group" class="quiet">取消</button></div>
+  </fieldset></form><p id="group-message" role="status" aria-live="polite"></p>
+</dialog>
+<dialog id="journal-add" aria-labelledby="journal-add-title">
+  <div class="dialog-head"><span id="journal-add-title">新增期刊</span><button class="close" aria-label="关闭新增期刊">✕</button></div>
+  <div id="journal-add-web" hidden><p>新增期刊由本机组件保存并采集文章。请打开桌面版继续添加。</p><a class="primary" href="http://127.0.0.1:8766/#add-journal" target="_blank" rel="noopener noreferrer">在桌面版添加期刊 ↗</a><p class="hint">网页版可创建和编辑个人分组；这些分组保存在当前浏览器。</p></div>
+  <form id="journal-lookup-form" class="library-controls">
+    <label for="new-journal-query">期刊名称、ISSN 或 RSS 地址</label><input id="new-journal-query" required maxlength="2000" placeholder="Journal of Consumer Research / 0093-5301 / https://…">
+    <label for="new-journal-rss">附加 RSS 地址（可选）</label><input id="new-journal-rss" type="url" maxlength="2000" placeholder="https://…">
+    <label for="new-journal-group">加入分组</label><select id="new-journal-group"></select>
+    <p class="hint">先核对期刊，再确认添加。相同 ISSN 的期刊会复用已有记录；只订阅 RSS 时，往期目录取决于该来源。</p>
+    <button id="lookup-journal" type="submit" class="primary">查找期刊</button>
+  </form><p id="journal-add-message" role="status" aria-live="polite"></p><div id="journal-candidates"></div>
+</dialog>
+
+<dialog id="settings"><div class="dialog-head"><span>期刊与数据源</span><button class="close" aria-label="关闭期刊管理">✕</button></div><p>勾选期刊可加入「我的选刊」。后台仍收集全部启用的期刊。侧边栏的「新增期刊」可接入新来源，「管理分组」可创建多个个人清单。</p><p class="hint">绿色表示本次来源请求完成；黄色表示部分来源失败。请求成功不代表已核实完整覆盖。</p><div id="journal-settings"></div><div class="source-links"><a href="https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and" target="_blank" rel="noopener noreferrer">FT50 名单依据 ↗</a><a href="https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php" target="_blank" rel="noopener noreferrer">UTD24 官方名单 ↗</a></div></dialog>
 <dialog id="help"><div class="dialog-head"><span>安装到 Windows 桌面</span><button class="close" aria-label="关闭安装说明">✕</button></div><p>用 Microsoft Edge 打开本站，在右上角「…」菜单中选择「应用」→「将此站点作为应用安装」。安装后可固定到桌面或任务栏，使用独立窗口阅读。</p><p>如果已经安装，可直接通过 Windows 开始菜单打开「期刊雷达」。</p></dialog>
 <dialog id="translation-options"><div class="dialog-head"><span>摘要翻译</span><button class="close" aria-label="关闭翻译设置">✕</button></div>
 <label class="translation-setting"><input type="checkbox" id="auto-translate" checked>打开文章时自动翻译摘要</label>

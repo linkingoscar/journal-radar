@@ -2,7 +2,7 @@
 const JournalReading=(()=>{
   const fields=['id','journal_id','title','authors','doi','link','abstract','abstract_source','abstract_url','published_date','print_date','online_date','first_seen','volume','issue','pages','article_number','article_type','sources','resolved_doi'];
   function article(value){
-    if(!value||typeof value!=='object'||!(/^[a-f0-9]{64}$/).test(value.id)||!(/^\d{4}-\d{3}[\dX]$/).test(value.journal_id)||typeof value.title!=='string'||!value.title.trim())throw new Error('备份文章信息无效');
+    if(!value||typeof value!=='object'||!(/^[a-f0-9]{64}$/).test(value.id)||!(/^(\d{4}-\d{3}[\dX]|rss-[a-f0-9]{16})$/).test(value.journal_id)||typeof value.title!=='string'||!value.title.trim())throw new Error('备份文章信息无效');
     const result={};
     for(const field of fields){const v=value[field];if(v!==undefined){if(typeof v!=='string'||v.length>(field==='abstract'?20000:4000))throw new Error('备份文章字段无效');result[field]=v;}}
     result.archive=value.archive===true;

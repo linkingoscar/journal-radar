@@ -392,7 +392,8 @@
         "1532-7663"
       ],
       "groups": [
-        "ft50"
+        "ft50",
+        "consumer-marketing"
       ],
       "id": "1057-7408",
       "enabled": true,
@@ -413,7 +414,8 @@
       ],
       "groups": [
         "ft50",
-        "utd24"
+        "utd24",
+        "consumer-marketing"
       ],
       "id": "0093-5301",
       "enabled": true,
@@ -582,7 +584,8 @@
       ],
       "groups": [
         "ft50",
-        "utd24"
+        "utd24",
+        "consumer-marketing"
       ],
       "id": "0022-2429",
       "enabled": true,
@@ -604,7 +607,8 @@
       ],
       "groups": [
         "ft50",
-        "utd24"
+        "utd24",
+        "consumer-marketing"
       ],
       "id": "0022-2437",
       "enabled": true,
@@ -667,7 +671,8 @@
         "1552-7824"
       ],
       "groups": [
-        "ft50"
+        "ft50",
+        "consumer-marketing"
       ],
       "id": "0092-0703",
       "enabled": true,
@@ -842,7 +847,8 @@
       ],
       "groups": [
         "ft50",
-        "hr35"
+        "hr35",
+        "consumer-marketing"
       ],
       "rss_url": "https://rss.sciencedirect.com/publication/science/07495978",
       "short_name": "OBHDP",
@@ -884,7 +890,8 @@
         "1467-9280"
       ],
       "groups": [
-        "ft50"
+        "ft50",
+        "consumer-marketing"
       ],
       "id": "0956-7976",
       "enabled": true,
@@ -1161,7 +1168,8 @@
         "0148-2963"
       ],
       "groups": [
-        "hr35"
+        "hr35",
+        "consumer-marketing"
       ],
       "id": "0148-2963",
       "enabled": true,
@@ -1612,6 +1620,375 @@
       "crossref_identity_verified": true,
       "crossref_title": "International Journal of Contemporary Hospitality Management",
       "publisher": "Emerald (MCB UP)"
+    },
+    {
+      "id": "0167-8116",
+      "name": "International Journal of Research in Marketing",
+      "short_name": "IJRM",
+      "issns": [
+        "0167-8116"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "International Journal of Research in Marketing",
+      "publisher": "Elsevier",
+      "sources": [
+        "https://api.crossref.org/journals/0167-8116"
+      ]
+    },
+    {
+      "id": "0022-4359",
+      "name": "Journal of Retailing",
+      "short_name": "JR",
+      "issns": [
+        "0022-4359"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Retailing",
+      "publisher": "Elsevier",
+      "sources": [
+        "https://api.crossref.org/journals/0022-4359"
+      ]
+    },
+    {
+      "id": "0022-3514",
+      "name": "Journal of Personality and Social Psychology",
+      "short_name": "JPSP",
+      "issns": [
+        "0022-3514",
+        "1939-1315"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Personality and Social Psychology",
+      "publisher": "American Psychological Association",
+      "sources": [
+        "https://api.crossref.org/journals/0022-3514"
+      ]
+    },
+    {
+      "id": "2378-1815",
+      "name": "Journal of the Association for Consumer Research",
+      "short_name": "JAfCR",
+      "issns": [
+        "2378-1815",
+        "2378-1823"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of the Association for Consumer Research",
+      "publisher": "The University of Chicago Press",
+      "sources": [
+        "https://api.crossref.org/journals/2378-1815"
+      ]
+    },
+    {
+      "id": "0742-6046",
+      "name": "Psychology & Marketing",
+      "short_name": "PM",
+      "issns": [
+        "0742-6046",
+        "1520-6793"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Psychology and Marketing",
+      "publisher": "Wiley (John Wiley & Sons)",
+      "sources": [
+        "https://api.crossref.org/journals/0742-6046"
+      ]
+    },
+    {
+      "id": "1472-0817",
+      "name": "Journal of Consumer Behaviour",
+      "short_name": "JCB",
+      "issns": [
+        "1472-0817",
+        "1479-1838"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Consumer Behaviour",
+      "publisher": "Wiley (John Wiley & Sons)",
+      "sources": [
+        "https://api.crossref.org/journals/1472-0817"
+      ]
+    },
+    {
+      "id": "0923-0645",
+      "name": "Marketing Letters",
+      "short_name": "ML",
+      "issns": [
+        "0923-0645",
+        "1573-059X"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Marketing Letters",
+      "publisher": "Springer-Verlag",
+      "sources": [
+        "https://api.crossref.org/journals/0923-0645"
+      ]
+    },
+    {
+      "id": "0091-3367",
+      "name": "Journal of Advertising",
+      "short_name": "JA",
+      "issns": [
+        "0091-3367",
+        "1557-7805"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Advertising",
+      "publisher": "Informa UK (Taylor & Francis)",
+      "sources": [
+        "https://api.crossref.org/journals/0091-3367"
+      ]
+    },
+    {
+      "id": "1094-9968",
+      "name": "Journal of Interactive Marketing",
+      "short_name": "JIM",
+      "issns": [
+        "1094-9968",
+        "1520-6653"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Interactive Marketing",
+      "publisher": "SAGE Publications",
+      "sources": [
+        "https://api.crossref.org/journals/1094-9968"
+      ]
+    },
+    {
+      "id": "0743-9156",
+      "name": "Journal of Public Policy & Marketing",
+      "short_name": "JPPM",
+      "issns": [
+        "0743-9156",
+        "1547-7207"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Public Policy & Marketing",
+      "publisher": "SAGE Publications",
+      "sources": [
+        "https://api.crossref.org/journals/0743-9156"
+      ]
+    },
+    {
+      "id": "0309-0566",
+      "name": "European Journal of Marketing",
+      "short_name": "EJM",
+      "issns": [
+        "0309-0566",
+        "1758-7123"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "European Journal of Marketing",
+      "publisher": "Emerald (MCB UP)",
+      "sources": [
+        "https://api.crossref.org/journals/0309-0566"
+      ]
+    },
+    {
+      "id": "0265-1335",
+      "name": "International Marketing Review",
+      "short_name": "IMR",
+      "issns": [
+        "0265-1335",
+        "1758-6763"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "International Marketing Review",
+      "publisher": "Emerald (MCB UP)",
+      "sources": [
+        "https://api.crossref.org/journals/0265-1335"
+      ]
+    },
+    {
+      "id": "0969-6989",
+      "name": "Journal of Retailing and Consumer Services",
+      "short_name": "JRCS",
+      "issns": [
+        "0969-6989"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Retailing and Consumer Services",
+      "publisher": "Elsevier",
+      "sources": [
+        "https://api.crossref.org/journals/0969-6989"
+      ]
+    },
+    {
+      "id": "1350-231X",
+      "name": "Journal of Brand Management",
+      "short_name": "JBM",
+      "issns": [
+        "1350-231X",
+        "1479-1803"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Journal of Brand Management",
+      "publisher": "Springer Science and Business Media LLC",
+      "sources": [
+        "https://api.crossref.org/journals/1350-231X"
+      ]
+    },
+    {
+      "id": "1470-6423",
+      "name": "International Journal of Consumer Studies",
+      "short_name": "IJCS",
+      "issns": [
+        "1470-6423",
+        "1470-6431"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "International Journal of Consumer Studies",
+      "publisher": "Wiley (Blackwell Publishing)",
+      "sources": [
+        "https://api.crossref.org/journals/1470-6423"
+      ]
+    },
+    {
+      "id": "0265-0487",
+      "name": "International Journal of Advertising",
+      "short_name": "IJA",
+      "issns": [
+        "0265-0487",
+        "1759-3948"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "International Journal of Advertising",
+      "publisher": "Informa UK (Taylor & Francis)",
+      "sources": [
+        "https://api.crossref.org/journals/0265-0487"
+      ]
+    },
+    {
+      "id": "0747-5632",
+      "name": "Computers in Human Behavior",
+      "short_name": "CHB",
+      "issns": [
+        "0747-5632"
+      ],
+      "groups": [
+        "consumer-marketing"
+      ],
+      "enabled": true,
+      "rss_url": null,
+      "crossref_identity_verified": true,
+      "crossref_title": "Computers in Human Behavior",
+      "publisher": "Elsevier",
+      "sources": [
+        "https://api.crossref.org/journals/0747-5632"
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "id": "consumer-marketing",
+      "name": "消费者行为与营销",
+      "journal_ids": [
+        "0093-5301",
+        "1057-7408",
+        "0022-2437",
+        "0022-2429",
+        "0092-0703",
+        "0167-8116",
+        "0022-4359",
+        "0749-5978",
+        "0022-3514",
+        "0956-7976",
+        "2378-1815",
+        "0742-6046",
+        "1472-0817",
+        "0923-0645",
+        "0091-3367",
+        "1094-9968",
+        "0743-9156",
+        "0309-0566",
+        "0265-1335",
+        "0148-2963",
+        "0969-6989",
+        "1350-231X",
+        "1470-6423",
+        "0265-0487",
+        "0747-5632"
+      ]
     }
   ]
 }

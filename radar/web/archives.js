@@ -24,15 +24,16 @@ class JournalArchives {
   }
   async enter(journal){
     this.paintKey=null;
-    this.controller?.abort();const generation=++this.generation;this.journal=journal;this.result=null;this.issue='all';this.mode=this.desktop?'archive':'recent';
+    this.controller?.abort();const generation=++this.generation;this.journal=journal;this.result=null;this.issue='all';this.mode=this.desktop&&journal?.crossref_enabled!==false?'archive':'recent';
     this.$('#archive-issues').replaceChildren();this.$('#archive-articles').replaceChildren();this.$('#archive-search').value='';this.$('#archive-reading').value='all';
     if(!journal){this.sync();return;}
     this.root.hidden=false;this.$('#archive-years').replaceChildren();this.$('#archive-year').value=new Date().getFullYear();this.$('#archive-year').max=new Date().getFullYear()+1;
     this.$('#archive-range').textContent='选择年份，浏览该年的卷期与文章。';
-    this.$('#archive-local-link').hidden=this.desktop;this.$('#archive-controls').hidden=!this.desktop;
-    this.$('#archive-layout').hidden=!this.desktop;
+    this.$('#archive-local-link').hidden=this.desktop;this.$('#archive-controls').hidden=!this.desktop||journal.crossref_enabled===false;
+    this.$('#archive-layout').hidden=!this.desktop||journal.crossref_enabled===false;
     this.$('#archive-local-link').href='http://127.0.0.1:8766/#journal='+journal.id;
     this.sync();
+    if(journal.crossref_enabled===false){this.status('此刊通过 RSS 订阅近期文章，暂无 Crossref 往期目录。');return;}
     if(!this.desktop){this.status('历史目录在本机版按需加载；网页版可切换查看近期动态。');return;}
     const controller=new AbortController();this.controller=controller;this.busy(true);this.status('正在查询此刊的历史年份范围…');
     try{

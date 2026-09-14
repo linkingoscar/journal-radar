@@ -105,7 +105,7 @@ def test_recent_deposit_with_year_only_date_and_precise_rss(tmp_path):
 def test_registry_groups_and_identity():
     registry=json.loads((Path(__file__).parent/'journals.json').read_text(encoding='utf-8'))
     journals=registry['journals'];assert len(journals)==len({j['id'] for j in journals})
-    assert len(journals)==78 and all('core10' not in j['groups'] for j in journals)
+    assert len(journals)==95 and all('core10' not in j['groups'] for j in journals)
     assert {g:sum(g in j['groups'] for j in journals) for g in ['hr35','ft50','utd24']}=={'hr35':35,'ft50':50,'utd24':24}
     hrm=next(j for j in journals if j['id']=='0090-4848');hrmj=next(j for j in journals if j['id']=='0954-5395')
     assert hrm['rss_url']!=hrmj['rss_url']

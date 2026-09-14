@@ -14,6 +14,7 @@ from urllib.parse import urlsplit, parse_qs
 from run import ROOT, RadarStore, collect_rss, collect_crossref, get, now, plain, safe_url
 from abstracts import AbstractService
 from archives import ArchiveService
+from library import Library, lookup, public_feed_get
 
 PORT=8766
 CLOUD='https://linkingoscar.github.io/journal-radar/data.json'
@@ -52,7 +53,11 @@ def effective_status(cloud, local):
 class Companion:
     def __init__(self,directory):
         self.directory=Path(directory);self.directory.mkdir(parents=True,exist_ok=True)
-        self.registry=json.loads((ROOT/'radar/journals.json').read_text(encoding='utf-8'))
+        self.library=Library(json.loads((ROOT/'radar/journals.json').read_text(encoding='utf-8')),self.directory/'library.json')
+        self.registry=self.library.registry()
+        self.library_lock=threading.RLock()
+        self.candidates={}
+        self.resync_requested=False
         self.store=RadarStore(self.directory)
         self.abstracts=AbstractService(self.directory)
         self.archives=ArchiveService(self.directory,self.registry)
@@ -68,6 +73,9 @@ class Companion:
         self.publish()
 
     def publish(self):
+        with self.library_lock:self._publish()
+
+    def _publish(self):
         payload=self.store.export(self.registry,self.directory/'site')
         self.abstracts.overlay(payload)
         cloud_abstracts={a.get('doi'):a for a in self.cloud.get('articles',[]) if a.get('doi') and a.get('abstract_source')}
@@ -89,12 +97,50 @@ class Companion:
         for a in self.cloud.get('articles',[]):
             canonical=doi_ids.get(a.get('doi')) or link_ids.get((a.get('journal_id'),a.get('link')))
             if canonical and canonical!=a.get('id'):aliases[a['id']]=canonical
-        payload.update(desktop=True,cloud_updated_at=self.cloud.get('generated_at'),reading_aliases=aliases)
+        payload.update(desktop=True,cloud_updated_at=self.cloud.get('generated_at'),reading_aliases=aliases,library_revision=self.library_revision())
         temp=self.directory/'site/data.json.tmp'
         temp.write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
         temp.replace(self.directory/'site/data.json')
-        self.status['data_revision']=payload['generated_at']
+        self.status['data_revision']=payload['generated_at']+':'+payload['library_revision']
         self.status['articles']=len(payload['articles'])
+
+    def library_revision(self):
+        import hashlib
+        return hashlib.sha256(json.dumps(self.library.local,sort_keys=True).encode()).hexdigest()
+
+    def lookup_journals(self,body):
+        matches=lookup(body.get('query',''),self.registry,body.get('rss_url',''))
+        with self.library_lock:
+            self.candidates={k:v for k,v in self.candidates.items() if v[0]>time.monotonic()}
+            if len(self.candidates)>100:self.candidates.clear()
+            result=[]
+            for journal in matches:
+                ticket=secrets.token_urlsafe(24)
+                self.candidates[ticket]=(time.monotonic()+900,journal)
+                result.append({**journal,'candidate':ticket})
+            return {'journals':result}
+
+    def change_library(self,action,body):
+        with self.library_lock:
+            if body.get('revision')!=self.library_revision():
+                raise ValueError('期刊配置已在其他窗口更新，请刷新页面后重试')
+            if action=='groups':
+                self.library.save_groups(body.get('groups'))
+                result={'saved':True}
+            else:
+                ticket=body.get('candidate')
+                candidate=self.candidates.get(ticket) if isinstance(ticket,str) else None
+                if not candidate or candidate[0]<time.monotonic():raise ValueError('查询结果已过期，请重新查找期刊')
+                journal,existing=self.library.add(candidate[1],body.get('group_id',''))
+                result={'journal_id':journal['id'],'existing':existing}
+            self.registry=self.library.registry()
+            self.archives.journals={j['id']:j for j in self.registry['journals'] if j.get('enabled',True)}
+            self.publish()
+        if action=='journals' and not result['existing']:
+            with self.guard:
+                if self.status['running']:self.resync_requested=True
+                else:self.start_sync_unlocked()
+        return result
 
     def abstract_article(self,identifier):
         with self.store.get_connection('history') as c:
@@ -124,8 +170,11 @@ class Companion:
     def start_sync(self):
         with self.guard:
             if self.status['running']:return False
-            self.abstract_stop.clear()
-            self.status.update(running=True,phase='正在读取云端文章',completed=0,total=0,error=None,abstract_stage=None,paused=False)
+            return self.start_sync_unlocked()
+
+    def start_sync_unlocked(self):
+        self.abstract_stop.clear()
+        self.status.update(running=True,phase='正在读取云端文章',completed=0,total=0,error=None,abstract_stage=None,paused=False)
         threading.Thread(target=self.sync,daemon=True,name='journal-radar-sync').start()
         return True
 
@@ -154,19 +203,21 @@ class Companion:
             cloud_stamp=self.cloud.get('generated_at')
             stale=not cloud_stamp or (dt.datetime.now(dt.timezone.utc)-dt.datetime.fromisoformat(cloud_stamp)).total_seconds()>86400
             jobs=[]
+            local_health=self.store.health()
             for j in self.registry['journals']:
                 if not j.get('enabled',True):continue
                 health={h['source']:h for h in byid.get(j['id'],{}).get('health',[])}
                 h=health.get('rss',{})
                 if j.get('rss_url') and (cloud_failed or stale or not h.get('last_success') or h.get('error')):jobs.append((j,'rss',None))
                 crossref=health.get('crossref',{})
-                if j.get('crossref_enabled',True) and crossref.get('error'):
-                    jobs.append((j,'crossref',crossref.get('last_success')))
+                if j.get('crossref_enabled',True) and (crossref.get('error') or j['id'] not in byid or j.get('user_added')):
+                    last=local_health.get((j['id'],'crossref'),{}).get('last_success') or crossref.get('last_success')
+                    jobs.append((j,'crossref',last))
             self.status.update(phase='正在补采文章来源',total=len(jobs))
             attempt=now()
             def fetch(job):
                 j,source,last_success=job
-                try:return j,source,collect_rss(j) if source=='rss' else collect_crossref(j,last_success,attempt,90),None
+                try:return j,source,(collect_rss(j,getter=public_feed_get) if j.get('user_added') else collect_rss(j)) if source=='rss' else collect_crossref(j,last_success,attempt,90),None
                 except Exception as exc:return j,source,[],str(exc)[:200]
             failed=0
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
@@ -192,7 +243,12 @@ class Companion:
             self.status.update(paused=report['paused'],abstract_report=report,phase=f'{label}：补回 {report["found"]} 篇摘要，仍有 {report["remaining"]} 篇缺失；文章来源 {len(jobs)-failed}/{len(jobs)} 个成功')
         except Exception as exc:
             self.status.update(phase='本次补采未完成',error=str(exc)[:200])
-        finally:self.status.update(running=False,abstract_stage=None,last_finished=now())
+        finally:
+            with self.guard:
+                self.status.update(running=False,abstract_stage=None,last_finished=now())
+                if self.resync_requested:
+                    self.resync_requested=False
+                    self.start_sync_unlocked()
 
 
 def make_handler(app,port):
@@ -230,11 +286,21 @@ def make_handler(app,port):
             return self.respond(200,(ROOT/'radar/web'/name).read_bytes(),mime)
         def do_POST(self):
             if not self.trusted() or not secrets.compare_digest(self.headers.get('X-Radar-Token',''),app.token):return self.respond(403,{'error':'无效的本机请求'})
-            if self.headers.get('Content-Length','0')!='0':return self.respond(400,{'error':'请求不应包含正文'})
             path=urlsplit(self.path).path
+            if path in ('/api/library/lookup','/api/library/groups','/api/library/journals'):
+                try:
+                    length=int(self.headers.get('Content-Length','0'))
+                    if not 0<length<=131072 or self.headers.get('Transfer-Encoding') or self.headers.get('Content-Type','').split(';')[0]!='application/json':raise ValueError('配置请求必须是小于 128 KB 的 JSON')
+                    body=json.loads(self.rfile.read(length))
+                    if not isinstance(body,dict):raise ValueError('配置请求格式错误')
+                    result=app.lookup_journals(body) if path.endswith('/lookup') else app.change_library(path.rsplit('/',1)[1],body)
+                    return self.respond(200,result)
+                except (ValueError,TypeError) as exc:return self.respond(400,{'error':str(exc)[:200]})
+                except Exception:return self.respond(502,{'error':'期刊来源暂时不可用或配置未能保存，请稍后重试'})
+            if self.headers.get('Content-Length','0')!='0':return self.respond(400,{'error':'请求不应包含正文'})
             if path=='/api/sync':return self.respond(202,{'started':app.start_sync()})
             if path=='/api/abstracts/pause':return self.respond(202,{'paused':app.pause_abstracts()})
-            archive=re.fullmatch(r'/api/archive/(\d{4}-\d{3}[\dX])',path)
+            archive=re.fullmatch(r'/api/archive/(\d{4}-\d{3}[\dX]|rss-[a-f0-9]{16})',path)
             if archive:
                 query=parse_qs(urlsplit(self.path).query)
                 if any(k not in ('year','next','refresh') or len(v)!=1 for k,v in query.items()):return self.respond(400,{'error':'目录查询参数错误'})

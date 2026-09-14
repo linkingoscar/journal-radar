@@ -76,8 +76,8 @@ python -m venv .venv
 # Windows: .venv\Scripts\Activate.ps1
 # Linux/macOS: source .venv/bin/activate
 python -m pip install -r radar/requirements.txt pytest==8.4.2
-python -m pytest radar/test_radar.py radar/test_desktop.py radar/test_abstracts.py radar/test_archives.py -q
-node --test radar/test_translation.cjs radar/test_archives_ui.cjs radar/test_reading.cjs
+python -m pytest radar/test_radar.py radar/test_desktop.py radar/test_abstracts.py radar/test_archives.py radar/test_library.py -q
+node --test radar/test_translation.cjs radar/test_archives_ui.cjs radar/test_reading.cjs radar/test_library.cjs
 python radar/run.py sync --days 90 --workers 3
 python radar/abstracts.py --limit 1000
 python radar/verify_site.py
@@ -86,7 +86,13 @@ python -m http.server 8767 --directory site
 
 打开 http://localhost:8767/。仅重建页面可用 `python radar/run.py build`；仅更新人力与组织组可加 `--group hr35`。本地 SQLite 位于 `radar-data/`，生成网站位于 `site/`，均不提交到主分支。
 
-新增期刊时在 `radar/journals.json` 增加一条配置：`id` 使用稳定 ISSN，填写 `name`、`issns`、`short_name`、`groups`、`rss_url`（如有）和 `enabled`。现有 78 本里挑选个人子集可直接通过页面“管理期刊与数据源”勾选；新增第 79 本及之后的采集对象仍需修改配置并提交。
+当前期刊库为 95 本。新增「消费者行为与营销」分组按用户清单收录 25 本，复用已有 8 本、新增 17 本，身份核对见 [期刊清单](docs/consumer-marketing-journals.md)。
+
+侧边栏「新增期刊」支持名称、ISSN 或 RSS 地址查找，确认后由本机保存并后台采集。ISSN 别名复用已有记录；只有 RSS 的期刊可订阅近期文章，不提供 Crossref 往期目录。RSS 仅访问公网 HTTP/HTTPS 地址，逐次校验重定向并固定连接到已校验的 IP。若系统代理返回 198.18.0.0/15 虚拟 DNS 地址，则通过 Google Public DNS 的 HTTPS 查询取得公网 IP 后再校验与连接，不修改系统代理或 DNS 设置。新版桌面组件首次启动也会补采云端尚未包含的期刊。
+
+「管理分组」可新建、重命名、删除个人分组并勾选成员；一本期刊可加入多个组，删除组保留期刊、文章和收藏。消费者行为与营销是可编辑分组；FT50、UTD24、人力与组织等内置清单固定。「我的选刊」继续独立使用。
+
+桌面新增期刊与个人分组保存在 `.desktop-data/library.json`，刷新、重启和常规代码更新后保留；多窗口同时修改会提示刷新，避免覆盖。网页版个人分组保存在当前浏览器，新增采集期刊的入口会引导到桌面版。桌面个人配置不会自动上传到公开站点；阅读记录备份不包含此配置文件，请单独备份。需要公开站点也收录新刊时，可将核验过的期刊配置加入 `radar/journals.json` 后发布。
 
 Fork 后在 Settings → Pages 设置 GitHub Actions，启用本仓库 Actions。定制部署地址时同时修改 `radar/desktop.py` 中的 `CLOUD` 和 `radar/web/app.js` 中的迁移地址与来源校验；本机固定端口为 8766。工作流需要本仓库的 contents write、pages write 和部署身份权限，将采集快照提交到主线的 `state/` 目录并发布静态站点。状态提交不匹配代码发布路径，也不会递归触发采集。
 

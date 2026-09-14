@@ -1223,5 +1223,90 @@ const JOURNAL_CATALOG = {
         "year": "2024"
       }
     ]
+  },
+  "0167-8116": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "0022-4359": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "0022-3514": {
+    "cover": "",
+    "discipline": "Psychology",
+    "ratings": []
+  },
+  "2378-1815": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "0742-6046": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "1472-0817": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "0923-0645": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "0091-3367": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "1094-9968": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "0743-9156": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "0309-0566": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "0265-1335": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "0969-6989": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "1350-231X": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "1470-6423": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "0265-0487": {
+    "cover": "",
+    "discipline": "Marketing",
+    "ratings": []
+  },
+  "0747-5632": {
+    "cover": "",
+    "discipline": "Psychology / Human–Computer Interaction",
+    "ratings": []
   }
 };

@@ -187,7 +187,7 @@ class RadarStore(DatabaseManager):
             errors=[r for r in records if r['error']]
             status='pending' if not any(r['last_attempt'] for r in records) else 'error' if len(errors)==len(records) else 'partial' if errors else 'ok'
             journals.append({**j,'health':records,'status':status,'article_count':sum(r['journal_id']==j['id'] for r in rows)})
-        payload={'generated_at':now(),'ft50_version':registry['ft50_version'],'sources':registry['sources'],'journals':journals,'articles':rows}
+        payload={'generated_at':now(),'ft50_version':registry['ft50_version'],'sources':registry['sources'],'groups':registry.get('groups',[]),'journals':journals,'articles':rows}
         destination=Path(destination);destination.mkdir(parents=True,exist_ok=True)
         for item in (ROOT/'radar/web').iterdir():
             if item.is_file():shutil.copy2(item,destination/item.name)
