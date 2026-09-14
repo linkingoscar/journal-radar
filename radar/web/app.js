@@ -320,7 +320,7 @@ $('#backup').addEventListener('click',async()=>{
   $('#backup').disabled=true;
   try{
     await readingWrites;await hydrateReading();
-    const articles=allKnown().filter(a=>state.read[a.id]||state.saved[a.id]).map(JournalReading.article),translations=[];
+    const articles=allKnown().filter(a=>state.read[a.id]||state.saved[a.id]||a.citation?.manual).map(JournalReading.article),translations=[];
     for(const source of new Set(articles.map(a=>a.abstract).filter(Boolean))){const cached=await translator.cached(source);if(cached?.text)translations.push({source,text:cached.text});}
     const body=JSON.stringify({version:3,exported_at:new Date().toISOString(),...state,articles,translations});
     const blob=new Blob([body],{type:'application/json'});if(blob.size>50e6)throw new Error('备份超过 50 MB，请联系维护者处理。');
