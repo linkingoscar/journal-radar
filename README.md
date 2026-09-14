@@ -77,7 +77,7 @@ python -m venv .venv
 # Linux/macOS: source .venv/bin/activate
 python -m pip install -r radar/requirements.txt pytest==8.4.2
 python -m pytest radar/test_radar.py radar/test_desktop.py radar/test_abstracts.py radar/test_archives.py radar/test_library.py -q
-node --test radar/test_translation.cjs radar/test_archives_ui.cjs radar/test_reading.cjs radar/test_library.cjs
+node --test radar/test_translation.cjs radar/test_archives_ui.cjs radar/test_reading.cjs radar/test_library.cjs radar/test_citations.cjs
 python radar/run.py sync --days 90 --workers 3
 python radar/abstracts.py --limit 1000
 python radar/verify_site.py
@@ -106,7 +106,15 @@ GitHub fork 保留上游历史与 MIT LICENSE。基线为 Paper Firehose v0.4.2�
 
 「全部收藏」汇总近期及历史文章，支持期刊、年份范围和摘要状态筛选。收藏或打开文章时，将其元数据和摘要存入浏览器 IndexedDB；日常首页仍不预加载历史目录。旧的历史收藏在本机首次加载时从现有目录缓存恢复，旧备份仅有 ID 时可能仍需原设备补出新版备份。
 
-阅读备份 v2 合并已读、收藏、自选期刊、相应文章元数据及已有完整译文，兼容 v1。导出不产生翻译请求；导入先校验文章与译文，再合并保存，不删除已有收藏。备份不包含全部历史目录、邮箱或翻译额度，因此仍按需查询未读年份；本机与网页之间可用导出/导入迁移阅读内容。单文件上限 50 MB。
+阅读备份 v3 合并已读、收藏、自选期刊、收藏文章分组、相应文章元数据（含引用信息及手动修正）及已有完整译文，兼容 v1/v2。导出不产生翻译请求；导入先校验文章与译文，再合并保存，不删除已有收藏。相同分组 ID 合并成员，保留当前名称；期刊侧边栏的个人配置仍需另行备份。备份不包含全部历史目录、邮箱或翻译额度，因此仍按需查询未读年份；本机与网页之间可用导出/导入迁移阅读内容。单文件上限 50 MB。
+
+「全部收藏」中的收藏文章分组支持新建、重命名、删除和多组归属；未分组为动态视图，删除分组不会取消收藏，取消收藏会移除该文全部分组归属。全选覆盖当前筛选的全部已知文章（含尚未展开的卡片），改变筛选会移除已不可见的选择。缺少元数据的旧收藏会提示恢复，不会凭 ID 编造参考文献。
+
+近期和历史文章均可使用「APA 引用」。采用随站点提供的 citeproc-js + APA 7 CSL 样式，无需外部脚本 CDN；生成参考文献和正文引用，共享同作者同年份的 a/b 标记。批量输出按作者排序，按标准化 DOI 去重。支持富文本/纯文本剪贴板以及 TXT、HTML 下载，HTML 可用 Word 打开，保留期刊与卷号斜体、双倍行距和悬挂缩进；复制结果为文字，不创建 Word 引用域。
+
+采集时保留结构化作者、正式刊期年份、卷期页码/文章编号。旧文按 DOI 从 Crossref 补取并缓存七天；补取仅向 Crossref 发送 DOI，按篇串行查询，失败或限流保留可核对的草稿，关闭窗口取消请求。缺卷号不自动判定为提前在线发表。每条引用可手动核对标题大小写、作者姓名及缺失字段，手动内容不被自动补取覆盖。引用适用期刊文章；来源不完整时预览与导出均包含待核对说明。收藏、引用缓存与手动修正仍按浏览器保存，不自动跨设备同步。
+
+第三方引用组件的固定版本、来源与许可见 [引用组件说明](docs/citation-vendor.md)。
 
 进入当年目录时，缓存超过 24 小时会自动刷新；失败保留旧目录。历史年份可手动更新。公开来源没有登记的论文、缺 DOI 老文和前身刊名仍不能保证完整，页面明确区分查询完成与覆盖完整。
 

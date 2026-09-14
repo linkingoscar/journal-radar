@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#173e3b">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.mymemory.translated.net; object-src 'none'; base-uri 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.mymemory.translated.net https://api.crossref.org; object-src 'none'; base-uri 'self'">
   <title>期刊雷达 · Journal Radar</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="enhancements.css">
-  <script src="translation.js" defer></script><script src="catalog.js" defer></script><script src="reading.js" defer></script><script src="archives.js" defer></script><script src="library.js" defer></script><script src="app.js" defer></script>
+  <script src="translation.js" defer></script><script src="catalog.js" defer></script><script src="reading.js" defer></script><script src="archives.js" defer></script><script src="library.js" defer></script><script src="citeproc.js" defer></script><script src="citations.js" defer></script><script src="favorites.js" defer></script><script src="app.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">跳到主要内容</a>
@@ -72,6 +72,11 @@
       </div>
     </section>
     <div id="article-feed" hidden>
+    <section id="saved-tools" class="saved-tools" aria-label="收藏分组与批量操作" hidden>
+      <div><label for="saved-folder">收藏文章分组</label><select id="saved-folder"><option value="all">全部收藏</option><option value="unfiled">未分组</option></select><button id="manage-saved-folders">管理收藏分组</button></div>
+      <div><button id="select-saved">全选当前筛选</button><button id="clear-saved-selection">清除选择</button><button id="assign-saved">加入分组</button><button id="remove-saved-folder" hidden>移出当前分组</button><button id="cite-saved" class="primary">生成 APA 参考文献</button></div>
+      <p id="saved-selection-count" role="status"></p>
+    </section>
     <section class="toolbar" aria-label="筛选文章">
       <label class="search"><span aria-hidden="true">⌕</span><input type="search" id="search" placeholder="搜索标题、作者、摘要或 DOI" aria-label="搜索标题、作者、摘要或 DOI"><kbd>/</kbd></label>
       <label class="sr-only" for="journal">选择期刊</label><select id="journal"><option value="">所有期刊</option></select>
@@ -88,6 +93,37 @@
   </main>
 </div>
 <dialog id="reader"><div class="dialog-head"><span>文章速览</span><button class="close" aria-label="关闭文章速览">✕</button></div><div id="reader-content"></div></dialog>
+<dialog id="saved-folder-dialog" aria-labelledby="saved-folder-title">
+  <div class="dialog-head"><span id="saved-folder-title">管理收藏文章分组</span><button class="close" aria-label="关闭收藏分组管理">✕</button></div>
+  <form id="saved-folder-form" class="library-controls"><label for="saved-folder-edit">选择分组或新建</label><select id="saved-folder-edit"></select><label for="saved-folder-name">分组名称</label><input id="saved-folder-name" required maxlength="100" placeholder="例如：博士论文、消费者决策"><button type="submit" class="primary">保存分组</button><button type="button" id="delete-saved-folder">删除分组</button></form>
+  <div id="saved-folder-delete-confirm" hidden><p>仅删除这个分组，保留其中的文章收藏。</p><button id="confirm-saved-folder-delete">确认删除分组</button><button id="cancel-saved-folder-delete">取消</button></div>
+  <p id="saved-folder-message" role="status"></p><p class="hint">收藏与分组保存在当前浏览器，可通过「导出阅读记录」一起备份。</p>
+</dialog>
+<dialog id="article-folders" aria-labelledby="article-folders-title"><div class="dialog-head"><span id="article-folders-title">文章收藏分组</span><button class="close" aria-label="关闭文章分组">✕</button></div><p id="article-folder-hint"></p><div id="article-folder-choices"></div><button id="save-article-folders" class="primary">保存文章分组</button></dialog>
+<dialog id="citation-dialog" aria-labelledby="citation-title">
+  <div class="dialog-head"><span id="citation-title">APA 7 引用与参考文献</span><button class="close" aria-label="关闭引用窗口">✕</button></div>
+  <p id="citation-status" role="status"></p><button id="enrich-citations">补齐书目信息</button><ul id="citation-warnings" class="citation-warnings"></ul>
+  <div id="citation-preview" class="citation-preview" aria-label="参考文献预览"></div>
+  <div class="citation-actions"><button id="copy-bibliography" class="primary">复制参考文献</button><button id="download-citations-txt">下载 TXT</button><button id="download-citations-html">下载 HTML（Word 可打开）</button></div>
+  <details open><summary>正文引用与书目信息核对</summary><p class="hint">同作者同年份的 a/b 标记取决于本次列表；增删文章后请重新生成。这里复制的是文字，不会创建 Word 引用域。</p><div id="citation-intext"></div></details>
+  <p class="hint">书目信息来自 Crossref 或本机缓存；不自动推断作者姓氏和提前在线发表状态。标题大小写、专有名词及来源缺录请对照原文核对。</p>
+  <p class="hint">© Frank Bennett · <a href="https://citationstyles.org/" target="_blank" rel="noopener noreferrer">citeproc-js implements the Citation Style Language</a> · <a href="apa.csl">APA CSL 样式</a>（CC BY-SA 3.0）</p>
+</dialog>
+<dialog id="citation-edit" aria-labelledby="citation-edit-title"><div class="dialog-head"><span id="citation-edit-title">核对引用信息</span><button class="close" aria-label="关闭引用信息编辑">✕</button></div>
+  <form id="citation-edit-form" class="library-controls">
+    <label for="cite-edit-title">文章标题（APA 句首大写，保留专有名词）</label><input id="cite-edit-title" required maxlength="4000">
+    <label for="cite-edit-journal">期刊全称</label><input id="cite-edit-journal" required maxlength="4000">
+    <label for="cite-edit-authors">作者（按原文顺序，每行「姓 | 名」；机构用「=机构名」）</label><textarea id="cite-edit-authors" rows="5" maxlength="20000" placeholder="Smith | Alex&#10;Chen | Mei"></textarea>
+    <label for="cite-edit-year">参考文献年份（优先正式刊期年份）</label><input id="cite-edit-year" pattern="[12][0-9]{3}" maxlength="4">
+    <label for="cite-edit-volume">卷号</label><input id="cite-edit-volume" maxlength="100">
+    <label for="cite-edit-issue">期号</label><input id="cite-edit-issue" maxlength="100">
+    <label for="cite-edit-pages">页码范围</label><input id="cite-edit-pages" maxlength="100">
+    <label for="cite-edit-article_number">文章编号（使用编号的期刊填写）</label><input id="cite-edit-article_number" maxlength="100">
+    <label for="cite-edit-doi">DOI</label><input id="cite-edit-doi" maxlength="1000">
+    <label for="cite-edit-status">发表状态</label><select id="cite-edit-status"><option value="">正常刊期 / 状态未核定</option><option value="advance online publication">已核实：提前在线发表</option></select>
+    <p class="hint">保存后标为手动核对，自动补取不会覆盖。这些修改仅用于引用，并随阅读记录备份。</p><button type="submit" class="primary">保存引用信息</button><p id="citation-edit-message" role="status"></p>
+  </form>
+</dialog>
 
 <dialog id="group-manager" aria-labelledby="group-manager-title">
   <div class="dialog-head"><span id="group-manager-title">管理分组</span><button class="close" aria-label="关闭分组管理">✕</button></div>

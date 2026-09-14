@@ -24,6 +24,22 @@ def test_doi_merge_updates_without_losing_abstract_or_first_seen(tmp_path):
     assert rows[0]['abstract']=='A useful abstract' and rows[0]['matched_date']==before['matched_date']
     assert rows[0]['published_date']=='2026-08-01' and rows[0]['print_date']=='2026-10'
 
+
+def test_citation_metadata_survives_rss_refresh_export_and_cloud_import(tmp_path):
+    from desktop import import_cloud
+    store=RadarStore(tmp_path/'source')
+    record={**paper(),'volume':'111','issue':'4','page':'10-29','article-number':'e123'}
+    store.ingest(J,[normalize_crossref(record,J)])
+    store.ingest(J,[normalize_rss({'title':record['title'][0],'doi':record['DOI'],'link':'https://doi.org/'+record['DOI']},J)])
+    registry={'journals':[J],'ft50_version':'test','sources':[]}
+    payload=store.export(registry,tmp_path/'site')
+    citation=payload['articles'][0]['citation']
+    assert citation['authors']==[{'family':'Researcher','given':'A'}]
+    assert (citation['year'],citation['volume'],citation['pages'])==('2026','111','10-29')
+    destination=RadarStore(tmp_path/'destination');import_cloud(destination,registry,payload)
+    restored=destination.export(registry,tmp_path/'other-site')
+    assert restored['articles'][0]['citation']==citation
+
 def test_rss_promoted_to_doi_preserves_reading_identity(tmp_path):
     store=RadarStore(tmp_path)
     rss=normalize_rss({'title':'An example paper','link':'https://publisher.test/paper','summary':'Abstract'},J)

@@ -32,6 +32,7 @@ def import_cloud(store, registry, payload):
         for source in sources:
             entry={key:plain(row.get(key)) for key in ('title','authors','abstract','doi','published_date','online_date','print_date','article_type')}
             entry.update(link=safe_url(row['link']),entry_id=row.get('id',''),first_seen=row.get('first_seen'),source=source,source_rank=2 if 'crossref' in sources else 1)
+            if isinstance(row.get('citation'),dict):entry['citation']=row['citation']
             grouped.setdefault(jid,[]).append(entry)
     added=sum(store.ingest(byid[jid],entries) for jid,entries in grouped.items())
     return added

@@ -64,6 +64,22 @@ def is_supplement(title, doi):
     return title.casefold().startswith(('supplemental material for ', 'supplementary material for ')) or doi.endswith('.supp')
 
 
+def citation_metadata(item, journal):
+    """Keep names structured; a missing volume is not evidence of Online First."""
+    authors = []
+    for author in item.get('author', []):
+        if author.get('family'):
+            authors.append({'family': plain(author['family']), 'given': plain(author.get('given'))})
+        elif author.get('name'):
+            authors.append({'literal': plain(author['name'])})
+    date = date_parts(item.get('published-print')) or date_parts(item.get('published')) or date_parts(item.get('published-online'))
+    return dict(title=plain((item.get('title') or [''])[0]), journal=journal['name'], authors=authors,
+                authors_incomplete=len(authors)!=len(item.get('author',[])),
+                year=date[:4], volume=plain(item.get('volume')), issue=plain(item.get('issue')),
+                pages=plain(item.get('page')), article_number=plain(item.get('article-number')),
+                doi=doi_of({'doi': item.get('DOI')}), checked_at=now(), status='')
+
+
 def normalize_crossref(item, journal):
     if not set(item.get('ISSN', [])) & set(journal['issns']):
         raise ValueError('Crossref 返回的 ISSN 与期刊不匹配')
@@ -75,7 +91,8 @@ def normalize_crossref(item, journal):
     return dict(title=title, doi=doi, link='https://doi.org/'+doi,
                 authors=', '.join(plain(' '.join(filter(None,[a.get('given'),a.get('family')]))) or plain(a.get('name')) for a in item.get('author',[])),
                 abstract=plain(item.get('abstract')), published_date=online or date_parts(item.get('published')) or printed,
-                online_date=online, print_date=printed, article_type=item.get('type','journal-article'), source='crossref', source_rank=2)
+                online_date=online, print_date=printed, citation=citation_metadata(item,journal),
+                article_type=item.get('type','journal-article'), source='crossref', source_rank=2)
 
 
 def normalize_rss(entry, journal):
@@ -102,7 +119,7 @@ class RadarStore(DatabaseManager):
         super().__init__({'database':{'path':str(directory/'current.db'),'all_feeds_path':str(directory/'feeds.db'),'history_path':str(directory/'history.db')}})
         with self.get_connection('history') as conn:
             existing={x['name'] for x in conn.execute('PRAGMA table_info(matched_entries)')}
-            for column,definition in {'journal_id':'TEXT','online_date':'TEXT','print_date':'TEXT','article_type':'TEXT','sources':'TEXT','source_rank':'INTEGER DEFAULT 0','title_key':'TEXT'}.items():
+            for column,definition in {'journal_id':'TEXT','online_date':'TEXT','print_date':'TEXT','article_type':'TEXT','sources':'TEXT','source_rank':'INTEGER DEFAULT 0','title_key':'TEXT','citation':'TEXT'}.items():
                 if column not in existing: conn.execute(f'ALTER TABLE matched_entries ADD COLUMN {column} {definition}')
             conn.execute('CREATE INDEX IF NOT EXISTS radar_doi ON matched_entries(doi)')
             conn.execute('CREATE INDEX IF NOT EXISTS radar_title ON matched_entries(journal_id,title_key)')
@@ -170,12 +187,22 @@ class RadarStore(DatabaseManager):
                     (identifier,journal['name'],', '.join(journal['groups']),entry['title'],entry['link'],'',entry['authors'],entry['abstract'],
                      entry['doi'] or None,entry['published_date'],previous['matched_date'] if previous else discovered,journal['id'],entry['online_date'],entry['print_date'],
                      entry['article_type'],','.join(sorted(sources)),max(entry['source_rank'],previous['source_rank'] or 0) if previous else entry['source_rank'],normalized_title(entry['title'])))
+                if entry.get('citation'):
+                    old = json.loads(previous['citation']) if previous and previous['citation'] else {}
+                    incoming = entry['citation']
+                    if incoming.get('checked_at','') >= old.get('checked_at',''):
+                        citation = {**old, **{k:v for k,v in incoming.items() if v or k=='authors_incomplete'}}
+                        conn.execute('UPDATE matched_entries SET citation=? WHERE entry_id=?',
+                                     (json.dumps(citation,ensure_ascii=False),identifier))
                 inserted+=not bool(previous)
         return inserted
 
     def export(self, registry, destination):
         with self.get_connection('history') as conn:
-            rows=[dict(r) for r in conn.execute('SELECT entry_id AS id,journal_id,title,link,authors,abstract,doi,published_date,matched_date AS first_seen,online_date,print_date,article_type,sources FROM matched_entries ORDER BY published_date DESC,entry_id')]
+            rows=[dict(r) for r in conn.execute('SELECT entry_id AS id,journal_id,title,link,authors,abstract,doi,published_date,matched_date AS first_seen,online_date,print_date,article_type,sources,citation FROM matched_entries ORDER BY published_date DESC,entry_id')]
+        for row in rows:
+            if row.get('citation'): row['citation']=json.loads(row['citation'])
+            else: row.pop('citation',None)
         active={j['id'] for j in registry['journals'] if j.get('enabled',True)}
         rows=[r for r in rows if r['journal_id'] in active and not is_supplement(r['title'],r['doi'] or '')]
         health=self.health()

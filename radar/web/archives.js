@@ -104,6 +104,7 @@ class JournalArchives {
       const actions=node('div','','archive-row-actions');
       for(const [kind,label] of [['read',state.read[article.id]?'✓ 已读':'标记已读'],['saved',state.saved[article.id]?'★ 已收藏':'☆ 收藏']]){const b=node('button',label);b.type='button';b.dataset.archiveFocus=kind+':'+article.id;b.setAttribute('aria-pressed',String(!!state[kind][article.id]));b.setAttribute('aria-label',label+'：'+article.title);b.addEventListener('click',()=>{this.toggle(kind,article.id);this.paintArticles();});actions.append(b);}
       const link=node('a','原文 ↗');link.href='https://doi.org/'+article.doi;link.target='_blank';link.rel='noopener noreferrer';actions.append(link);
+      for(const [action,label] of [[this.cite,'APA 引用'],[this.assign,'收藏分组']])if(action){const b=node('button',label);b.type='button';b.addEventListener('click',()=>action(article));actions.append(b);}
       row.append(heading,node('p',meta.join(' · '),'archive-meta'),actions);list.append(row);
     }
     if(!rows.length)list.append(node('li',this.result?.complete?'此筛选下暂无记录；来源无记录不代表该年未出版。':'目录尚未加载完成。','archive-empty'));
