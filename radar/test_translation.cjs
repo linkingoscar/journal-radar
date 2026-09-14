@@ -4,6 +4,17 @@ const {Engine,splitText,LIMIT,EMAIL_LIMIT}=require('./web/translation.js');
 const memory=()=>{const entries=new Map();return {async get(k){return structuredClone(entries.get(k));},async put(k,v){entries.set(k,structuredClone(v));}};};
 const response=(text='中文译文')=>({ok:true,status:200,json:async()=>({responseStatus:200,responseData:{translatedText:text},quotaFinished:false})});
 
+test('restored translations work offline without resetting usage or overwriting an existing translation',async()=>{
+  const store=memory(),usage=[{at:Date.now(),chars:5000}];await store.put('usage',usage);
+  const engine=new Engine({store,fetcher:async()=>{throw new Error('must not use network');}});
+  await engine.restore('A source abstract.','从备份恢复的译文');
+  await engine.restore('A source abstract.','不应覆盖');
+  const cached=await engine.translate('A source abstract.');
+  assert.equal(cached.text,'从备份恢复的译文');assert.equal(cached.cached,true);
+  assert.deepEqual(await store.get('usage'),usage);
+  assert.equal((await engine.cached('A source abstract.')).text,cached.text);
+});
+
 test('UTF-8 chunks preserve every source character within the provider byte limit',()=>{
   const source=('Employee well-being matters. 员工😀参与 and organizational performance! ').repeat(35);
   const chunks=splitText(source);

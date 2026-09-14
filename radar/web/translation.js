@@ -24,6 +24,12 @@ const JournalTranslation = (() => {
   function decode(text){return text.replace(/&(?:amp|lt|gt|quot|apos|#39);/g,s=>({'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&apos;':"'",'&#39;':"'"}[s]));}
   class Engine {
     constructor({store,fetcher=(url,options)=>fetch(url,options),clock=Date.now,getEmail=()=>''}={}){this.store=store||browserStore();this.fetcher=fetcher;this.clock=clock;this.getEmail=getEmail;this.queue=Promise.resolve();}
+    async cached(text){return this.store.get('mymemory-en-zh-v1:'+await digest(String(text).trim()));}
+    async restore(source,text){
+      if(typeof source!=='string'||!source.trim()||source.length>20000||typeof text!=='string'||!text.trim()||text.length>100000)throw new Error('备份译文无效');
+      const key='mymemory-en-zh-v1:'+await digest(source.trim());
+      if(!(await this.store.get(key))?.text)await this.store.put(key,{text,provider:PROVIDER,imported:true,created_at:new Date(this.clock()).toISOString()});
+    }
     translate(text,options={}){
       const execute=()=>typeof navigator!=='undefined'&&navigator.locks?navigator.locks.request('journal-radar-free-translation',()=>this.run(text,options)):this.run(text,options);
       const result=this.queue.then(execute);this.queue=result.catch(()=>{});return result;

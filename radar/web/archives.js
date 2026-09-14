@@ -30,6 +30,7 @@ class JournalArchives {
     this.root.hidden=false;this.$('#archive-years').replaceChildren();this.$('#archive-year').value=new Date().getFullYear();this.$('#archive-year').max=new Date().getFullYear()+1;
     this.$('#archive-range').textContent='选择年份，浏览该年的卷期与文章。';
     this.$('#archive-local-link').hidden=this.desktop;this.$('#archive-controls').hidden=!this.desktop;
+    this.$('#archive-layout').hidden=!this.desktop;
     this.$('#archive-local-link').href='http://127.0.0.1:8766/#journal='+journal.id;
     this.sync();
     if(!this.desktop){this.status('历史目录在本机版按需加载；网页版可切换查看近期动态。');return;}
@@ -52,14 +53,17 @@ class JournalArchives {
     if(this.result?.year!==year){this.paintKey=null;this.result=null;this.issue='all';this.$('#archive-articles').replaceChildren();this.$('#archive-issues').replaceChildren();}
     this.$('#archive-year').value=year;this.$('#archive-years').value=String(year);this.busy(true);this.status(`正在读取 ${year} 年目录…`);
     try{
-      let query=`?year=${year}${refresh?'&refresh=1':''}`;
+      let query=`?year=${year}${refresh?'&refresh=1':''}`,refreshed=refresh;
       for(;;){
         const result=await this.request(journal.id,query,controller.signal);
         if(generation!==this.generation||controller.signal.aborted)return;
         this.result=result;this.aliases(result.reading_aliases||{});this.paintIssues();this.paintArticles();
         const stamp=new Date(result.checked_at*1000).toLocaleString('zh-CN');
         this.status(`${year} 年 · 已载入 ${result.articles.length} 条${result.complete?' · 本次来源查询完成':' · 正在继续分页'} · 更新于 ${stamp}。来源可能缺录，未与官方目录逐篇核验。`);
-        if(result.complete)break;
+        if(result.complete){
+          if(!refreshed&&year===new Date().getFullYear()&&Date.now()-result.checked_at*1000>86400000){refreshed=true;query=`?year=${year}&refresh=1`;this.status(`${year} 年缓存超过 24 小时，正在更新；已有目录仍可阅读。`);continue;}
+          break;
+        }
         query=`?year=${year}&next=1`;
       }
     }catch(error){if(generation===this.generation&&!controller.signal.aborted)this.status(error.message+' 已载入目录保留，请重试。');}

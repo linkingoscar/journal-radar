@@ -101,6 +101,26 @@ class Companion:
             row=c.execute('SELECT entry_id AS id,title,doi,link,abstract,journal_id FROM matched_entries WHERE entry_id=?',(identifier,)).fetchone()
         return dict(row) if row else self.archives.article(identifier)
 
+    def reading_articles(self, identifiers):
+        # Read existing caches only; opening saved items never starts an archive crawl.
+        payload=json.loads((self.directory/'site/data.json').read_text(encoding='utf-8'))
+        recent={a['id']:a for a in payload['articles']}
+        articles=[]
+        aliases=dict(payload.get('reading_aliases',{}))
+        for identifier in dict.fromkeys(identifiers):
+            canonical=payload.get('reading_aliases',{}).get(identifier,identifier)
+            article=recent.get(canonical) or self.archives.article(identifier)
+            if article:
+                if article.get('doi','').startswith('10.1037//'):
+                    import hashlib
+                    from archives import merge_apa_aliases
+                    single=self.archives.article(hashlib.sha256(article['doi'].replace('10.1037//','10.1037/',1).encode()).hexdigest())
+                    if single:
+                        merged,found_aliases=merge_apa_aliases([article,single])
+                        if found_aliases:article=merged[0];aliases.update(found_aliases)
+                articles.append(article)
+        return self.abstracts.overlay({'articles':list({a['id']:a for a in articles}.values()),'reading_aliases':aliases})
+
     def start_sync(self):
         with self.guard:
             if self.status['running']:return False
@@ -197,6 +217,11 @@ def make_handler(app,port):
             if not self.trusted():return self.respond(403,{'error':'仅允许本机应用访问'})
             path=urlsplit(self.path).path
             if path=='/api/session':return self.respond(200,{'app':'journal-radar-desktop','version':1,'token':app.token,**app.status})
+            if path=='/api/reading-articles':
+                query=parse_qs(urlsplit(self.path).query)
+                ids=query.get('ids',[''])[0].split(',')
+                if set(query)!={'ids'} or len(query['ids'])!=1 or len(ids)>100 or any(not re.fullmatch(r'[a-f0-9]{64}',i) for i in ids):return self.respond(400,{'error':'阅读记录参数无效'})
+                return self.respond(200,app.reading_articles(ids))
             if path=='/data.json':return self.respond(200,app.abstracts.overlay(json.loads((app.directory/'site/data.json').read_text(encoding='utf-8'))))
             name='index.html' if path=='/' else path[1:]
             if name not in files:return self.respond(404,{'error':'Not found'})

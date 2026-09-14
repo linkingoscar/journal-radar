@@ -1,7 +1,7 @@
 importScripts('catalog.js');
-const SHELL='journal-radar-shell-v13', DATA='journal-radar-data-v1';
-const FILES=['./','index.html','style.css','enhancements.css','translation.js','catalog.js','archives.js','app.js','icon.svg','icon-192.png','icon-512.png','manifest.webmanifest',...Object.values(JOURNAL_CATALOG).map(j=>j.cover).filter(Boolean)];
-self.addEventListener('install',event=>event.waitUntil(Promise.all([caches.open(SHELL).then(cache=>cache.addAll(FILES)),caches.open(DATA).then(cache=>cache.add('data.json'))]).then(()=>self.skipWaiting())));
+const SHELL='journal-radar-shell-v14', DATA='journal-radar-data-v1';
+const FILES=['./','index.html','style.css','enhancements.css','translation.js','catalog.js','reading.js','archives.js','app.js','icon.svg','icon-192.png','icon-512.png','manifest.webmanifest',...Object.values(JOURNAL_CATALOG).map(j=>j.cover).filter(Boolean)];
+self.addEventListener('install',event=>event.waitUntil(Promise.all([caches.open(SHELL).then(cache=>cache.addAll(FILES.map(url=>new Request(url,{cache:'reload'})))),caches.open(DATA).then(cache=>cache.add('data.json'))]).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('journal-radar-')&&![SHELL,DATA].includes(k)).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
   const url=new URL(event.request.url);if(event.request.method!=='GET'||url.origin!==self.location.origin||url.pathname.startsWith('/api/'))return;
@@ -9,6 +9,6 @@ self.addEventListener('fetch',event=>{
     const key=new URL('data.json',self.registration.scope).href;
     event.respondWith(fetch(event.request).then(async response=>{if(!response.ok)throw new Error('Unavailable');const cache=await caches.open(DATA);await cache.put(key,response.clone());return response;}).catch(()=>caches.open(DATA).then(cache=>cache.match(key)).then(response=>response||Response.error())));
   }else{
-    event.respondWith(fetch(event.request).catch(()=>caches.match(event.request).then(response=>response||(event.request.mode==='navigate'?caches.match('./'):Response.error()))));
+    event.respondWith(fetch(event.request,{cache:'no-cache'}).then(response=>{if(!response.ok)throw new Error('Unavailable');return response;}).catch(()=>caches.match(event.request).then(response=>response||(event.request.mode==='navigate'?caches.match('./'):Response.error()))));
   }
 });

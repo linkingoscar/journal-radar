@@ -3,6 +3,7 @@ import threading
 from http.server import ThreadingHTTPServer
 from types import SimpleNamespace
 import requests
+import pytest
 from desktop import import_cloud,effective_status,make_handler
 from run import RadarStore,normalize_rss
 
@@ -37,6 +38,7 @@ def test_loopback_api_rejects_cross_origin_rebinding_and_unauthenticated_mutatio
     app=SimpleNamespace(token='test-secret',status={},directory=tmp_path,start_sync=lambda:calls.append(True) or True)
     app.abstract_article=lambda identifier:{'id':identifier} if identifier=='a'*64 else None
     app.pause_abstracts=lambda:True
+    app.reading_articles=lambda ids:{'articles':[{'id':identifier} for identifier in ids]}
     app.abstract_slot=threading.BoundedSemaphore(1)
     app.abstracts=SimpleNamespace(lookup=lambda article:calls.append(article['id']) or {'status':'found','abstract':'An existing abstract'})
     app.abstracts.overlay=lambda result:result
@@ -48,6 +50,12 @@ def test_loopback_api_rejects_cross_origin_rebinding_and_unauthenticated_mutatio
     url=f'http://127.0.0.1:{port}'
     try:
         assert requests.get(url+'/api/session').json()['app']=='journal-radar-desktop'
+        reading=url+'/api/reading-articles?ids='+'a'*64
+        assert requests.get(reading).json()['articles']==[{'id':'a'*64}]
+        assert requests.get(reading,headers={'Origin':'https://untrusted.test'}).status_code==403
+        assert requests.get(url+'/api/reading-articles?ids=bad').status_code==400
+        assert requests.get(reading+'&ids='+'b'*64).status_code==400
+        assert requests.get(url+'/api/reading-articles?ids='+','.join(['a'*64]*101)).status_code==400
         for cover,mime in [('cover-0001-4273.jpg','image/jpeg'),('cover-0001-8392.webp','image/webp'),('cover-1572-3097.jpeg','image/jpeg')]:
             image=requests.get(url+'/'+cover)
             assert image.status_code==200 and image.headers['Content-Type']==mime
@@ -126,3 +134,26 @@ def test_desktop_retries_failed_crossref_and_exposes_local_health(tmp_path,monke
     payload=json.loads((tmp_path/'site/data.json').read_text(encoding='utf-8'))
     assert payload['journals'][0]['status']=='ok'
     assert any(h['source']=='本机 Crossref' and not h['error'] for h in payload['journals'][0]['health'])
+
+def test_reading_metadata_recovers_cached_history_without_external_requests(tmp_path):
+    import json
+    from desktop import Companion
+    from test_archives import record, normalize_archive
+    app=Companion(tmp_path)
+    archived=normalize_archive(record(),J)
+    recent={**archived,'id':'a'*64,'archive':False,'title':'A recent paper'}
+    (tmp_path/'site/data.json').write_text(json.dumps({'articles':[recent]}),encoding='utf-8')
+    with app.archives.connection() as c:
+        c.execute('INSERT INTO archive_articles VALUES (?,?,?,?)',(archived['id'],J['id'],1980,json.dumps(archived)))
+    app.archives.getter=lambda *a,**k:pytest.fail('Reading metadata must not trigger a remote query')
+    result=app.reading_articles([recent['id'],archived['id'],'f'*64,archived['id']])
+    assert {a['id'] for a in result['articles']}=={recent['id'],archived['id']}
+    assert next(a for a in result['articles'] if a['archive'])['archive_year']==1980
+    author=[{'given':'A.','family':'Researcher'}]
+    legacy=normalize_archive(record(doi='10.1037//0021-9010.65.1.21',author=author),J)
+    canonical=normalize_archive(record(doi='10.1037/0021-9010.65.1.21',author=author),J)
+    with app.archives.connection() as c:
+        for a in (legacy,canonical):c.execute('INSERT INTO archive_articles VALUES (?,?,?,?)',(a['id'],J['id'],1980,json.dumps(a)))
+    migrated=app.reading_articles([legacy['id'],canonical['id']])
+    assert len(migrated['articles'])==1 and migrated['articles'][0]['doi']==canonical['doi']
+    assert migrated['reading_aliases'][legacy['id']]==canonical['id']

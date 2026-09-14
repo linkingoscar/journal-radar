@@ -56,3 +56,13 @@ test('switching issue preserves the focused issue control',()=>{
   assert.equal(document.activeElement.dataset.archiveIssue,view.issue);
   assert.equal(document.activeElement.textContent,'第 1 卷 · 第 2 期（1）');
 });
+
+test('a stale current year is refreshed once on entry while old rows survive a failed refresh',async()=>{
+  const {view,nodes}=fixture(),year=new Date().getFullYear(),cached={...view.result,year,checked_at:Date.now()/1000-90000};
+  Object.assign(view,{result:cached,desktop:true,generation:0,aliases:()=>{},paintIssues:()=>{},status:()=>{},busy:()=>{}});
+  for(const id of ['archive-year','archive-years'])nodes['#'+id]={};
+  const queries=[];view.request=async(_id,query)=>{queries.push(query);if(query.includes('refresh'))throw new Error('offline');return cached;};
+  await view.loadYear(year);
+  assert.equal(queries.length,2);assert(queries[1].endsWith('&refresh=1'));
+  assert.equal(nodes['#archive-articles'].children.length,1);
+});

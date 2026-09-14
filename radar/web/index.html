@@ -7,7 +7,7 @@
   <title>期刊雷达 · Journal Radar</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="enhancements.css">
-  <script src="translation.js" defer></script><script src="catalog.js" defer></script><script src="archives.js" defer></script><script src="app.js" defer></script>
+  <script src="translation.js" defer></script><script src="catalog.js" defer></script><script src="reading.js" defer></script><script src="archives.js" defer></script><script src="app.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">跳到主要内容</a>
@@ -36,7 +36,8 @@
 <div class="workspace">
   <header class="topbar"><span>管理学 · 组织行为 · 人力资源</span><div><span id="connection" class="status-dot">正在载入</span><button id="refresh" class="quiet">刷新文章</button></div></header>
   <main id="main">
-    <nav class="browse-modes" aria-label="浏览方式"><a id="library-mode" href="#library=hr35" aria-current="page">期刊库</a><a id="feed-mode" href="#feed=hr35">文章动态</a></nav>
+    <nav class="browse-modes" aria-label="浏览方式"><a id="library-mode" href="#library=hr35" aria-current="page">期刊库</a><a id="feed-mode" href="#feed=hr35">文章动态</a><a id="saved-mode" href="#saved">全部收藏</a></nav>
+    <div id="update-banner" role="status" hidden>新版本已就绪，阅读记录会保留。<button id="apply-update">更新页面</button></div>
     <a id="back-library" class="back-library" href="#library=hr35" hidden>← 返回期刊库</a>
     <section class="hero"><div><span class="eyebrow">YOUR RESEARCH, IN FOCUS</span><h1 id="group-title" tabindex="-1">人力与组织<span>的期刊库</span></h1><p id="group-description">选一本期刊，开始阅读。</p></div><div class="hero-stat"><strong id="article-total">—</strong><span id="total-label">本关注期刊</span></div></section>
     <div id="notice" role="status" hidden></div>
@@ -60,7 +61,7 @@
           </div>
         </div>
         <p id="archive-status" role="status" class="archive-note"></p>
-        <div class="archive-layout">
+        <div class="archive-layout" id="archive-layout">
           <nav id="archive-issues" aria-label="本年卷期"></nav>
           <section class="archive-list" aria-label="历史文章目录">
             <div class="archive-list-heading"><h3 id="archive-heading">本年目录</h3><select id="archive-reading" aria-label="历史目录阅读状态"><option value="all">全部文章</option><option value="unread">未读</option><option value="saved">收藏</option></select></div>
@@ -77,6 +78,8 @@
       <label class="sr-only" for="period">发表时间</label><select id="period"><option value="30">近 30 天</option><option value="90" selected>近 90 天</option><option value="all">全部时间</option></select>
     </section>
     <section class="list-header"><div id="views" class="tabs" aria-label="阅读状态"><button data-view="all" class="selected" aria-pressed="true">全部文章</button><button data-view="unread" aria-pressed="false">未读</button><button data-view="saved" aria-pressed="false">收藏</button></div><label>排序 <select id="sort"><option value="published">发表时间</option><option value="discovered">收录时间</option></select></label></section>
+    <label>摘要状态 <select id="abstract-filter"><option value="all">全部摘要状态</option><option value="missing">仅缺摘要</option></select></label>
+    <p id="coverage-status" class="archive-note" role="status"></p>
     <div class="result-info"><span id="result-count" aria-live="polite">正在读取文章…</span><span id="updated"></span></div>
     <section id="articles" aria-label="文章列表"></section>
     <button id="more" class="load-more" hidden>加载更多文章</button>
