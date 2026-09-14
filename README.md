@@ -7,7 +7,6 @@
 ## 已接入清单
 
 - 人力与组织：用户指定的 35 本期刊，作为默认期刊库入口。
-- 核心关注：用户指定的 10 本组织行为、人力资源与管理学期刊。
 - FT50：2026 年 4 月版，依据 [SMU 图书馆核验的名单与 ISSN](https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and)。此次更新加入 Academy of Management Annals、American Sociological Review、Psychological Science，移出 Human Relations、Journal of Business Ethics、Organization Studies。
 - UTD24：依据 [UT Dallas 官方名单](https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php)。
 - 四组重叠去重后共 **78 本**。完整名称、ISSN、来源和分组保存在 `radar/journals.json`。
@@ -85,7 +84,7 @@ python radar/verify_site.py
 python -m http.server 8767 --directory site
 ```
 
-打开 http://localhost:8767/。仅重建页面可用 `python radar/run.py build`；仅更新核心组可加 `--group core10`。本地 SQLite 位于 `radar-data/`，生成网站位于 `site/`，均不提交到主分支。
+打开 http://localhost:8767/。仅重建页面可用 `python radar/run.py build`；仅更新人力与组织组可加 `--group hr35`。本地 SQLite 位于 `radar-data/`，生成网站位于 `site/`，均不提交到主分支。
 
 新增期刊时在 `radar/journals.json` 增加一条配置：`id` 使用稳定 ISSN，填写 `name`、`issns`、`short_name`、`groups`、`rss_url`（如有）和 `enabled`。现有 78 本里挑选个人子集可直接通过页面“管理期刊与数据源”勾选；新增第 79 本及之后的采集对象仍需修改配置并提交。
 

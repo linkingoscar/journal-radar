@@ -7,7 +7,7 @@ import pytest
 sys.path.insert(0,str(Path(__file__).parent))
 from run import RadarStore, normalize_crossref, normalize_rss, collect_crossref, collect_rss, doi_of
 
-J={'id':'0021-9010','name':'Journal of Applied Psychology','groups':['core10','ft50'],'issns':['0021-9010','1939-1854']}
+J={'id':'0021-9010','name':'Journal of Applied Psychology','groups':['hr35','ft50'],'issns':['0021-9010','1939-1854']}
 def paper(doi='10.1037/apl0001234',title='An example paper',abstract='A useful abstract'):
     return {'DOI':doi,'title':[title],'ISSN':['1939-1854'],'abstract':abstract,'author':[{'given':'A','family':'Researcher'}],'published-online':{'date-parts':[[2026,8,1]]},'published-print':{'date-parts':[[2026,10]]},'type':'journal-article'}
 
@@ -105,8 +105,8 @@ def test_recent_deposit_with_year_only_date_and_precise_rss(tmp_path):
 def test_registry_groups_and_identity():
     registry=json.loads((Path(__file__).parent/'journals.json').read_text(encoding='utf-8'))
     journals=registry['journals'];assert len(journals)==len({j['id'] for j in journals})
-    assert len([j for j in journals if set(j['groups']) & {'core10','ft50','utd24'}])==55
-    assert {g:sum(g in j['groups'] for j in journals) for g in ['core10','ft50','utd24']}=={'core10':10,'ft50':50,'utd24':24}
+    assert len(journals)==78 and all('core10' not in j['groups'] for j in journals)
+    assert {g:sum(g in j['groups'] for j in journals) for g in ['hr35','ft50','utd24']}=={'hr35':35,'ft50':50,'utd24':24}
     hrm=next(j for j in journals if j['id']=='0090-4848');hrmj=next(j for j in journals if j['id']=='0954-5395')
     assert hrm['rss_url']!=hrmj['rss_url']
 

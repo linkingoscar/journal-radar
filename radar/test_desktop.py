@@ -7,7 +7,7 @@ import pytest
 from desktop import import_cloud,effective_status,make_handler
 from run import RadarStore,normalize_rss
 
-J={'id':'0021-9010','name':'Journal of Applied Psychology','groups':['core10'],'issns':['0021-9010']}
+J={'id':'0021-9010','name':'Journal of Applied Psychology','groups':['hr35'],'issns':['0021-9010']}
 
 
 def test_cloud_import_keeps_reading_identity_and_merges_local_rss(tmp_path):

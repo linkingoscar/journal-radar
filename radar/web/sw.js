@@ -1,5 +1,5 @@
 importScripts('catalog.js');
-const SHELL='journal-radar-shell-v14', DATA='journal-radar-data-v1';
+const SHELL='journal-radar-shell-v15', DATA='journal-radar-data-v1';
 const FILES=['./','index.html','style.css','enhancements.css','translation.js','catalog.js','reading.js','archives.js','app.js','icon.svg','icon-192.png','icon-512.png','manifest.webmanifest',...Object.values(JOURNAL_CATALOG).map(j=>j.cover).filter(Boolean)];
 self.addEventListener('install',event=>event.waitUntil(Promise.all([caches.open(SHELL).then(cache=>cache.addAll(FILES.map(url=>new Request(url,{cache:'reload'})))),caches.open(DATA).then(cache=>cache.add('data.json'))]).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('journal-radar-')&&![SHELL,DATA].includes(k)).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
