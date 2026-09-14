@@ -25,6 +25,8 @@ jobs:
       collection-outcome: ${{ steps.collect.outcome }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -44,11 +46,16 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p radar-data
-          if git ls-remote --exit-code --heads origin radar-history >/dev/null 2>&1; then
-            git fetch origin radar-history
-            git show FETCH_HEAD:state/history.db.gz > radar-data/history.db.gz
-            python -c "import gzip,pathlib; p=pathlib.Path('radar-data'); (p/'history.db').write_bytes(gzip.decompress((p/'history.db.gz').read_bytes()))"
-          fi
+          python - <<'PY'
+          import gzip, pathlib, sqlite3
+          path = pathlib.Path('radar-data/history.db')
+          path.write_bytes(gzip.decompress(pathlib.Path('state/history.db.gz').read_bytes()))
+          with sqlite3.connect(path) as connection:
+              assert connection.execute('PRAGMA integrity_check').fetchone()[0] == 'ok', 'Invalid history snapshot'
+              count = connection.execute('SELECT COUNT(*) FROM matched_entries').fetchone()[0]
+              assert count > 0, 'History snapshot is empty'
+              print(f'Restored {count} historical articles from main')
+          PY
       - name: Collect journals and build reading site
         id: collect
         continue-on-error: true
@@ -57,7 +64,7 @@ jobs:
         run: python radar/abstracts.py --limit 1000
       - name: Verify generated data after abstract enrichment
         run: python radar/verify_site.py
-      - name: Save history to radar-history branch
+      - name: Save history to main
         shell: bash
         run: |
           set -euo pipefail
@@ -65,22 +72,22 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           STATE_DIR="$RUNNER_TEMP/radar-state"
-          if git ls-remote --exit-code --heads origin radar-history >/dev/null 2>&1; then
-            git fetch origin radar-history
-            git worktree add --detach "$STATE_DIR" FETCH_HEAD
-          else
-            git worktree add --detach "$STATE_DIR" HEAD
-            git -C "$STATE_DIR" checkout --orphan radar-state
-            git -C "$STATE_DIR" rm -rf .
-          fi
+          git fetch origin main
+          git worktree add --detach "$STATE_DIR" FETCH_HEAD
           mkdir -p "$STATE_DIR/state"
           cp radar-data/history.db.gz "$STATE_DIR/state/history.db.gz"
-          python -c "import json,pathlib; d=json.loads(pathlib.Path('site/data.json').read_text()); pathlib.Path('radar-data/last-run.json').write_text(json.dumps({'generated_at':d['generated_at'],'journals':len(d['journals']),'articles':len(d['articles'])}))"
+          python -c "import json,pathlib; d=json.loads(pathlib.Path('site/data.json').read_text(encoding='utf-8')); pathlib.Path('radar-data/last-run.json').write_text(json.dumps({'generated_at':d['generated_at'],'journals':len(d['journals']),'articles':len(d['articles'])}),encoding='utf-8')"
           cp radar-data/last-run.json "$STATE_DIR/state/last-run.json"
-          git -C "$STATE_DIR" add state
+          git -C "$STATE_DIR" add state/history.db.gz state/last-run.json
           if ! git -C "$STATE_DIR" diff --cached --quiet; then
             git -C "$STATE_DIR" commit -m 'Update journal collection history'
-            git -C "$STATE_DIR" push origin HEAD:radar-history
+            # Preserve any code commits pushed while collection was running.
+            for attempt in 1 2 3; do
+              if git -C "$STATE_DIR" push origin HEAD:main; then break; fi
+              if [ "$attempt" -eq 3 ]; then exit 1; fi
+              git -C "$STATE_DIR" fetch origin main
+              git -C "$STATE_DIR" rebase FETCH_HEAD
+            done
           fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

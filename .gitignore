@@ -38,7 +38,7 @@ docs/EMAIL_DELIVERABILITY_GUIDE.md
 paper_firehose.log
 status.log
 
-# Personal journal edition: generated data stays on the data branch / Pages.
+# Generated working data stays local; durable snapshots live in main under state/.
 radar-data/
 site/
 !radar/web/*.html

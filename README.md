@@ -57,7 +57,7 @@ Windows 桌面增强版：运行 `Install-DesktopShortcut.ps1` 安装本机组�
 
 Crossref 按 ISSN 获取元数据，RSS 补充出版商的最新条目。DOI 去重，RSS 后续获得 DOI 时保留阅读记录标识；在线日期优先显示，正式刊期另行保留。附件类 Supplemental Material 不作为独立文章显示。普通社论、更正可能保留。
 
-首次 Crossref 同时回填近 90 天发表和近 90 天登记的条目，RSS 可能含更早记录；后续按元数据更新时间增量抓取并回看 7 天，避免延迟登记文章因发表日期较早而遗漏。日期只提供年份或月份时按原精度展示，筛选时保留可能与时间范围重叠的记录。历史存放在 `radar-history` 分支的压缩 SQLite 文件中，失败来源不会推进其同步时间或清空历史。上游原有的 `data` 分支保留，不参与本应用采集。
+首次 Crossref 同时回填近 90 天发表和近 90 天登记的条目，RSS 可能含更早记录；后续按元数据更新时间增量抓取并回看 7 天，避免延迟登记文章因发表日期较早而遗漏。日期只提供年份或月份时按原精度展示，筛选时保留可能与时间范围重叠的记录。历史存放在 `main` 分支的 `state/history.db.gz` 压缩 SQLite 文件中，失败来源不会推进其同步时间或清空历史。上游旧数据已保留为归档标签，不参与本应用采集。
 
 **加入清单不代表来源完整覆盖。** 摘要可能缺失，Crossref 登记可能延迟，出版商 RSS 可能只返回部分最新文章或暂时拒绝访问。“管理期刊与数据源”展示每本期刊各来源的最近成功时间和错误。HBR 使用官方综合 feed，包含 Digital Articles，并非仅杂志论文；该刊 Crossref 期刊接口不可用。MIT Sloan Management Review 也主要依赖其网站 RSS。
 
@@ -88,13 +88,15 @@ python -m http.server 8767 --directory site
 
 新增期刊时在 `radar/journals.json` 增加一条配置：`id` 使用稳定 ISSN，填写 `name`、`issns`、`short_name`、`groups`、`rss_url`（如有）和 `enabled`。现有 78 本里挑选个人子集可直接通过页面“管理期刊与数据源”勾选；新增第 79 本及之后的采集对象仍需修改配置并提交。
 
-Fork 后在 Settings → Pages 设置 GitHub Actions，启用本仓库 Actions。定制部署地址时同时修改 `radar/desktop.py` 中的 `CLOUD` 和 `radar/web/app.js` 中的迁移地址与来源校验；本机固定端口为 8766。工作流需要本仓库的 contents write、pages write 和部署身份权限，仅保存采集记录与发布静态站点。
+Fork 后在 Settings → Pages 设置 GitHub Actions，启用本仓库 Actions。定制部署地址时同时修改 `radar/desktop.py` 中的 `CLOUD` 和 `radar/web/app.js` 中的迁移地址与来源校验；本机固定端口为 8766。工作流需要本仓库的 contents write、pages write 和部署身份权限，将采集快照提交到主线的 `state/` 目录并发布静态站点。状态提交不匹配代码发布路径，也不会递归触发采集。
 
 ## 上游与许可
 
 GitHub fork 保留上游历史与 MIT LICENSE。基线为 Paper Firehose v0.4.2，提交 `421e956b8ec3b6e49df2a7c8a9fa5d754a61c8e1`。复用其 SQLite 历史库管理、搜索索引维护、DOI 提取及 JATS 文本清理；`radar/` 增加期刊识别、Crossref 增量同步、来源健康检查及中文阅读界面。保留原文档于 `README.upstream.md`，原工作流移至 `.github/legacy-workflows/`，避免运行其模型、邮件和发布任务。
 
 ## 阅读与版本维护
+
+维护分支统一为 `main`；旧版本保存在归档标签中，当前采集状态保存在主线的 `state/` 目录。各分支的处理依据与恢复方式见[分支归并记录](docs/branch-consolidation.md)。
 
 「全部收藏」汇总近期及历史文章，支持期刊、年份范围和摘要状态筛选。收藏或打开文章时，将其元数据和摘要存入浏览器 IndexedDB；日常首页仍不预加载历史目录。旧的历史收藏在本机首次加载时从现有目录缓存恢复，旧备份仅有 ID 时可能仍需原设备补出新版备份。
 
