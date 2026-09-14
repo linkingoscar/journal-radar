@@ -6,14 +6,15 @@ let browseMode='library', journalId=null;
 let archiveReadingAliases={};
 let state = {read:{}, saved:{}, custom:[]};
 const readingStore=JournalReading.store();
-let remembered=[],readingWrites=Promise.resolve(),hydrating=false;
+let remembered=[],readingWrites=Promise.resolve(),hydration=null;
 function allKnown(){return JournalReading.merge(data?.articles||[],remembered,{...archiveReadingAliases,...data?.reading_aliases});}
 function rememberArticle(a){
   if(!a)return;
   try{const row=JournalReading.article(a);remembered=JournalReading.merge([row],remembered);readingWrites=readingWrites.then(()=>readingStore.put([row])).catch(error=>toast(error.message));}catch(error){toast(error.message);}
 }
-async function hydrateReading(){
-  if(hydrating||!data)return;hydrating=true;
+function hydrateReading(){
+  if(hydration)return hydration;if(!data)return Promise.resolve();
+  hydration=(async()=>{
   try{
     const ids=Object.keys({...state.read,...state.saved});
     if(isDesktop)for(let i=0;i<ids.length;i+=100){
@@ -23,7 +24,8 @@ async function hydrateReading(){
     }
     for(const a of allKnown())if(state.read[a.id]||state.saved[a.id])rememberArticle(a);
     await readingWrites;
-  }catch(error){toast(error.message);}finally{hydrating=false;render();}
+  }catch(error){toast(error.message);}finally{hydration=null;render();}
+  })();return hydration;
 }
 const isDesktop=location.origin==='http://127.0.0.1:8766';
 let desktopSession=null,desktopRevision=null,migrationWindow=null,translationController=null,abstractController=null;
