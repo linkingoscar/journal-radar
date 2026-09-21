@@ -115,13 +115,13 @@ pwsh -NoProfile -File .\Install-DesktopShortcut.ps1
 
 ```mermaid
 flowchart TB
-    S[出版商 RSS · Crossref · OpenAlex] --> C[Python 采集与摘要补全]
-    C --> H[SQLite 历史库]
-    H --> P[静态站点 · GitHub Pages / PWA]
-    H --> R[GitHub Release 恢复快照]
+    C["采集与存储 · Python / SQLite<br/>出版商 RSS · Crossref · OpenAlex"]
+    C --> P["静态站点<br/>GitHub Pages / PWA"]
+    C --> R["恢复快照<br/>GitHub Release"]
     P --> L["浏览器阅读记录<br/>收藏 · 笔记 · JSON 备份"]
     classDef default fill:#edf4ef,stroke:#789488,color:#173e3b
-    class C,H fill:#173e3b,stroke:#173e3b,color:#fff
+    classDef core fill:#173e3b,stroke:#173e3b,color:#fff
+    class C core
 ```
 
 Windows 本机版另有独立数据库，用于合并云端数据、本机补采与历史目录查询；它不会把个人数据库自动上传到 GitHub。
