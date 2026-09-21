@@ -38,7 +38,9 @@ docs/EMAIL_DELIVERABILITY_GUIDE.md
 paper_firehose.log
 status.log
 
-# Generated working data stays local; durable snapshots live in main under state/.
+# Generated working data stays local; durable snapshots are Release assets.
+node_modules/
+.venv/
 radar-data/
 site/
 !radar/web/*.html

@@ -9,19 +9,24 @@
 - 人力与组织：用户指定的 35 本期刊，作为默认期刊库入口。
 - FT50：2026 年 4 月版，依据 [SMU 图书馆核验的名单与 ISSN](https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and)。此次更新加入 Academy of Management Annals、American Sociological Review、Psychological Science，移出 Human Relations、Journal of Business Ethics、Organization Studies。
 - UTD24：依据 [UT Dallas 官方名单](https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php)。
-- 四组重叠去重后共 **78 本**。完整名称、ISSN、来源和分组保存在 `radar/journals.json`。
+- 消费者行为与营销：25 本期刊，与其他清单重叠的期刊复用已有记录。
+- 当前去重后共 **95 本**。完整名称、ISSN、来源和分组以 `radar/journals.json` 及页面实时计数为准。
 
 ## 阅读
 
-默认展示「人力与组织」35 本期刊的期刊库，点击卡片查看该刊文章。可按期刊、日期、关键词筛选，切换未读与收藏，打开摘要和原文；浏览器首次载入后会缓存阅读页面和文章数据。
+默认展示「人力与组织」35 本期刊的期刊库，点击卡片查看该刊文章。首页只读取最新收录的 600 篇；搜索、选择单刊、切换全部时间或点击「加载更早文章」时再读取对应历史。可按期刊、日期、关键词筛选，切换未读与收藏，打开摘要和原文；浏览器首次载入后会缓存阅读页面和文章数据。
 
-已读、收藏和“我的选刊”仅保存在当前浏览器，换设备或清除浏览器数据前请点击“导出阅读记录”。导入会合并记录。页面的“刷新文章”读取最新云端采集结果，不会立即启动一次采集。
+已读、收藏和“我的选刊”仅保存在当前浏览器，换设备或清除浏览器数据前请点击“导出完整备份”。导入会合并记录。页面的“更新列表”读取最新云端采集结果，不会立即启动一次采集。
+
+同一版本的多个窗口通过浏览器事务合并阅读操作，分别收藏、取消收藏或调整分组不会整份覆盖其他窗口的记录。首次升级自动迁移旧阅读记录；升级后请让所有旧窗口更新页面再继续编辑。
+
+文章动态默认按「最新收录」排序，时间范围也按首次收录时间计算。选择「发表时间」后按在线或发表日期筛选与排序；只有未来正式刊期的文章使用收录日期排序，并保留「预排刊期」标签，不虚构在线日期。摘要统计跟随期刊、时间、关键词、阅读状态和收藏分组，在摘要状态筛选前计算。
 
 Windows 桌面增强版：运行 `Install-DesktopShortcut.ps1` 安装本机组件并创建图标（安装时需要 Python 3.10+ 和 PowerShell 7；本机已安装）。双击桌面图标会静默启动采集组件，并用 Edge 独立窗口打开 `http://127.0.0.1:8766/`。日常使用不需要打开终端。
 
 每次打开应用时先读取云端文章，再补采云端失败的 RSS，随后批量补全缺失摘要；15 分钟内重复打开会复用现有结果，也可点击“本机补采”手动运行。摘要阶段显示进度和补回数量，可暂停、继续，已完成结果逐篇保存。电脑关机后云端继续按原计划采集，本机补采在下次打开应用时进行。本机文章历史位于 `.desktop-data/`，仅在本机合并显示，不自动上传 GitHub。后台组件只监听本机回环地址，不对局域网开放。
 
-原网页版与本机版属于不同浏览器站点，收藏不会自动共享。首次进入本机版可点击“迁移原网页版阅读记录”，在同一浏览器内合并原有收藏、已读和自选期刊；也可使用 JSON 导出/导入。合并保留已有记录，DOI 去重时保留阅读标识。浏览器保存的 PWA 仍是网页版；需要本机补采时请使用安装脚本生成的桌面图标。
+原网页版与本机版属于不同浏览器站点，收藏不会自动共享。首次进入本机版可点击“迁移网页版内容”，在同一浏览器内合并收藏、已读、文章、译文、个人期刊分组和新增期刊配置；也可使用 JSON 导出/导入。合并保留已有记录，DOI 去重时保留阅读标识。浏览器保存的 PWA 仍是网页版；需要本机补采时请使用安装脚本生成的桌面图标。
 
 ## 期刊历史目录（本机版）
 
@@ -39,7 +44,7 @@ Windows 桌面增强版：运行 `Install-DesktopShortcut.ps1` 安装本机组�
 
 桌面版后台优先处理「人力与组织」35 本期刊，先批量查询 OpenAlex，再补查缺失 DOI 和出版商网页。无 DOI 时，仅接受 Crossref 中标题一致、ISSN 匹配且唯一的论文记录；补查到的 DOI 单独缓存，保留原文章标识和阅读记录。CAR 的英法双语标题仅在同一 DOI 和指定期刊下允许英文标题前缀匹配。明显的目录、编委会和更正通知保留在文章库，但跳过逐篇网页补查。
 
-文章列表可筛选「仅缺摘要」，数据源面板显示每刊摘要覆盖率。打开仍缺摘要的文章时，也会按篇尝试 OpenAlex、Crossref 和出版商网页；用户也可从原文粘贴完整摘要，保存为明确标识的手动摘录，并纳入阅读备份。网页只提取匹配文章的摘要元数据、明确的摘要区块或结构化摘要，不用全文生成摘要，也不把刊期和作者信息当摘要。后台复用当天的 OpenAlex 批量检查结果，并跳过已由 Crossref 采集的条目的重复 Crossref 请求。出版商访问受限时不会绕过验证：同一来源的 401/403 暂停 6 小时，429 至少暂停 5 分钟并参考 Retry-After；网络错误暂停 1 分钟，正常查询无摘要则次日重试。到期后需再次运行补采；失败原因和本轮统计保存在 `.desktop-data/abstract-progress.json`。
+文章列表可筛选「缺失或待核对」和「疑似不完整」。明显从句中截断或以省略号截尾的摘要保留原片段，不自动翻译，并进入补采队列；其他摘要仍需读者对照来源核对。数据源面板显示每刊摘要覆盖率。打开仍缺摘要的文章时，也会按篇尝试 OpenAlex、Crossref 和出版商网页；用户也可从原文粘贴完整摘要，保存为明确标识的手动摘录，并纳入阅读备份。网页只提取匹配文章的摘要元数据、明确的摘要区块或结构化摘要，不用全文生成摘要，也不把刊期和作者信息当摘要。后台复用当天的 OpenAlex 批量检查结果，并跳过已由 Crossref 采集的条目的重复 Crossref 请求。出版商访问受限时不会绕过验证：同一来源的 401/403 暂停 6 小时，429 至少暂停 5 分钟并参考 Retry-After；网络错误暂停 1 分钟，正常查询无摘要则次日重试。到期后需再次运行补采；失败原因和本轮统计保存在 `.desktop-data/abstract-progress.json`。
 
 成功后标明摘要来源、保存本机缓存，并按当前翻译设置自动翻译。已缓存摘要可离线阅读，后续 RSS 更新不会清掉缓存；文章身份变化会重新核对。按篇补取只在本机版提供，网页版保留原文和打开本机版对应文章的入口。
 
@@ -57,7 +62,7 @@ Windows 桌面增强版：运行 `Install-DesktopShortcut.ps1` 安装本机组�
 
 Crossref 按 ISSN 获取元数据，RSS 补充出版商的最新条目。DOI 去重，RSS 后续获得 DOI 时保留阅读记录标识；在线日期优先显示，正式刊期另行保留。附件类 Supplemental Material 不作为独立文章显示。普通社论、更正可能保留。
 
-首次 Crossref 同时回填近 90 天发表和近 90 天登记的条目，RSS 可能含更早记录；后续按元数据更新时间增量抓取并回看 7 天，避免延迟登记文章因发表日期较早而遗漏。日期只提供年份或月份时按原精度展示，筛选时保留可能与时间范围重叠的记录。历史存放在 `main` 分支的 `state/history.db.gz` 压缩 SQLite 文件中，失败来源不会推进其同步时间或清空历史。上游旧数据已保留为归档标签，不参与本应用采集。
+首次 Crossref 同时回填近 90 天发表和近 90 天登记的条目，RSS 可能含更早记录；后续按元数据更新时间增量抓取并回看 7 天，避免延迟登记文章因发表日期较早而遗漏。日期只提供年份或月份时按原精度展示，筛选时保留可能与时间范围重叠的记录。历史存放在 GitHub Release 的压缩 SQLite 附件中，主线仅保留 `state/snapshot.json` 指针，失败来源不会推进其同步时间或清空历史。上游旧数据已保留为归档标签，不参与本应用采集。
 
 **加入清单不代表来源完整覆盖。** 摘要可能缺失，Crossref 登记可能延迟，出版商 RSS 可能只返回部分最新文章或暂时拒绝访问。“管理期刊与数据源”展示每本期刊各来源的最近成功时间和错误。HBR 使用官方综合 feed，包含 Digital Articles，并非仅杂志论文；该刊 Crossref 期刊接口不可用。MIT Sloan Management Review 也主要依赖其网站 RSS。
 
@@ -65,19 +70,23 @@ Crossref 按 ISSN 获取元数据，RSS 补充出版商的最新条目。DOI 去
 
 计划北京时间 **09:23、21:23** 更新，GitHub 调度可能延迟。在仓库 Actions → Update Journal Radar → Run workflow 可手动运行。
 
-当前使用公开仓库的标准 GitHub 托管 runner 和 Pages，不需要购买服务器、不调用付费 AI 接口。公开仓库与网站中的期刊配置和文章元数据可被访问，个人阅读记录不上传。GitHub 对长时间无仓库活动的定时任务可能自动停用，可在 Actions 重新启用；本项目每天保存采集状态产生仓库活动。平台政策以 [GitHub Actions 文档](https://docs.github.com/en/actions) 为准。
+当前使用公开仓库的标准 GitHub 托管 runner 和 Pages，不需要购买服务器、不调用付费 AI 接口。公开仓库与网站中的期刊配置和文章元数据可被访问，个人阅读记录不上传。GitHub 对长时间无仓库活动的定时任务可能自动停用，可在 Actions 重新启用；本项目每天更新快照指针产生仓库活动。平台政策以 [GitHub Actions 文档](https://docs.github.com/en/actions) 为准。
 
 ## 本地开发
 
-Python 3.10+，在仓库根目录执行：
+Python 3.10+、Node.js 24。在实际源码仓库根目录执行以下命令；根目录的 pyproject.toml 和 requirements.txt 属于保留的上游 CLI，当前阅读应用使用 radar/requirements.txt 的轻量依赖。
 
 ```sh
 python -m venv .venv
 # Windows: .venv\Scripts\Activate.ps1
 # Linux/macOS: source .venv/bin/activate
-python -m pip install -r radar/requirements.txt pytest==8.4.2
-python -m pytest radar/test_radar.py radar/test_desktop.py radar/test_abstracts.py radar/test_archives.py radar/test_library.py -q
-node --test radar/test_translation.cjs radar/test_archives_ui.cjs radar/test_reading.cjs radar/test_library.cjs radar/test_citations.cjs
+python -m pip install -r radar/dev-requirements.txt
+npm ci --ignore-scripts
+python -m pytest radar -q
+ruff format --check radar
+npm run format:check
+npm test
+python radar/snapshots.py restore
 python radar/run.py sync --days 90 --workers 3
 python radar/abstracts.py --limit 1000
 python radar/verify_site.py
@@ -92,9 +101,9 @@ python -m http.server 8767 --directory site
 
 「管理分组」可新建、重命名、删除个人分组并勾选成员；一本期刊可加入多个组，删除组保留期刊、文章和收藏。消费者行为与营销是可编辑分组；FT50、UTD24、人力与组织等内置清单固定。「我的选刊」继续独立使用。
 
-桌面新增期刊与个人分组保存在 `.desktop-data/library.json`，刷新、重启和常规代码更新后保留；多窗口同时修改会提示刷新，避免覆盖。网页版个人分组保存在当前浏览器，新增采集期刊的入口会引导到桌面版。桌面个人配置不会自动上传到公开站点；阅读记录备份不包含此配置文件，请单独备份。需要公开站点也收录新刊时，可将核验过的期刊配置加入 `radar/journals.json` 后发布。
+桌面新增期刊与个人分组保存在 `.desktop-data/library.json`，刷新、重启和常规代码更新后保留；多窗口同时修改会提示刷新，避免覆盖。网页版个人分组保存在当前浏览器，新增采集期刊的入口会引导到桌面版。桌面个人配置不会自动上传到公开站点；v4 完整备份已包含个人期刊组及新增期刊配置，可随阅读记录迁移。需要公开站点也收录新刊时，可将核验过的期刊配置加入 `radar/journals.json` 后发布。
 
-Fork 后在 Settings → Pages 设置 GitHub Actions，启用本仓库 Actions。定制部署地址时同时修改 `radar/desktop.py` 中的 `CLOUD` 和 `radar/web/app.js` 中的迁移地址与来源校验；本机固定端口为 8766。工作流需要本仓库的 contents write、pages write 和部署身份权限，将采集快照提交到主线的 `state/` 目录并发布静态站点。状态提交不匹配代码发布路径，也不会递归触发采集。
+Fork 后在 Settings → Pages 设置 GitHub Actions，启用本仓库 Actions。定制部署地址时同时修改 `radar/desktop.py` 中的 `CLOUD` 和 `radar/web/app.js` 中的迁移地址与来源校验；本机固定端口为 8766。工作流需要本仓库的 contents write、pages write 和部署身份权限，将采集快照上传为 Release 附件，验证恢复后更新主线的小型指针，再发布静态站点。保留最近 14 份自动快照和长期迁移种子；指针提交不会递归触发采集。恢复步骤见[数据恢复说明](docs/data-recovery.md)。
 
 ## 上游与许可
 
@@ -102,11 +111,11 @@ GitHub fork 保留上游历史与 MIT LICENSE。基线为 Paper Firehose v0.4.2�
 
 ## 阅读与版本维护
 
-维护分支统一为 `main`；旧版本保存在归档标签中，当前采集状态保存在主线的 `state/` 目录。各分支的处理依据与恢复方式见[分支归并记录](docs/branch-consolidation.md)。
+维护分支统一为 `main`；旧版本保存在归档标签中，当前采集状态由主线 `state/snapshot.json` 指向对应 Release 附件。各分支的处理依据与恢复方式见[分支归并记录](docs/branch-consolidation.md)。
 
 「全部收藏」汇总近期及历史文章，支持期刊、年份范围和摘要状态筛选。收藏或打开文章时，将其元数据和摘要存入浏览器 IndexedDB；日常首页仍不预加载历史目录。旧的历史收藏在本机首次加载时从现有目录缓存恢复，旧备份仅有 ID 时可能仍需原设备补出新版备份。
 
-阅读备份 v3 合并已读、收藏、自选期刊、收藏文章分组、相应文章元数据（含引用信息及手动修正）及已有完整译文，兼容 v1/v2。导出不产生翻译请求；导入先校验文章与译文，再合并保存，不删除已有收藏。相同分组 ID 合并成员，保留当前名称；期刊侧边栏的个人配置仍需另行备份。备份不包含全部历史目录、邮箱或翻译额度，因此仍按需查询未读年份；本机与网页之间可用导出/导入迁移阅读内容。单文件上限 50 MB。
+「导出完整备份」生成 v4 JSON，包含已读、收藏、自选期刊、收藏文章分组、相应文章与手动引用修正、已有完整译文、个人期刊组、新增期刊配置和自动翻译开关，兼容导入 v1–v3。导出不请求翻译服务；导入先校验再合并，保留目标现有记录。新期刊随备份恢复，网页版可阅读已备份文章，本机版可继续采集；无需另找 library.json。邮箱、访问令牌、额度和全部历史目录不导出。单文件上限 50 MB；迁移与异常恢复见[数据恢复说明](docs/data-recovery.md)。
 
 「全部收藏」中的收藏文章分组支持新建、重命名、删除和多组归属；未分组为动态视图，删除分组不会取消收藏，取消收藏会移除该文全部分组归属。全选覆盖当前筛选的全部已知文章（含尚未展开的卡片），改变筛选会移除已不可见的选择。缺少元数据的旧收藏会提示恢复，不会凭 ID 编造参考文献。
 
@@ -116,6 +125,15 @@ GitHub fork 保留上游历史与 MIT LICENSE。基线为 Paper Firehose v0.4.2�
 
 第三方引用组件的固定版本、来源与许可见 [引用组件说明](docs/citation-vendor.md)。
 
+引用处理器在首次打开「APA 引用」时加载，减轻阅读页首次加载；成功加载后由服务工作线程缓存。首次离线使用前，请先联网打开一次引用面板。
+
 进入当年目录时，缓存超过 24 小时会自动刷新；失败保留旧目录。历史年份可手动更新。公开来源没有登记的论文、缺 DOI 老文和前身刊名仍不能保证完整，页面明确区分查询完成与覆盖完整。
 
 检测到新服务工作线程后显示「新版本已就绪」，点击「更新页面」重新载入并保留阅读记录；资源请求重新校验缓存，离线时回退到已缓存版本。首次从旧版本升级可能仍需刷新一次。
+
+
+## 维护与格式
+
+应用代码集中在 `radar/`，上游 CLI 保留在 `src/`。阅读状态、数据加载、筛选、备份分别位于 `radar/web/state.js`、`data.js`、`feed.js`、`backup.js`；快照与网站分片分别由 `radar/snapshots.py`、`site_data.py` 处理。
+
+手工维护的前端使用固定版本 Prettier，Python 使用固定版本 Ruff；执行 `npm run format` 和 `ruff format radar` 整理源码。CI 检查格式与行为回归。citeproc.js 及生成的 catalog.js 不参与格式化，保留第三方和生成文件原状。

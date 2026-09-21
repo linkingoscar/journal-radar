@@ -1,169 +1,553 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#173e3b">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.mymemory.translated.net https://api.crossref.org; object-src 'none'; base-uri 'self'">
-  <title>期刊雷达 · Journal Radar</title>
-  <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="enhancements.css">
-  <script src="translation.js" defer></script><script src="catalog.js" defer></script><script src="reading.js" defer></script><script src="archives.js" defer></script><script src="library.js" defer></script><script src="citeproc.js" defer></script><script src="citations.js" defer></script><script src="favorites.js" defer></script><script src="app.js" defer></script>
-</head>
-<body>
-<a class="skip" href="#main">跳到主要内容</a>
-<aside class="sidebar">
-  <a class="brand" href="./"><img src="icon.svg" alt="" width="42" height="42"><span>期刊雷达<small>JOURNAL RADAR</small></span></a>
-  <div class="nav-label">你的研究视野</div>
-  <nav aria-label="期刊分组" id="groups">
-    <button data-group="hr35" class="active" aria-pressed="true"><span>人力与组织</span><span class="badge">35</span></button>
-    <button data-group="ft50" aria-pressed="false"><span>FT50</span><span class="badge">50</span></button>
-    <button data-group="utd24" aria-pressed="false"><span>UTD24</span><span class="badge">24</span></button>
-    <button data-group="custom" aria-pressed="false"><span>我的选刊</span><span class="badge" id="custom-count">0</span></button>
-    <button data-group="all" aria-pressed="false"><span>全部期刊</span><span class="badge" id="all-count">—</span></button>
-  </nav>
-  <div class="sidebar-library-actions"><button id="manage-groups" type="button">管理分组</button><button id="add-journal" type="button">＋ 新增期刊</button></div>
-  <div class="sidebar-note"><span class="eyebrow">A LITTLE, EVERY DAY</span><p>让新研究来到你面前。</p><small>按期刊追踪，留出阅读的时间。</small></div>
-  <div class="sidebar-bottom">
-    <button id="manage">管理期刊与数据源 <span>↗</span></button>
-    <button id="backup">导出阅读记录 <span>↓</span></button>
-    <button id="restore">导入阅读记录 <span>↑</span></button>
-    <button id="translation-settings">摘要翻译设置 <span>译</span></button>
-    <button id="install">安装到桌面 <span>＋</span></button>
-    <input type="file" id="import-file" accept="application/json,.json" hidden>
-    <small>基于 Paper Firehose · 个人阅读版</small>
-  </div>
-</aside>
-<div class="workspace">
-  <header class="topbar"><span>管理学 · 组织行为 · 人力资源</span><div><span id="connection" class="status-dot">正在载入</span><button id="refresh" class="quiet">刷新文章</button></div></header>
-  <main id="main">
-    <nav class="browse-modes" aria-label="浏览方式"><a id="library-mode" href="#library=hr35" aria-current="page">期刊库</a><a id="feed-mode" href="#feed=hr35">文章动态</a><a id="saved-mode" href="#saved">全部收藏</a></nav>
-    <div id="update-banner" role="status" hidden>新版本已就绪，阅读记录会保留。<button id="apply-update">更新页面</button></div>
-    <a id="back-library" class="back-library" href="#library=hr35" hidden>← 返回期刊库</a>
-    <section class="hero"><div><span class="eyebrow">YOUR RESEARCH, IN FOCUS</span><h1 id="group-title" tabindex="-1">人力与组织<span>的期刊库</span></h1><p id="group-description">选一本期刊，开始阅读。</p></div><div class="hero-stat"><strong id="article-total">—</strong><span id="total-label">本关注期刊</span></div></section>
-    <div id="notice" role="status" hidden></div>
-    <section id="desktop-bar" class="desktop-bar" aria-label="本机采集" hidden><span id="desktop-status" role="status">正在连接本机采集组件</span><button id="sync-local">本机补采</button><button id="pause-abstracts" hidden>暂停摘要补全</button><button id="migrate-reading">迁移原网页版阅读记录</button></section>
-    <section id="journal-library" aria-label="期刊库">
-      <div class="catalog-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input type="search" id="catalog-search" placeholder="搜索刊名、简称、ISSN 或学科" aria-label="搜索期刊"><kbd>/</kbd></label><div class="catalog-layout" aria-label="期刊显示方式"><button data-layout="grid" aria-pressed="true">▦ 卡片</button><button data-layout="list" aria-pressed="false">☰ 列表</button></div></div>
-      <div class="result-info"><span id="catalog-count" aria-live="polite">正在读取期刊…</span><span>点击期刊，查看已收录文章</span></div>
-      <div id="catalog-cards" class="catalog-grid"></div>
-      <p class="catalog-source">封面与学科、评级资料复用自 <a href="https://github.com/linkingoscar/paper" target="_blank" rel="noopener noreferrer">paper 期刊库 ↗</a>；评级年份见标签。封面仅用于识别期刊。</p>
-    </section>
-    <section id="journal-archive" aria-label="期刊历史目录" hidden>
-      <div class="archive-modes" aria-label="期刊内容"><button id="show-archive" aria-pressed="true">往期目录</button><button id="show-recent" aria-pressed="false">近期动态</button></div>
-      <div id="archive-content">
-        <p id="archive-range" class="archive-note">选择年份，浏览该年的卷期与文章。</p>
-        <a id="archive-local-link" class="back-library" target="_blank" rel="noopener noreferrer" hidden>在本机版打开此刊历史目录 ↗</a>
-        <div id="archive-controls">
-          <div class="archive-controls">
-            <label>历史年份 <select id="archive-years" aria-label="选择历史年份"></select></label>
-            <form id="archive-year-form"><label for="archive-year">跳转年份</label><input id="archive-year" type="number" min="1500" step="1" required><button type="submit">查看目录</button></form>
-            <button id="archive-refresh">更新本年目录</button><button id="archive-stop" hidden>停止加载</button><button id="archive-continue" hidden>继续加载</button>
-          </div>
-        </div>
-        <p id="archive-status" role="status" class="archive-note"></p>
-        <div class="archive-layout" id="archive-layout">
-          <nav id="archive-issues" aria-label="本年卷期"></nav>
-          <section class="archive-list" aria-label="历史文章目录">
-            <div class="archive-list-heading"><h3 id="archive-heading">本年目录</h3><select id="archive-reading" aria-label="历史目录阅读状态"><option value="all">全部文章</option><option value="unread">未读</option><option value="saved">收藏</option></select></div>
-            <input id="archive-search" type="search" placeholder="搜索本年已加载的标题、作者、DOI 或页码" aria-label="搜索本年历史目录">
-            <p id="archive-count" class="archive-note"></p><ol id="archive-articles"></ol>
-          </section>
-        </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#173e3b" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.mymemory.translated.net https://api.crossref.org; object-src 'none'; base-uri 'self'"
+    />
+    <title>期刊雷达 · Journal Radar</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="enhancements.css" />
+    <script src="translation.js" defer></script>
+    <script src="catalog.js" defer></script>
+    <script src="reading.js" defer></script>
+    <script src="state.js" defer></script>
+    <script src="data.js" defer></script>
+    <script src="feed.js" defer></script>
+    <script src="archives.js" defer></script>
+    <script src="library.js" defer></script>
+    <script src="backup.js" defer></script>
+    <script src="citations.js" defer></script>
+    <script src="favorites.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">跳到主要内容</a>
+    <aside class="sidebar">
+      <a class="brand" href="./"
+        ><img src="icon.svg" alt="" width="42" height="42" /><span
+          >期刊雷达<small>JOURNAL RADAR</small></span
+        ></a
+      >
+      <div class="nav-label">你的研究视野</div>
+      <nav aria-label="期刊分组" id="groups">
+        <button data-group="hr35" class="active" aria-pressed="true">
+          <span>人力与组织</span><span class="badge">35</span>
+        </button>
+        <button data-group="ft50" aria-pressed="false">
+          <span>FT50</span><span class="badge">50</span>
+        </button>
+        <button data-group="utd24" aria-pressed="false">
+          <span>UTD24</span><span class="badge">24</span>
+        </button>
+        <button data-group="custom" aria-pressed="false">
+          <span>我的选刊</span><span class="badge" id="custom-count">0</span>
+        </button>
+        <button data-group="all" aria-pressed="false">
+          <span>全部期刊</span><span class="badge" id="all-count">—</span>
+        </button>
+      </nav>
+      <div class="sidebar-library-actions">
+        <button id="manage-groups" type="button">管理分组</button
+        ><button id="add-journal" type="button">＋ 新增期刊</button>
       </div>
-    </section>
-    <div id="article-feed" hidden>
-    <section id="saved-tools" class="saved-tools" aria-label="收藏分组与批量操作" hidden>
-      <div><label for="saved-folder">收藏文章分组</label><select id="saved-folder"><option value="all">全部收藏</option><option value="unfiled">未分组</option></select><button id="manage-saved-folders">管理收藏分组</button></div>
-      <div><button id="select-saved">全选当前筛选</button><button id="clear-saved-selection">清除选择</button><button id="assign-saved">加入分组</button><button id="remove-saved-folder" hidden>移出当前分组</button><button id="cite-saved" class="primary">生成 APA 参考文献</button></div>
-      <p id="saved-selection-count" role="status"></p>
-    </section>
-    <section class="toolbar" aria-label="筛选文章">
-      <label class="search"><span aria-hidden="true">⌕</span><input type="search" id="search" placeholder="搜索标题、作者、摘要或 DOI" aria-label="搜索标题、作者、摘要或 DOI"><kbd>/</kbd></label>
-      <label class="sr-only" for="journal">选择期刊</label><select id="journal"><option value="">所有期刊</option></select>
-      <label class="sr-only" for="period">发表时间</label><select id="period"><option value="30">近 30 天</option><option value="90" selected>近 90 天</option><option value="all">全部时间</option></select>
-    </section>
-    <section class="list-header"><div id="views" class="tabs" aria-label="阅读状态"><button data-view="all" class="selected" aria-pressed="true">全部文章</button><button data-view="unread" aria-pressed="false">未读</button><button data-view="saved" aria-pressed="false">收藏</button></div><label>排序 <select id="sort"><option value="published">发表时间</option><option value="discovered">收录时间</option></select></label></section>
-    <label>摘要状态 <select id="abstract-filter"><option value="all">全部摘要状态</option><option value="missing">仅缺摘要</option></select></label>
-    <p id="coverage-status" class="archive-note" role="status"></p>
-    <div class="result-info"><span id="result-count" aria-live="polite">正在读取文章…</span><span id="updated"></span></div>
-    <section id="articles" aria-label="文章列表"></section>
-    <button id="more" class="load-more" hidden>加载更多文章</button>
+      <div class="sidebar-note">
+        <span class="eyebrow">A LITTLE, EVERY DAY</span>
+        <p>让新研究来到你面前。</p>
+        <small>按期刊追踪，留出阅读的时间。</small>
+      </div>
+      <div class="sidebar-bottom">
+        <button id="manage">管理期刊与数据源 <span>↗</span></button>
+        <button id="backup">导出完整备份 <span>↓</span></button>
+        <button id="restore">导入备份 <span>↑</span></button>
+        <button id="translation-settings">摘要翻译设置 <span>译</span></button>
+        <button id="install">安装到桌面 <span>＋</span></button>
+        <input type="file" id="import-file" accept="application/json,.json" hidden />
+        <small>基于 Paper Firehose · 个人阅读版</small>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <span id="edition-label">期刊雷达 · 网页阅读版</span>
+        <div>
+          <span id="connection" class="status-dot">正在载入</span
+          ><button id="refresh" class="quiet" title="读取最新采集结果">更新列表</button>
+        </div>
+      </header>
+      <main id="main">
+        <nav class="browse-modes" aria-label="浏览方式">
+          <a id="library-mode" href="#library=hr35" aria-current="page">期刊库</a
+          ><a id="feed-mode" href="#feed=hr35">文章动态</a
+          ><a id="saved-mode" href="#saved">全部收藏</a>
+        </nav>
+        <div id="update-banner" role="status" hidden>
+          新版本已就绪，阅读记录会保留。<button id="apply-update">更新页面</button>
+        </div>
+        <a id="back-library" class="back-library" href="#library=hr35" hidden>← 返回期刊库</a>
+        <section class="hero">
+          <div>
+            <span class="eyebrow">YOUR RESEARCH, IN FOCUS</span>
+            <h1 id="group-title" tabindex="-1">人力与组织<span>的期刊库</span></h1>
+            <p id="group-description">选一本期刊，开始阅读。</p>
+          </div>
+          <div class="hero-stat">
+            <strong id="article-total">—</strong><span id="total-label">本关注期刊</span>
+          </div>
+        </section>
+        <div id="notice" role="status" hidden></div>
+        <section id="desktop-bar" class="desktop-bar" aria-label="本机采集" hidden>
+          <span id="desktop-status" role="status">正在连接本机采集组件</span
+          ><button id="sync-local">本机补采</button
+          ><button id="pause-abstracts" hidden>暂停摘要补全</button
+          ><button id="migrate-reading">迁移网页版内容</button>
+        </section>
+        <section id="journal-library" aria-label="期刊库">
+          <div class="catalog-toolbar">
+            <label class="search"
+              ><span aria-hidden="true">⌕</span
+              ><input
+                type="search"
+                id="catalog-search"
+                placeholder="搜索刊名、简称、ISSN 或学科"
+                aria-label="搜索期刊"
+              /><kbd>/</kbd></label
+            >
+            <div class="catalog-layout" aria-label="期刊显示方式">
+              <button data-layout="grid" aria-pressed="true">▦ 卡片</button
+              ><button data-layout="list" aria-pressed="false">☰ 列表</button>
+            </div>
+          </div>
+          <div class="result-info">
+            <span id="catalog-count" aria-live="polite">正在读取期刊…</span
+            ><span>点击期刊，查看已收录文章</span>
+          </div>
+          <div id="catalog-cards" class="catalog-grid"></div>
+          <p class="catalog-source">
+            封面与学科、评级资料复用自
+            <a
+              href="https://github.com/linkingoscar/paper"
+              target="_blank"
+              rel="noopener noreferrer"
+              >paper 期刊库 ↗</a
+            >；评级年份见标签。封面仅用于识别期刊。
+          </p>
+        </section>
+        <section id="journal-archive" aria-label="期刊历史目录" hidden>
+          <div class="archive-modes" aria-label="期刊内容">
+            <button id="show-archive" aria-pressed="true">往期目录</button
+            ><button id="show-recent" aria-pressed="false">近期动态</button>
+          </div>
+          <div id="archive-content">
+            <p id="archive-range" class="archive-note">选择年份，浏览该年的卷期与文章。</p>
+            <a
+              id="archive-local-link"
+              class="back-library"
+              target="_blank"
+              rel="noopener noreferrer"
+              hidden
+              >在本机版打开此刊历史目录 ↗</a
+            >
+            <div id="archive-controls">
+              <div class="archive-controls">
+                <label
+                  >历史年份
+                  <select id="archive-years" aria-label="选择历史年份"></select
+                ></label>
+                <form id="archive-year-form">
+                  <label for="archive-year">跳转年份</label
+                  ><input id="archive-year" type="number" min="1500" step="1" required /><button
+                    type="submit"
+                  >
+                    查看目录
+                  </button>
+                </form>
+                <button id="archive-refresh">更新本年目录</button
+                ><button id="archive-stop" hidden>停止加载</button
+                ><button id="archive-continue" hidden>继续加载</button>
+              </div>
+            </div>
+            <p id="archive-status" role="status" class="archive-note"></p>
+            <div class="archive-layout" id="archive-layout">
+              <nav id="archive-issues" aria-label="本年卷期"></nav>
+              <section class="archive-list" aria-label="历史文章目录">
+                <div class="archive-list-heading">
+                  <h3 id="archive-heading">本年目录</h3>
+                  <select id="archive-reading" aria-label="历史目录阅读状态">
+                    <option value="all">全部文章</option>
+                    <option value="unread">未读</option>
+                    <option value="saved">收藏</option>
+                  </select>
+                </div>
+                <input
+                  id="archive-search"
+                  type="search"
+                  placeholder="搜索本年已加载的标题、作者、DOI 或页码"
+                  aria-label="搜索本年历史目录"
+                />
+                <p id="archive-count" class="archive-note"></p>
+                <ol id="archive-articles"></ol>
+              </section>
+            </div>
+          </div>
+        </section>
+        <div id="article-feed" hidden>
+          <section id="saved-tools" class="saved-tools" aria-label="收藏分组与批量操作" hidden>
+            <div>
+              <label for="saved-folder">收藏文章分组</label
+              ><select id="saved-folder">
+                <option value="all">全部收藏</option>
+                <option value="unfiled">未分组</option></select
+              ><button id="manage-saved-folders">管理收藏分组</button>
+            </div>
+            <div>
+              <button id="select-saved">全选当前筛选</button
+              ><button id="clear-saved-selection">清除选择</button
+              ><button id="assign-saved">加入分组</button
+              ><button id="remove-saved-folder" hidden>移出当前分组</button
+              ><button id="cite-saved" class="primary">生成 APA 参考文献</button>
+            </div>
+            <p id="saved-selection-count" role="status"></p>
+          </section>
+          <section class="toolbar" aria-label="筛选文章">
+            <label class="search"
+              ><span aria-hidden="true">⌕</span
+              ><input
+                type="search"
+                id="search"
+                placeholder="搜索标题、作者、摘要或 DOI"
+                aria-label="搜索标题、作者、摘要或 DOI"
+              /><kbd>/</kbd></label
+            >
+            <label class="sr-only" for="journal">选择期刊</label
+            ><select id="journal">
+              <option value="">所有期刊</option>
+            </select>
+            <label class="sr-only" for="period">收录时间范围</label
+            ><select id="period">
+              <option value="30">近 30 天</option>
+              <option value="90" selected>近 90 天</option>
+              <option value="all">全部时间</option>
+            </select>
+          </section>
+          <section class="list-header">
+            <div id="views" class="tabs" aria-label="阅读状态">
+              <button data-view="all" class="selected" aria-pressed="true">全部文章</button
+              ><button data-view="unread" aria-pressed="false">未读</button
+              ><button data-view="saved" aria-pressed="false">收藏</button>
+            </div>
+            <label
+              >排序
+              <select id="sort">
+                <option value="discovered">最新收录</option>
+                <option value="published">发表时间</option>
+              </select></label
+            >
+          </section>
+          <label
+            >摘要状态
+            <select id="abstract-filter">
+              <option value="all">全部摘要状态</option>
+              <option value="missing">缺失或待核对</option>
+              <option value="suspect">疑似不完整</option>
+            </select></label
+          >
+          <div id="history-loading" class="history-loading" hidden>
+            <span id="history-message" role="status"></span
+            ><button id="load-history" type="button">加载更早文章</button>
+          </div>
+          <p id="coverage-status" class="archive-note" role="status"></p>
+          <div class="result-info">
+            <span id="result-count" aria-live="polite">正在读取文章…</span
+            ><span id="updated"></span>
+          </div>
+          <section id="articles" aria-label="文章列表"></section>
+          <button id="more" class="load-more" hidden>加载更多文章</button>
+        </div>
+        <footer>
+          标题来自出版商 RSS 和 Crossref；补全摘要另标来源。原文访问条件以出版商页面为准。<br /><span
+            >FT50：2026 年 4 月版 · UTD24：官方名单 · 收藏与已读保存在本机，可导出备份。</span
+          >
+        </footer>
+      </main>
     </div>
-    <footer>标题来自出版商 RSS 和 Crossref；补全摘要另标来源。原文访问条件以出版商页面为准。<br><span>FT50：2026 年 4 月版 · UTD24：官方名单 · 收藏与已读保存在本机，可导出备份。</span></footer>
-  </main>
-</div>
-<dialog id="reader"><div class="dialog-head"><span>文章速览</span><button class="close" aria-label="关闭文章速览">✕</button></div><div id="reader-content"></div></dialog>
-<dialog id="saved-folder-dialog" aria-labelledby="saved-folder-title">
-  <div class="dialog-head"><span id="saved-folder-title">管理收藏文章分组</span><button class="close" aria-label="关闭收藏分组管理">✕</button></div>
-  <form id="saved-folder-form" class="library-controls"><label for="saved-folder-edit">选择分组或新建</label><select id="saved-folder-edit"></select><label for="saved-folder-name">分组名称</label><input id="saved-folder-name" required maxlength="100" placeholder="例如：博士论文、消费者决策"><button type="submit" class="primary">保存分组</button><button type="button" id="delete-saved-folder">删除分组</button></form>
-  <div id="saved-folder-delete-confirm" hidden><p>仅删除这个分组，保留其中的文章收藏。</p><button id="confirm-saved-folder-delete">确认删除分组</button><button id="cancel-saved-folder-delete">取消</button></div>
-  <p id="saved-folder-message" role="status"></p><p class="hint">收藏与分组保存在当前浏览器，可通过「导出阅读记录」一起备份。</p>
-</dialog>
-<dialog id="article-folders" aria-labelledby="article-folders-title"><div class="dialog-head"><span id="article-folders-title">文章收藏分组</span><button class="close" aria-label="关闭文章分组">✕</button></div><p id="article-folder-hint"></p><div id="article-folder-choices"></div><button id="save-article-folders" class="primary">保存文章分组</button></dialog>
-<dialog id="citation-dialog" aria-labelledby="citation-title">
-  <div class="dialog-head"><span id="citation-title">APA 7 引用与参考文献</span><button class="close" aria-label="关闭引用窗口">✕</button></div>
-  <p id="citation-status" role="status"></p><button id="enrich-citations">补齐书目信息</button><ul id="citation-warnings" class="citation-warnings"></ul>
-  <div id="citation-preview" class="citation-preview" aria-label="参考文献预览"></div>
-  <div class="citation-actions"><button id="copy-bibliography" class="primary">复制参考文献</button><button id="download-citations-txt">下载 TXT</button><button id="download-citations-html">下载 HTML（Word 可打开）</button></div>
-  <details open><summary>正文引用与书目信息核对</summary><p class="hint">同作者同年份的 a/b 标记取决于本次列表；增删文章后请重新生成。这里复制的是文字，不会创建 Word 引用域。</p><div id="citation-intext"></div></details>
-  <p class="hint">书目信息来自 Crossref 或本机缓存；不自动推断作者姓氏和提前在线发表状态。标题大小写、专有名词及来源缺录请对照原文核对。</p>
-  <p class="hint">© Frank Bennett · <a href="https://citationstyles.org/" target="_blank" rel="noopener noreferrer">citeproc-js implements the Citation Style Language</a> · <a href="apa.csl">APA CSL 样式</a>（CC BY-SA 3.0）</p>
-</dialog>
-<dialog id="citation-edit" aria-labelledby="citation-edit-title"><div class="dialog-head"><span id="citation-edit-title">核对引用信息</span><button class="close" aria-label="关闭引用信息编辑">✕</button></div>
-  <form id="citation-edit-form" class="library-controls">
-    <label for="cite-edit-title">文章标题（APA 句首大写，保留专有名词）</label><input id="cite-edit-title" required maxlength="4000">
-    <label for="cite-edit-journal">期刊全称</label><input id="cite-edit-journal" required maxlength="4000">
-    <label for="cite-edit-authors">作者（按原文顺序，每行「姓 | 名」；机构用「=机构名」）</label><textarea id="cite-edit-authors" rows="5" maxlength="20000" placeholder="Smith | Alex&#10;Chen | Mei"></textarea>
-    <label for="cite-edit-year">参考文献年份（优先正式刊期年份）</label><input id="cite-edit-year" pattern="[12][0-9]{3}" maxlength="4">
-    <label for="cite-edit-volume">卷号</label><input id="cite-edit-volume" maxlength="100">
-    <label for="cite-edit-issue">期号</label><input id="cite-edit-issue" maxlength="100">
-    <label for="cite-edit-pages">页码范围</label><input id="cite-edit-pages" maxlength="100">
-    <label for="cite-edit-article_number">文章编号（使用编号的期刊填写）</label><input id="cite-edit-article_number" maxlength="100">
-    <label for="cite-edit-doi">DOI</label><input id="cite-edit-doi" maxlength="1000">
-    <label for="cite-edit-status">发表状态</label><select id="cite-edit-status"><option value="">正常刊期 / 状态未核定</option><option value="advance online publication">已核实：提前在线发表</option></select>
-    <p class="hint">保存后标为手动核对，自动补取不会覆盖。这些修改仅用于引用，并随阅读记录备份。</p><button type="submit" class="primary">保存引用信息</button><p id="citation-edit-message" role="status"></p>
-  </form>
-</dialog>
+    <dialog id="reader">
+      <div class="dialog-head">
+        <span>文章速览</span><button class="close" aria-label="关闭文章速览">✕</button>
+      </div>
+      <div id="reader-content"></div>
+    </dialog>
+    <dialog id="saved-folder-dialog" aria-labelledby="saved-folder-title">
+      <div class="dialog-head">
+        <span id="saved-folder-title">管理收藏文章分组</span
+        ><button class="close" aria-label="关闭收藏分组管理">✕</button>
+      </div>
+      <form id="saved-folder-form" class="library-controls">
+        <label for="saved-folder-edit">选择分组或新建</label
+        ><select id="saved-folder-edit"></select
+        ><label for="saved-folder-name">分组名称</label
+        ><input
+          id="saved-folder-name"
+          required
+          maxlength="100"
+          placeholder="例如：博士论文、消费者决策"
+        /><button type="submit" class="primary">保存分组</button
+        ><button type="button" id="delete-saved-folder">删除分组</button>
+      </form>
+      <div id="saved-folder-delete-confirm" hidden>
+        <p>仅删除这个分组，保留其中的文章收藏。</p>
+        <button id="confirm-saved-folder-delete">确认删除分组</button
+        ><button id="cancel-saved-folder-delete">取消</button>
+      </div>
+      <p id="saved-folder-message" role="status"></p>
+      <p class="hint">收藏与分组保存在当前浏览器，可通过「导出完整备份」一起备份。</p>
+    </dialog>
+    <dialog id="article-folders" aria-labelledby="article-folders-title">
+      <div class="dialog-head">
+        <span id="article-folders-title">文章收藏分组</span
+        ><button class="close" aria-label="关闭文章分组">✕</button>
+      </div>
+      <p id="article-folder-hint"></p>
+      <div id="article-folder-choices"></div>
+      <button id="save-article-folders" class="primary">保存文章分组</button>
+    </dialog>
+    <dialog id="citation-dialog" aria-labelledby="citation-title">
+      <div class="dialog-head">
+        <span id="citation-title">APA 7 引用与参考文献</span
+        ><button class="close" aria-label="关闭引用窗口">✕</button>
+      </div>
+      <p id="citation-status" role="status"></p>
+      <button id="enrich-citations">补齐书目信息</button>
+      <ul id="citation-warnings" class="citation-warnings"></ul>
+      <div id="citation-preview" class="citation-preview" aria-label="参考文献预览"></div>
+      <div class="citation-actions">
+        <button id="copy-bibliography" class="primary">复制参考文献</button
+        ><button id="download-citations-txt">下载 TXT</button
+        ><button id="download-citations-html">下载 HTML（Word 可打开）</button>
+      </div>
+      <details open>
+        <summary>正文引用与书目信息核对</summary>
+        <p class="hint">
+          同作者同年份的 a/b 标记取决于本次列表；增删文章后请重新生成。这里复制的是文字，不会创建
+          Word 引用域。
+        </p>
+        <div id="citation-intext"></div>
+      </details>
+      <p class="hint">
+        书目信息来自 Crossref
+        或本机缓存；不自动推断作者姓氏和提前在线发表状态。标题大小写、专有名词及来源缺录请对照原文核对。
+      </p>
+      <p class="hint">
+        © Frank Bennett ·
+        <a href="https://citationstyles.org/" target="_blank" rel="noopener noreferrer"
+          >citeproc-js implements the Citation Style Language</a
+        >
+        · <a href="apa.csl">APA CSL 样式</a>（CC BY-SA 3.0）
+      </p>
+    </dialog>
+    <dialog id="citation-edit" aria-labelledby="citation-edit-title">
+      <div class="dialog-head">
+        <span id="citation-edit-title">核对引用信息</span
+        ><button class="close" aria-label="关闭引用信息编辑">✕</button>
+      </div>
+      <form id="citation-edit-form" class="library-controls">
+        <label for="cite-edit-title">文章标题（APA 句首大写，保留专有名词）</label
+        ><input id="cite-edit-title" required maxlength="4000" />
+        <label for="cite-edit-journal">期刊全称</label
+        ><input id="cite-edit-journal" required maxlength="4000" />
+        <label for="cite-edit-authors">作者（按原文顺序，每行「姓 | 名」；机构用「=机构名」）</label
+        ><textarea
+          id="cite-edit-authors"
+          rows="5"
+          maxlength="20000"
+          placeholder="Smith | Alex&#10;Chen | Mei"
+        ></textarea>
+        <label for="cite-edit-year">参考文献年份（优先正式刊期年份）</label
+        ><input id="cite-edit-year" pattern="[12][0-9]{3}" maxlength="4" />
+        <label for="cite-edit-volume">卷号</label><input id="cite-edit-volume" maxlength="100" />
+        <label for="cite-edit-issue">期号</label><input id="cite-edit-issue" maxlength="100" />
+        <label for="cite-edit-pages">页码范围</label><input id="cite-edit-pages" maxlength="100" />
+        <label for="cite-edit-article_number">文章编号（使用编号的期刊填写）</label
+        ><input id="cite-edit-article_number" maxlength="100" />
+        <label for="cite-edit-doi">DOI</label><input id="cite-edit-doi" maxlength="1000" />
+        <label for="cite-edit-status">发表状态</label
+        ><select id="cite-edit-status">
+          <option value="">正常刊期 / 状态未核定</option>
+          <option value="advance online publication">已核实：提前在线发表</option>
+        </select>
+        <p class="hint">
+          保存后标为手动核对，自动补取不会覆盖。这些修改仅用于引用，并随阅读记录备份。
+        </p>
+        <button type="submit" class="primary">保存引用信息</button>
+        <p id="citation-edit-message" role="status"></p>
+      </form>
+    </dialog>
 
-<dialog id="group-manager" aria-labelledby="group-manager-title">
-  <div class="dialog-head"><span id="group-manager-title">管理分组</span><button class="close" aria-label="关闭分组管理">✕</button></div>
-  <p class="hint">一本期刊可以属于多个个人分组。FT50、UTD24 等内置清单保持固定。</p>
-  <form id="group-form"><fieldset id="group-controls" class="library-controls">
-    <div class="library-form-row"><label for="group-editor-select">选择分组</label><select id="group-editor-select"></select><button id="new-group" type="button" class="quiet">新建分组</button></div>
-    <label for="group-name">分组名称</label><input id="group-name" maxlength="40" required placeholder="例如：消费者行为与营销">
-    <div class="library-form-row"><label for="group-member-search">选择期刊</label><span id="group-selected-count" class="hint"></span></div>
-    <input id="group-member-search" type="search" placeholder="搜索期刊名称或 ISSN">
-    <div id="group-members" class="group-members" role="group" aria-label="分组内的期刊"></div>
-    <div class="library-form-actions"><button type="submit" class="primary">保存分组</button><button type="button" id="delete-group" class="quiet">删除分组</button></div>
-    <div id="group-delete-confirm" hidden><p>删除这个分组？期刊、文章和收藏都会保留。</p><button type="button" id="confirm-delete-group" class="quiet">确认删除分组</button><button type="button" id="cancel-delete-group" class="quiet">取消</button></div>
-  </fieldset></form><p id="group-message" role="status" aria-live="polite"></p>
-</dialog>
-<dialog id="journal-add" aria-labelledby="journal-add-title">
-  <div class="dialog-head"><span id="journal-add-title">新增期刊</span><button class="close" aria-label="关闭新增期刊">✕</button></div>
-  <div id="journal-add-web" hidden><p>新增期刊由本机组件保存并采集文章。请打开桌面版继续添加。</p><a class="primary" href="http://127.0.0.1:8766/#add-journal" target="_blank" rel="noopener noreferrer">在桌面版添加期刊 ↗</a><p class="hint">网页版可创建和编辑个人分组；这些分组保存在当前浏览器。</p></div>
-  <form id="journal-lookup-form" class="library-controls">
-    <label for="new-journal-query">期刊名称、ISSN 或 RSS 地址</label><input id="new-journal-query" required maxlength="2000" placeholder="Journal of Consumer Research / 0093-5301 / https://…">
-    <label for="new-journal-rss">附加 RSS 地址（可选）</label><input id="new-journal-rss" type="url" maxlength="2000" placeholder="https://…">
-    <label for="new-journal-group">加入分组</label><select id="new-journal-group"></select>
-    <p class="hint">先核对期刊，再确认添加。相同 ISSN 的期刊会复用已有记录；只订阅 RSS 时，往期目录取决于该来源。</p>
-    <button id="lookup-journal" type="submit" class="primary">查找期刊</button>
-  </form><p id="journal-add-message" role="status" aria-live="polite"></p><div id="journal-candidates"></div>
-</dialog>
+    <dialog id="group-manager" aria-labelledby="group-manager-title">
+      <div class="dialog-head">
+        <span id="group-manager-title">管理分组</span
+        ><button class="close" aria-label="关闭分组管理">✕</button>
+      </div>
+      <p class="hint">一本期刊可以属于多个个人分组。FT50、UTD24 等内置清单保持固定。</p>
+      <form id="group-form">
+        <fieldset id="group-controls" class="library-controls">
+          <div class="library-form-row">
+            <label for="group-editor-select">选择分组</label
+            ><select id="group-editor-select"></select
+            ><button id="new-group" type="button" class="quiet">新建分组</button>
+          </div>
+          <label for="group-name">分组名称</label
+          ><input id="group-name" maxlength="40" required placeholder="例如：消费者行为与营销" />
+          <div class="library-form-row">
+            <label for="group-member-search">选择期刊</label
+            ><span id="group-selected-count" class="hint"></span>
+          </div>
+          <input id="group-member-search" type="search" placeholder="搜索期刊名称或 ISSN" />
+          <div
+            id="group-members"
+            class="group-members"
+            role="group"
+            aria-label="分组内的期刊"
+          ></div>
+          <div class="library-form-actions">
+            <button type="submit" class="primary">保存分组</button
+            ><button type="button" id="delete-group" class="quiet">删除分组</button>
+          </div>
+          <div id="group-delete-confirm" hidden>
+            <p>删除这个分组？期刊、文章和收藏都会保留。</p>
+            <button type="button" id="confirm-delete-group" class="quiet">确认删除分组</button
+            ><button type="button" id="cancel-delete-group" class="quiet">取消</button>
+          </div>
+        </fieldset>
+      </form>
+      <p id="group-message" role="status" aria-live="polite"></p>
+    </dialog>
+    <dialog id="journal-add" aria-labelledby="journal-add-title">
+      <div class="dialog-head">
+        <span id="journal-add-title">新增期刊</span
+        ><button class="close" aria-label="关闭新增期刊">✕</button>
+      </div>
+      <div id="journal-add-web" hidden>
+        <p>新增期刊由本机组件保存并采集文章。请打开桌面版继续添加。</p>
+        <a
+          class="primary"
+          href="http://127.0.0.1:8766/#add-journal"
+          target="_blank"
+          rel="noopener noreferrer"
+          >在桌面版添加期刊 ↗</a
+        >
+        <p class="hint">网页版可创建和编辑个人分组；这些分组保存在当前浏览器。</p>
+      </div>
+      <form id="journal-lookup-form" class="library-controls">
+        <label for="new-journal-query">期刊名称、ISSN 或 RSS 地址</label
+        ><input
+          id="new-journal-query"
+          required
+          maxlength="2000"
+          placeholder="Journal of Consumer Research / 0093-5301 / https://…"
+        />
+        <label for="new-journal-rss">附加 RSS 地址（可选）</label
+        ><input id="new-journal-rss" type="url" maxlength="2000" placeholder="https://…" />
+        <label for="new-journal-group">加入分组</label
+        ><select id="new-journal-group"></select>
+        <p class="hint">
+          先核对期刊，再确认添加。相同 ISSN 的期刊会复用已有记录；只订阅 RSS
+          时，往期目录取决于该来源。
+        </p>
+        <button id="lookup-journal" type="submit" class="primary">查找期刊</button>
+      </form>
+      <p id="journal-add-message" role="status" aria-live="polite"></p>
+      <div id="journal-candidates"></div>
+    </dialog>
 
-<dialog id="settings"><div class="dialog-head"><span>期刊与数据源</span><button class="close" aria-label="关闭期刊管理">✕</button></div><p>勾选期刊可加入「我的选刊」。后台仍收集全部启用的期刊。侧边栏的「新增期刊」可接入新来源，「管理分组」可创建多个个人清单。</p><p class="hint">绿色表示本次来源请求完成；黄色表示部分来源失败。请求成功不代表已核实完整覆盖。</p><div id="journal-settings"></div><div class="source-links"><a href="https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and" target="_blank" rel="noopener noreferrer">FT50 名单依据 ↗</a><a href="https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php" target="_blank" rel="noopener noreferrer">UTD24 官方名单 ↗</a></div></dialog>
-<dialog id="help"><div class="dialog-head"><span>安装到 Windows 桌面</span><button class="close" aria-label="关闭安装说明">✕</button></div><p>用 Microsoft Edge 打开本站，在右上角「…」菜单中选择「应用」→「将此站点作为应用安装」。安装后可固定到桌面或任务栏，使用独立窗口阅读。</p><p>如果已经安装，可直接通过 Windows 开始菜单打开「期刊雷达」。</p></dialog>
-<dialog id="translation-options"><div class="dialog-head"><span>摘要翻译</span><button class="close" aria-label="关闭翻译设置">✕</button></div>
-<label class="translation-setting"><input type="checkbox" id="auto-translate" checked>打开文章时自动翻译摘要</label>
-<p>使用 MyMemory 免费在线翻译，将英文摘要发送给翻译服务；译文缓存在本机，保留英文原文对照。</p>
-<form id="translation-email-form">
-  <label for="translation-email">MyMemory 联系邮箱</label>
-  <input id="translation-email" type="email" maxlength="254" autocomplete="email" placeholder="填写有效邮箱，启用每日 50,000 字符额度" aria-describedby="translation-email-help translation-email-status">
-  <p id="translation-email-help">邮箱只保存在当前浏览器，翻译时会随英文摘要发送给 MyMemory，用于服务联系；不会写入公开仓库或阅读记录备份。桌面版与网页版需分别设置。</p>
-  <div class="translation-email-actions"><button type="submit">保存邮箱</button><button type="button" id="clear-translation-email">移除邮箱</button></div>
-  <p id="translation-email-status" role="status"></p>
-</form>
-<p>有效邮箱版约 50,000 字符/天；留空时匿名版约 5,000 字符/天。本机按近 24 小时保守限制请求量，实际可用额度以服务返回为准。更换或移除邮箱不重置用量，已有缓存继续复用。</p>
-<p>关闭自动翻译后，仍可手动点击“翻译摘要”。缺少摘要时无法翻译。机器翻译仅供阅读参考；超额或服务不可用时保留原文。</p>
-<a class="translation-settings-link" href="https://mymemory.translated.net/doc/usagelimits.php" target="_blank" rel="noopener noreferrer">查看免费额度说明 ↗</a></dialog>
-<div id="toast" role="status" hidden></div>
-</body></html>
+    <dialog id="settings">
+      <div class="dialog-head">
+        <span>期刊与数据源</span><button class="close" aria-label="关闭期刊管理">✕</button>
+      </div>
+      <p>
+        勾选期刊可加入「我的选刊」。后台仍收集全部启用的期刊。侧边栏的「新增期刊」可接入新来源，「管理分组」可创建多个个人清单。
+      </p>
+      <p class="hint">
+        绿色表示本次来源请求完成；黄色表示部分来源失败。请求成功不代表已核实完整覆盖。
+      </p>
+      <div id="journal-settings"></div>
+      <div class="source-links">
+        <a
+          href="https://library.smu.edu.sg/topics-insights/updating-your-ft50-search-strategies-verified-issns-literature-search-scopus-and"
+          target="_blank"
+          rel="noopener noreferrer"
+          >FT50 名单依据 ↗</a
+        ><a
+          href="https://jsom.utdallas.edu/the-utd-top-100-business-school-research-rankings/index.php"
+          target="_blank"
+          rel="noopener noreferrer"
+          >UTD24 官方名单 ↗</a
+        >
+      </div>
+    </dialog>
+    <dialog id="help">
+      <div class="dialog-head">
+        <span>选择阅读方式</span><button class="close" aria-label="关闭安装说明">✕</button>
+      </div>
+      <p>
+        用 Microsoft Edge
+        打开本站，在右上角「…」菜单中选择「应用」→「将此站点作为应用安装」。安装后可固定到桌面或任务栏，使用独立窗口阅读。
+      </p>
+      <p>
+        上面的安装方式保存的是网页阅读版。需要往期目录或摘要补采时，请使用已安装的
+        Windows「期刊雷达」本机版快捷方式。
+      </p>
+      <p>两种版本的阅读记录分别保存；换版本前导出完整备份，再在目标版本导入。</p>
+    </dialog>
+    <dialog id="translation-options">
+      <div class="dialog-head">
+        <span>摘要翻译</span><button class="close" aria-label="关闭翻译设置">✕</button>
+      </div>
+      <label class="translation-setting"
+        ><input type="checkbox" id="auto-translate" checked />打开文章时自动翻译摘要</label
+      >
+      <p>
+        使用 MyMemory 免费在线翻译，将英文摘要发送给翻译服务；译文缓存在本机，保留英文原文对照。
+      </p>
+      <form id="translation-email-form">
+        <label for="translation-email">MyMemory 联系邮箱</label>
+        <input
+          id="translation-email"
+          type="email"
+          maxlength="254"
+          autocomplete="email"
+          placeholder="填写有效邮箱，启用每日 50,000 字符额度"
+          aria-describedby="translation-email-help translation-email-status"
+        />
+        <p id="translation-email-help">
+          邮箱只保存在当前浏览器，翻译时会随英文摘要发送给
+          MyMemory，用于服务联系；不会写入公开仓库或阅读记录备份。桌面版与网页版需分别设置。
+        </p>
+        <div class="translation-email-actions">
+          <button type="submit">保存邮箱</button
+          ><button type="button" id="clear-translation-email">移除邮箱</button>
+        </div>
+        <p id="translation-email-status" role="status"></p>
+      </form>
+      <p>
+        有效邮箱版约 50,000 字符/天；留空时匿名版约 5,000 字符/天。本机按近 24
+        小时保守限制请求量，实际可用额度以服务返回为准。更换或移除邮箱不重置用量，已有缓存继续复用。
+      </p>
+      <p>
+        关闭自动翻译后，仍可手动点击“翻译摘要”。缺少摘要时无法翻译。机器翻译仅供阅读参考；超额或服务不可用时保留原文。
+      </p>
+      <a
+        class="translation-settings-link"
+        href="https://mymemory.translated.net/doc/usagelimits.php"
+        target="_blank"
+        rel="noopener noreferrer"
+        >查看免费额度说明 ↗</a
+      >
+    </dialog>
+    <div id="toast" role="status" hidden></div>
+  </body>
+</html>

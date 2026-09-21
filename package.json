@@ -1,0 +1,12 @@
+{
+  "name": "journal-radar-maintenance",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write radar/web/*.js radar/web/*.css radar/web/index.html radar/test_*.cjs",
+    "format:check": "prettier --check radar/web/*.js radar/web/*.css radar/web/index.html radar/test_*.cjs",
+    "test": "node --test radar/test_*.cjs"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}
