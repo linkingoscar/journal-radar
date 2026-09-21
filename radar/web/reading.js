@@ -14,6 +14,7 @@ const JournalReading = (() => {
     'print_date',
     'online_date',
     'first_seen',
+    'source_first_seen',
     'volume',
     'issue',
     'pages',

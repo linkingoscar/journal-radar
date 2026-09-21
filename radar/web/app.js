@@ -900,7 +900,9 @@ function render() {
   $('label[for="period"]').textContent = $('#period').getAttribute('aria-label');
   $('#period').title =
     $('#sort').value === 'discovered'
-      ? '按首次收录时间筛选'
+      ? isDesktop
+        ? '按首次进入本机文章列表的时间筛选'
+        : '按首次收录时间筛选'
       : '按在线或发表时间筛选；仅有未来刊期时使用收录日期';
   $('#result-count').textContent =
     browseMode === 'saved'

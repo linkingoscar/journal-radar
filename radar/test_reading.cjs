@@ -10,6 +10,8 @@ const row = {
   archive: true,
   archive_year: 1980,
   abstract: 'An abstract preserved in a backup',
+  first_seen: '2026-09-21T03:00:00.001Z',
+  source_first_seen: '2026-09-21T01:00:00Z',
   link: 'https://doi.org/10.1000/a',
 };
 test('old reading backups stay compatible; new backups retain historical metadata and translations', () => {
@@ -22,6 +24,8 @@ test('old reading backups stay compatible; new backups retain historical metadat
     translations: [{ source: row.abstract, text: '已缓存的译文' }],
   });
   assert.equal(restored.articles[0].archive_year, 1980);
+  assert.equal(restored.articles[0].first_seen, row.first_seen);
+  assert.equal(restored.articles[0].source_first_seen, row.source_first_seen);
   assert.equal(restored.translations[0].source, row.abstract);
 });
 test('recent and historical saved records merge by canonical id without discarding cached abstracts', () => {

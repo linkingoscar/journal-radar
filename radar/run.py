@@ -194,6 +194,7 @@ class RadarStore(DatabaseManager):
             }
         )
         with self.get_connection("history") as conn:
+            conn.execute("BEGIN IMMEDIATE")
             existing = {
                 x["name"] for x in conn.execute("PRAGMA table_info(matched_entries)")
             }
@@ -206,11 +207,18 @@ class RadarStore(DatabaseManager):
                 "source_rank": "INTEGER DEFAULT 0",
                 "title_key": "TEXT",
                 "citation": "TEXT",
+                "local_first_seen": "TEXT",
             }.items():
                 if column not in existing:
                     conn.execute(
                         f"ALTER TABLE matched_entries ADD COLUMN {column} {definition}"
                     )
+            if "local_first_seen" not in existing:
+                # Arrival times were not recorded by older versions. Keep their
+                # existing baseline rather than announcing the whole library again.
+                conn.execute("UPDATE matched_entries SET local_first_seen=matched_date")
+            conn.execute("""CREATE TABLE IF NOT EXISTS radar_local_publication (
+                id INTEGER PRIMARY KEY CHECK(id=1), generated_at TEXT NOT NULL)""")
             conn.execute("CREATE INDEX IF NOT EXISTS radar_doi ON matched_entries(doi)")
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS radar_title ON matched_entries(journal_id,title_key)"
@@ -294,7 +302,7 @@ class RadarStore(DatabaseManager):
                 if entry.get("first_seen"):
                     try:
                         discovered = dt.datetime.fromisoformat(
-                            entry["first_seen"]
+                            str(entry["first_seen"]).replace("Z", "+00:00")
                         ).isoformat()
                     except (ValueError, TypeError):
                         pass
@@ -391,15 +399,43 @@ class RadarStore(DatabaseManager):
                 inserted += not bool(previous)
         return inserted
 
-    def export(self, registry, destination):
+    def export(self, registry, destination, *, local=False):
+        generated_at = now()
         with self.get_connection("history") as conn:
+            if local:
+                # Stamp arrivals in the same snapshot transaction as the rows.
+                # Ingestion may finish after an earlier page was generated.
+                conn.execute("BEGIN IMMEDIATE")
+                previous = conn.execute(
+                    "SELECT generated_at FROM radar_local_publication WHERE id=1"
+                ).fetchone()
+                stamp = dt.datetime.fromisoformat(generated_at)
+                if previous:
+                    stamp = max(
+                        stamp,
+                        dt.datetime.fromisoformat(previous[0])
+                        + dt.timedelta(milliseconds=1),
+                    )
+                generated_at = stamp.isoformat(timespec="milliseconds")
+                conn.execute(
+                    "INSERT OR REPLACE INTO radar_local_publication VALUES (1,?)",
+                    (generated_at,),
+                )
+                conn.execute(
+                    "UPDATE matched_entries SET local_first_seen=? WHERE local_first_seen IS NULL",
+                    (generated_at,),
+                )
             rows = [
                 dict(r)
                 for r in conn.execute(
-                    "SELECT entry_id AS id,journal_id,title,link,authors,abstract,doi,published_date,matched_date AS first_seen,online_date,print_date,article_type,sources,citation FROM matched_entries ORDER BY published_date DESC,entry_id"
+                    "SELECT entry_id AS id,journal_id,title,link,authors,abstract,doi,published_date,matched_date AS first_seen,local_first_seen,online_date,print_date,article_type,sources,citation FROM matched_entries ORDER BY published_date DESC,entry_id"
                 )
             ]
         for row in rows:
+            local_seen = row.pop("local_first_seen")
+            if local:
+                row["source_first_seen"] = row["first_seen"] or ""
+                row["first_seen"] = local_seen or row["first_seen"]
             if row.get("citation"):
                 row["citation"] = json.loads(row["citation"])
             else:
@@ -452,7 +488,7 @@ class RadarStore(DatabaseManager):
                 }
             )
         payload = {
-            "generated_at": now(),
+            "generated_at": generated_at,
             "ft50_version": registry["ft50_version"],
             "sources": registry["sources"],
             "groups": registry.get("groups", []),

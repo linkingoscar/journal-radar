@@ -1,4 +1,5 @@
 import json
+import datetime as dt
 import threading
 from http.server import ThreadingHTTPServer
 from types import SimpleNamespace
@@ -61,6 +62,60 @@ def test_local_success_replaces_failed_cloud_rss_without_masking_crossref_failur
     assert effective_status([good, failed], local) == "ok"
     assert effective_status([{**good, "error": "503"}, failed], local) == "partial"
     assert effective_status([good, failed], {**local, "error": "403"}) == "partial"
+
+
+def test_delayed_cloud_arrival_uses_local_publication_and_repeated_sync_keeps_baseline(
+    tmp_path, monkeypatch
+):
+    from desktop import Companion
+    from site_data import write_site
+
+    monkeypatch.setattr("run.now", lambda: "2026-09-21T02:00:00+00:00")
+    app = Companion(tmp_path)
+    before = json.loads((tmp_path / "site/index.json").read_text(encoding="utf-8"))
+    row = {
+        "id": "b" * 64,
+        "journal_id": J["id"],
+        "title": "Delayed cloud arrival",
+        "link": "https://doi.org/10.1000/delayed",
+        "doi": "10.1000/delayed",
+        "abstract": "",
+        "sources": "crossref",
+        "article_type": "journal-article",
+        "first_seen": "2026-09-21T01:00:00Z",
+        "published_date": "2020-01-01",
+    }
+    cloud = {"journals": [J], "articles": [row]}
+    assert import_cloud(app.store, app.registry, cloud) == 1
+    app.publish()
+    after = json.loads((tmp_path / "site/data.json").read_text(encoding="utf-8"))
+    article = after["articles"][0]
+    # Even a second publication within the same clock tick must cross the checkpoint.
+    assert article["first_seen"] > before["generated_at"]
+    assert article["first_seen"] == after["generated_at"]
+    assert article["source_first_seen"] == "2026-09-21T01:00:00+00:00"
+    assert (
+        app.reading_articles([row["id"]])["articles"][0]["first_seen"]
+        == article["first_seen"]
+    )
+    assert (
+        app.abstract_article(row["id"])["source_first_seen"]
+        == article["source_first_seen"]
+    )
+    # A cold history request must use the same local boundary as the recent feed.
+    index = write_site(after, tmp_path / "chunked", recent_limit=0)
+    assert dt.datetime.fromisoformat(
+        index["history_chunks"][0]["first_seen_max"]
+    ) == dt.datetime.fromisoformat(article["first_seen"])
+    monkeypatch.setattr("run.now", lambda: "2026-09-21T04:00:00+00:00")
+    assert import_cloud(app.store, app.registry, cloud) == 0
+    restarted = Companion(tmp_path)
+    refreshed = json.loads((tmp_path / "site/data.json").read_text(encoding="utf-8"))
+    assert refreshed["articles"][0]["first_seen"] == article["first_seen"]
+    assert refreshed["articles"][0]["id"] == row["id"]
+    public = restarted.store.export(restarted.registry, tmp_path / "public")
+    assert public["articles"][0]["first_seen"] == article["source_first_seen"]
+    assert "source_first_seen" not in public["articles"][0]
 
 
 def test_loopback_api_rejects_cross_origin_rebinding_and_unauthenticated_mutations(

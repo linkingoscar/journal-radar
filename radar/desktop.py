@@ -168,7 +168,7 @@ class Companion:
             self._publish()
 
     def _publish(self):
-        payload = self.store.export(self.registry, self.directory / "site")
+        payload = self.store.export(self.registry, self.directory / "site", local=True)
         self.abstracts.overlay(payload)
         cloud_abstracts = {
             a.get("doi"): a
@@ -282,7 +282,7 @@ class Companion:
     def abstract_article(self, identifier):
         with self.store.get_connection("history") as c:
             row = c.execute(
-                "SELECT entry_id AS id,journal_id,title,link,authors,abstract,doi,published_date,matched_date AS first_seen,online_date,print_date,article_type,sources,citation FROM matched_entries WHERE entry_id=?",
+                "SELECT entry_id AS id,journal_id,title,link,authors,abstract,doi,published_date,COALESCE(local_first_seen,matched_date) AS first_seen,matched_date AS source_first_seen,online_date,print_date,article_type,sources,citation FROM matched_entries WHERE entry_id=?",
                 (identifier,),
             ).fetchone()
         if not row:

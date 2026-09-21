@@ -83,6 +83,38 @@ def test_doi_merge_updates_without_losing_abstract_or_first_seen(tmp_path):
     )
 
 
+def test_existing_library_migration_preserves_old_baseline_and_new_arrivals(
+    tmp_path, monkeypatch
+):
+    store = RadarStore(tmp_path)
+    monkeypatch.setattr("run.now", lambda: "2026-09-20T01:00:00+00:00")
+    store.ingest(J, [normalize_crossref(paper(), J)])
+    with store.get_connection("history") as conn:
+        # Restore the schema used before local arrival dates were introduced.
+        conn.execute("ALTER TABLE matched_entries DROP COLUMN local_first_seen")
+        original = dict(conn.execute("SELECT * FROM matched_entries").fetchone())
+    monkeypatch.setattr("run.now", lambda: "2026-09-21T01:00:00+00:00")
+    store = RadarStore(tmp_path)
+    registry = {"journals": [J], "ft50_version": "test", "sources": []}
+    old = store.export(registry, tmp_path / "site", local=True)["articles"][0]
+    assert old["first_seen"] == original["matched_date"]
+    assert old["id"] == original["entry_id"]
+    store.ingest(
+        J, [normalize_crossref(paper(doi="10.1000/later", title="New arrival"), J)]
+    )
+    # A restart before publishing must not backfill the new arrival with its source date.
+    store = RadarStore(tmp_path)
+    monkeypatch.setattr("run.now", lambda: "2026-09-21T02:00:00+00:00")
+    rows = store.export(registry, tmp_path / "site", local=True)["articles"]
+    assert (
+        next(a for a in rows if a["doi"] == "10.1000/later")["first_seen"]
+        == "2026-09-21T02:00:00.000+00:00"
+    )
+    assert (
+        next(a for a in rows if a["id"] == old["id"])["first_seen"] == old["first_seen"]
+    )
+
+
 def test_citation_metadata_survives_rss_refresh_export_and_cloud_import(tmp_path):
     from desktop import import_cloud
 

@@ -2,6 +2,21 @@ const test = require('node:test'),
   assert = require('node:assert/strict');
 const Feed = require('./web/feed.js');
 const state = { read: {}, saved: {} };
+
+test('late local publication uses its arrival date for discovery and check boundaries', () => {
+  const rows = [
+    {
+      id: 'late',
+      first_seen: '2026-09-21T03:00:00.001Z',
+      source_first_seen: '2026-09-21T01:00:00Z',
+      published_date: '2020-01-01',
+    },
+  ];
+  const before = '2026-09-21T02:00:00Z';
+  assert.equal(Feed.select(rows, { state, view: 'new', since: before }).total, 1);
+  assert.equal(Feed.select(rows, { state, view: 'new', since: rows[0].first_seen }).total, 0);
+  assert.equal(Feed.select(rows, { state, cutoff: '2026-09-01' }).total, 1);
+});
 test('total collected counts stay stable as history loads and follow the selected journal', () => {
   const journals = [
     { id: 'one', article_count: 62 },
