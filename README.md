@@ -114,15 +114,14 @@ pwsh -NoProfile -File .\Install-DesktopShortcut.ps1
 ## 数据如何流动
 
 ```mermaid
-flowchart LR
-    S[出版商 RSS / Crossref] --> C[Python 采集]
-    O[OpenAlex] -->|补全摘要| C
+flowchart TB
+    S[出版商 RSS · Crossref · OpenAlex] --> C[Python 采集与摘要补全]
     C --> H[SQLite 历史库]
+    H --> P[静态站点 · GitHub Pages / PWA]
     H --> R[GitHub Release 恢复快照]
-    H --> B[静态页面与数据分片]
-    B --> P[GitHub Pages / PWA]
-    P --> L[浏览器阅读记录]
-    L --> E[JSON 导出与迁移]
+    P --> L["浏览器阅读记录<br/>收藏 · 笔记 · JSON 备份"]
+    classDef default fill:#edf4ef,stroke:#789488,color:#173e3b
+    class C,H fill:#173e3b,stroke:#173e3b,color:#fff
 ```
 
 Windows 本机版另有独立数据库，用于合并云端数据、本机补采与历史目录查询；它不会把个人数据库自动上传到 GitHub。
