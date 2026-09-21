@@ -1,15 +1,22 @@
 :root {
   --ink: #213432;
-  --muted: #687773;
+  --muted: #56685d;
   --teal: #173e3b;
   --accent: #baddcf;
   --paper: #f7f8f5;
   --line: #e2e7df;
   --white: #fff;
   --font: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --control-radius: 6px;
+  --text-small: 12px;
 }
 * {
   box-sizing: border-box;
+  scrollbar-width: none;
+}
+/* Hide the tracks without disabling wheel, touch or keyboard scrolling. */
+*::-webkit-scrollbar {
+  display: none;
 }
 body {
   margin: 0;
@@ -19,8 +26,22 @@ body {
 }
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
+}
+:where(input:not([type='checkbox'], [type='radio'], [type='file']), select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--white);
+  color: var(--ink);
+  padding: 9px 10px;
+  font-size: 13px;
+}
+textarea {
+  resize: vertical;
 }
 button,
 a,
@@ -32,7 +53,7 @@ button {
   cursor: pointer;
 }
 button:disabled {
-  cursor: wait;
+  cursor: not-allowed;
   opacity: 0.6;
 }
 a {
@@ -109,7 +130,8 @@ button:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
+  padding: 12px 10px;
+  gap: 8px;
   border-radius: 7px;
   text-align: left;
   color: #c8d9d2;
@@ -123,6 +145,7 @@ button:hover {
   font-weight: 650;
 }
 .badge {
+  flex-shrink: 0;
   font-size: 11px;
   min-width: 28px;
   text-align: center;
@@ -133,31 +156,13 @@ button:hover {
   background: #bdd5c6;
   border: 0;
 }
-.sidebar-note {
-  margin: 38px 12px 20px;
-  border-top: 1px solid #ffffff1b;
-  padding-top: 24px;
-}
 .eyebrow {
   font-size: 10px;
   letter-spacing: 2.5px;
   font-weight: 600;
 }
-.sidebar-note .eyebrow {
-  color: #b2c6b7;
-  letter-spacing: 1.5px;
-  font-size: 8px;
-}
-.sidebar-note p {
-  font-size: 15px;
-  margin: 12px 0 8px;
-}
-.sidebar-note small {
-  color: #a6c1b6;
-  font-size: 11px;
-}
 .sidebar-bottom {
-  margin-top: auto;
+  margin-top: 12px;
 }
 .sidebar-bottom button {
   display: flex;
@@ -285,7 +290,7 @@ main {
   padding: 12px 0;
   width: 100%;
   background: none;
-  font-size: 12px;
+  font-size: 13px;
 }
 .search:focus-within {
   outline: 2px solid #668d78;
@@ -303,7 +308,7 @@ select {
   background: white;
   color: #4d6258;
   padding: 10px;
-  font-size: 11px;
+  font-size: 13px;
   max-width: 245px;
 }
 .list-header {
@@ -341,9 +346,9 @@ select {
 .result-info {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
-  color: #728478;
-  padding: 15px 1px;
+  font-size: var(--text-small);
+  color: var(--muted);
+  padding: 10px 0;
 }
 .article {
   background: white;
@@ -366,7 +371,7 @@ select {
   gap: 14px;
 }
 .journal-name {
-  font-size: 10px;
+  font-size: var(--text-small);
   font-weight: 650;
   letter-spacing: 0.2px;
   color: #567362;
@@ -383,8 +388,8 @@ select {
   flex-shrink: 0;
 }
 .date {
-  font-size: 10px;
-  color: #7b887e;
+  font-size: var(--text-small);
+  color: var(--muted);
   white-space: nowrap;
 }
 .article h2 {
@@ -406,15 +411,15 @@ select {
   text-underline-offset: 4px;
 }
 .authors {
-  font-size: 10px;
-  color: #718077;
+  font-size: var(--text-small);
+  color: var(--muted);
   margin: 0 0 9px;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
 }
 .abstract-preview {
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.7;
   color: #63746a;
   display: -webkit-box;
@@ -425,6 +430,8 @@ select {
 }
 .article-bottom {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   justify-content: space-between;
   align-items: center;
   margin-top: 17px;
@@ -435,7 +442,7 @@ select {
   flex-wrap: wrap;
 }
 .tag {
-  font-size: 9px;
+  font-size: 11px;
   background: #f0f4ed;
   color: #5c7763;
   border-radius: 3px;
@@ -443,12 +450,13 @@ select {
 }
 .article-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
+  margin-left: auto;
 }
 .article-actions button,
 .article-actions a {
-  font-size: 11px;
-  color: #6b7b71;
+  font-size: var(--text-small);
+  color: var(--muted);
   text-decoration: none;
   padding: 4px;
 }
@@ -479,7 +487,14 @@ select {
 }
 .empty p {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
+}
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
 }
 footer {
   font-size: 10px;
@@ -554,8 +569,19 @@ dialog::backdrop {
 }
 .reader-buttons {
   display: flex;
-  gap: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
+.reader-buttons > *,
+.reader-navigation button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.reader-navigation button,
 .reader-buttons button {
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -642,6 +668,9 @@ dialog::backdrop {
   .workspace {
     margin-left: 205px;
   }
+  .sidebar nav button {
+    font-size: 13px;
+  }
   main {
     padding: 28px 24px;
   }
@@ -664,9 +693,6 @@ dialog::backdrop {
   .hero-stat strong {
     font-size: 38px;
   }
-  .sidebar-note {
-    margin-top: 22px;
-  }
 }
 @media (max-width: 700px) {
   .sidebar {
@@ -685,7 +711,6 @@ dialog::backdrop {
     font-size: 8px;
   }
   .nav-label,
-  .sidebar-note,
   .sidebar-bottom > small {
     display: none;
   }
@@ -763,32 +788,43 @@ dialog::backdrop {
   }
   .article-top {
     align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
   .journal-name {
-    font-size: 9px;
+    font-size: var(--text-small);
   }
   .article h2 {
     font-size: 20px;
   }
   .result-info {
-    font-size: 9px;
+    font-size: var(--text-small);
     gap: 10px;
   }
   .article-actions {
-    gap: 5px;
+    gap: 4px 12px;
+    margin-left: 0;
+    width: 100%;
   }
   .article-actions button,
   .article-actions a {
-    font-size: 10px;
+    font-size: var(--text-small);
   }
   .tags {
-    max-width: 45%;
+    max-width: 100%;
   }
   dialog {
     padding: 20px;
   }
   .reader-title {
     font-size: 23px;
+  }
+  .reader-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .reader-buttons > .primary {
+    grid-column: 1 / -1;
   }
   .tabs {
     gap: 20px;

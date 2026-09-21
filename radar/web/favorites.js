@@ -205,23 +205,39 @@ class JournalFavorites {
       ?.articles.includes(article.id);
   }
   sync(active, articles) {
-    const s = this.state();
-    if (!['all', 'unfiled'].includes(this.folder) && !s.folders.some((f) => f.id === this.folder))
+    const state = this.state();
+    if (
+      !['all', 'unfiled'].includes(this.folder) &&
+      !state.folders.some((folder) => folder.id === this.folder)
+    )
       this.folder = 'all';
-    this.$('#saved-tools').hidden = !active;
+    // A bookmark can exist before its article metadata has been restored.
+    this.$('#saved-tools').hidden = !active || !Object.keys(state.saved).length;
     if (!active) return;
     const select = this.$('#saved-folder');
     select.replaceChildren(new Option('全部收藏', 'all'), new Option('未分组', 'unfiled'));
-    for (const f of s.folders) select.add(new Option(`${f.name}（${f.articles.length}）`, f.id));
+    for (const folder of state.folders)
+      select.add(new Option(`${folder.name}（${folder.articles.length}）`, folder.id));
     select.value = this.folder;
     this.visible = articles;
-    const ids = new Set(articles.map((a) => a.id));
-    this.selected = new Set([...this.selected].filter((id) => ids.has(id)));
+    const visibleIds = new Set(articles.map((article) => article.id));
+    this.selected = new Set([...this.selected].filter((id) => visibleIds.has(id)));
+    const hasSelection = this.selected.size > 0;
+    this.$('#saved-batch-actions').hidden = !articles.length;
+    this.$('#saved-selection-count').hidden = !articles.length;
     this.$('#saved-selection-count').textContent =
       `已选 ${this.selected.size} / 当前筛选 ${articles.length} 篇（包含未展开的文章）`;
-    for (const id of ['cite-saved', 'assign-saved', 'clear-saved-selection', 'remove-saved-folder'])
-      this.$('#' + id).disabled = !this.selected.size;
-    this.$('#remove-saved-folder').hidden = ['all', 'unfiled'].includes(this.folder);
+    for (const id of [
+      'cite-saved',
+      'assign-saved',
+      'clear-saved-selection',
+      'remove-saved-folder',
+    ]) {
+      const control = this.$('#' + id);
+      control.disabled = !hasSelection;
+      control.hidden = !hasSelection;
+    }
+    this.$('#remove-saved-folder').hidden ||= ['all', 'unfiled'].includes(this.folder);
   }
   checkbox(article) {
     const label = this.node('label'),

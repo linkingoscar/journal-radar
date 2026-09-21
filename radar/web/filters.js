@@ -32,14 +32,19 @@ const JournalFilters = (() => {
       this.options = options;
       this.$ = (s) => document.querySelector(s);
     }
-    sync() {
-      const select = this.$('#saved-query'),
-        previous = select.value;
+    sync(selectedId = this.$('#saved-query').value) {
+      const select = this.$('#saved-query');
       select.replaceChildren(new Option('选择常用筛选', ''));
       for (const [id, row] of Object.entries(this.options.state().queries || {}))
         select.add(new Option(row.name, id));
-      if ([...select.options].some((o) => o.value === previous)) select.value = previous;
-      this.$('#apply-query').disabled = this.$('#edit-query').disabled = !select.value;
+      if ([...select.options].some((option) => option.value === selectedId))
+        select.value = selectedId;
+      this.$('.saved-query-bar').hidden = select.options.length === 1;
+      for (const id of ['apply-query', 'edit-query']) {
+        const control = this.$('#' + id);
+        control.disabled = !select.value;
+        control.hidden = !select.value;
+      }
     }
     edit(id = '') {
       this.id = id || 'filter-' + crypto.randomUUID();
@@ -82,9 +87,8 @@ const JournalFilters = (() => {
               },
             })[this.id];
         await this.options.save(this.id, this.original, row);
-        this.sync();
-        this.$('#saved-query').value = remove ? '' : this.id;
-        this.sync();
+        this.sync(remove ? '' : this.id);
+        this.$('#advanced-filters').open = true;
         this.$('#query-editor').close();
         this.options.toast(remove ? '常用筛选已删除。' : '常用筛选已保存，可一键打开。');
       } catch (error) {

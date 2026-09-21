@@ -2,7 +2,7 @@
 const $ = (s) => document.querySelector(s);
 const mobileLayout = matchMedia('(max-width: 700px)');
 function adaptControls() {
-  for (const id of ['personal-tools', 'advanced-filters']) $('#' + id).open = !mobileLayout.matches;
+  $('#personal-tools').open = !mobileLayout.matches;
 }
 adaptControls();
 mobileLayout.addEventListener('change', adaptControls);
@@ -500,7 +500,9 @@ function renderCatalog(journals) {
       el('p', j.issns.length ? 'ISSN ' + j.issns.join(' / ') : 'RSS 订阅', 'catalog-issn'),
     );
     const tags = el('div', undefined, 'catalog-tags');
-    j.groups.forEach((g) => tags.append(el('span', label(g), 'catalog-tag catalog-tag-' + g)));
+    j.groups
+      .filter((g) => g !== group)
+      .forEach((g) => tags.append(el('span', label(g), 'catalog-tag catalog-tag-' + g)));
     for (const r of meta.ratings || [])
       tags.append(
         el(
@@ -841,6 +843,7 @@ function renderHistoryStatus() {
     : historyError
       ? historyError + '；当前文章仍可阅读。'
       : `还有 ${pending} 篇更早收录的文章，可按需查看。`;
+  $('#history-loading').classList.toggle('is-error', !!historyError);
   $('#load-history').disabled = historyBusy;
   $('#finish-check').disabled =
     checkBusy ||
@@ -912,7 +915,9 @@ function renderArticleCard(article, journal) {
   const bottom = el('div', undefined, 'article-bottom'),
     tags = el('div', undefined, 'tags'),
     actions = el('div', undefined, 'article-actions');
-  journal.groups.forEach((g) => tags.append(el('span', label(g), 'tag')));
+  journal.groups
+    .filter((g) => g !== group)
+    .forEach((g) => tags.append(el('span', label(g), 'tag')));
   for (const tag of state.annotations?.[article.id]?.tags || [])
     tags.append(el('span', tag, 'tag personal-tag'));
   if (state.annotations?.[article.id]?.note) tags.append(el('span', '有笔记', 'tag personal-tag'));
@@ -964,36 +969,85 @@ function renderArticleCard(article, journal) {
   card.append(bottom);
   return card;
 }
-function renderArticleList(articles, since) {
+function renderEmptyFeed(since, missingBookmarks) {
+  const box = el('div', undefined, 'empty');
+  const noSaved = browseMode === 'saved' && !Object.keys(state.saved).length;
+  let description = '试试放宽时间范围、清除关键词，或切换期刊分组。';
+  if (noSaved) description = '点击文章旁的「收藏」，把值得细读的研究留在这里。';
+  else if (view === 'new' && since)
+    description = '上次检查后暂无符合筛选的新文章。可更新列表或清除其他筛选。';
+  else if (view === 'saved') description = '试试切换收藏分组、放宽时间范围或清除搜索条件。';
+  box.append(el('strong', noSaved ? '还没有收藏文章' : '没有符合筛选的文章'), el('p', description));
+  const actions = el('div', undefined, 'empty-actions');
+  if (noSaved) {
+    const browse = el('a', '去浏览文章', 'primary');
+    browse.href = '#feed=' + group;
+    actions.append(browse);
+  } else {
+    actions.append(
+      button(
+        '调整筛选',
+        () => {
+          $('#advanced-filters').open = true;
+          $('#filter-summary').focus();
+        },
+        'quiet',
+      ),
+    );
+  }
+  const needsRecovery = browseMode === 'saved' && missingBookmarks > 0;
+  if (needsRecovery)
+    box.append(
+      el('p', `${missingBookmarks} 条旧收藏暂缺文章信息。可从原设备导入新版阅读备份恢复。`),
+    );
+  if (noSaved || needsRecovery)
+    actions.append(button('导入备份', () => $('#import-file').click(), 'quiet'));
+  box.append(actions);
+  return box;
+}
+function renderArticleList(articles, since, missingBookmarks = 0) {
   readerCandidates = articles;
   const list = $('#articles');
   const focus = captureFeedFocus(list);
   list.replaceChildren();
-  if (!articles.length) {
-    const box = el('div', undefined, 'empty');
-    box.append(
-      el('strong', '这里暂时没有文章'),
-      el(
-        'p',
-        view === 'new' && since
-          ? '上次检查后暂无符合筛选的新文章。可更新列表或清除其他筛选。'
-          : view === 'saved'
-            ? '点击文章旁的「收藏」，把值得细读的研究留在这里。'
-            : '试试放宽时间范围、清除关键词，或切换期刊分组。',
-      ),
-    );
-    list.append(box);
-  }
+  if (!articles.length) list.append(renderEmptyFeed(since, missingBookmarks));
   const byId = new Map(data.journals.map((j) => [j.id, j]));
   visibleArticles = articles.slice(0, limit);
   const unreadVisible = visibleArticles.filter((a) => !state.read[a.id]).length;
   $('#mark-visible-read').textContent = `将当前显示的 ${unreadVisible} 篇未读标为已读`;
   $('#mark-visible-read').disabled = bulkBusy || !unreadVisible;
+  $('#mark-visible-read').hidden = !unreadVisible;
+  $('.bulk-reading').hidden = !unreadVisible && !bulkUndo.length;
   $('#undo-visible-read').hidden = !bulkUndo.length;
   $('#undo-visible-read').disabled = bulkBusy;
   for (const article of visibleArticles)
     list.append(renderArticleCard(article, byId.get(article.journal_id)));
   restoreFeedFocus(list, focus);
+}
+function renderSourceStatus(journals, selectedJournal, noSaved) {
+  const scopedJournals = selectedJournal
+    ? journals.filter((journal) => journal.id === selectedJournal)
+    : journals;
+  const failures = scopedJournals.filter((journal) =>
+    ['error', 'partial'].includes(journal.status),
+  );
+  const pendingJournals = scopedJournals.filter((journal) => journal.status === 'pending');
+  const stale =
+    Date.now() - new Date(data.cloud_updated_at || data.generated_at).getTime() > 48 * 3600000;
+  $('#notice').hidden = !failures.length && !pendingJournals.length && !stale;
+  $('#source-status').hidden = noSaved || $('#notice').hidden;
+  $('#source-summary').textContent =
+    '采集状态 · ' +
+    (stale ? '更新延迟' : `${failures.length + pendingJournals.length} 本期刊需关注`);
+  $('#notice').textContent = [
+    failures.length
+      ? `${failures.length} 本期刊存在来源请求失败，历史文章仍可阅读。详情见「管理期刊与数据源」。`
+      : '',
+    pendingJournals.length ? `${pendingJournals.length} 本期刊等待首次采集。` : '',
+    stale ? '数据已超过 48 小时未更新，请检查云端采集任务。' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 function render() {
   if (!data) return;
@@ -1005,7 +1059,10 @@ function render() {
   const journals = data.journals.filter(inGroup),
     ids = new Set(journals.map((j) => j.id));
   const current = data.journals.find((j) => j.id === journalId),
-    isLibrary = browseMode === 'library';
+    isLibrary = browseMode === 'library',
+    noSaved = browseMode === 'saved' && !Object.keys(state.saved).length;
+  for (const selector of ['.toolbar', '#advanced-filters', '.feed-summary'])
+    $(selector).hidden = noSaved;
   document.body.classList.toggle('reading-view', !isLibrary);
   renderHistoryStatus();
   showBackupStatus();
@@ -1085,6 +1142,7 @@ function render() {
     $('#total-label').textContent = '篇收藏文章';
   }
   $('#views').hidden = browseMode === 'saved';
+  $('.list-header').hidden = browseMode === 'saved';
   const q = $('#search').value.trim().toLowerCase(),
     selected = current?.id || $('#journal').value;
   const days = $('#period').value;
@@ -1127,12 +1185,12 @@ function render() {
   favorites.sync(browseMode === 'saved', articles);
   const knownIds = new Set(allKnown().map((a) => a.id)),
     knownAliases = { ...archiveReadingAliases, ...data?.reading_aliases };
-  const unknown = Object.keys(state.saved).filter(
+  const missingBookmarks = Object.keys(state.saved).filter(
     (id) => !knownIds.has(id) && !knownAliases[id],
   ).length;
   $('#coverage-status').textContent =
-    browseMode === 'saved' && unknown
-      ? `${unknown} 条旧收藏暂缺文章信息。本机可从已查询目录恢复；其他设备请导入新版阅读备份。`
+    browseMode === 'saved' && missingBookmarks
+      ? `${missingBookmarks} 条旧收藏暂缺文章信息。本机可从已查询目录恢复；其他设备请导入新版阅读备份。`
       : `当前筛选范围 ${selection.total} 篇 · ${selection.missing} 篇缺摘要 · ${selection.suspect} 篇疑似不完整`;
   const filters = [
     selected ? data.journals.find((j) => j.id === selected)?.name : '',
@@ -1170,26 +1228,8 @@ function render() {
       minute: '2-digit',
       hour12: false,
     });
-  const scopedJournals = selected ? journals.filter((j) => j.id === selected) : journals;
-  const failures = scopedJournals.filter((j) => j.status === 'error' || j.status === 'partial');
-  const pendingJournals = scopedJournals.filter((j) => j.status === 'pending');
-  const stale =
-    Date.now() - new Date(data.cloud_updated_at || data.generated_at).getTime() > 48 * 3600000;
-  $('#notice').hidden = !failures.length && !pendingJournals.length && !stale;
-  $('#source-status').hidden = $('#notice').hidden;
-  $('#source-summary').textContent =
-    '采集状态 · ' +
-    (stale ? '更新延迟' : `${failures.length + pendingJournals.length} 本期刊需关注`);
-  $('#notice').textContent = [
-    failures.length
-      ? `${failures.length} 本期刊存在来源请求失败，历史文章仍可阅读。详情见「管理期刊与数据源」。`
-      : '',
-    pendingJournals.length ? `${pendingJournals.length} 本期刊等待首次采集。` : '',
-    stale ? '数据已超过 48 小时未更新，请检查云端采集任务。' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-  renderArticleList(articles, since);
+  renderSourceStatus(journals, selected, noSaved);
+  renderArticleList(articles, since, missingBookmarks);
   $('#more').hidden = articles.length <= limit;
   if (resumeScroll !== null)
     requestAnimationFrame(() => {

@@ -9,13 +9,27 @@ __pycache__
 *.pyo
 *.pyd
 .pytest_cache
+.ruff_cache
 *.egg-info
 dist/
 build/
+docs/_build/
+
+# Installed development environments and generated previews
+.venv/
+.desktop-venv/
+node_modules/
+site/
 
 # Project local data
 .paper_firehose/
 pf-data/
+.desktop-data/
+radar-data/
+*.db
+*.db-wal
+*.db-shm
+*.env
 
 # Jupyter
 *.ipynb_checkpoints

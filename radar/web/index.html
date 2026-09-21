@@ -62,11 +62,6 @@
           <button id="manage-groups" type="button">管理分组</button
           ><button id="add-journal" type="button">＋ 新增期刊</button>
         </div>
-        <div class="sidebar-note">
-          <span class="eyebrow">A LITTLE, EVERY DAY</span>
-          <p>让新研究来到你面前。</p>
-          <small>按期刊追踪，留出阅读的时间。</small>
-        </div>
         <div class="sidebar-bottom">
           <button id="manage">管理期刊与数据源 <span>↗</span></button>
           <button id="backup">导出完整备份 <span>↓</span></button>
@@ -214,15 +209,6 @@
           </div>
         </section>
         <div id="article-feed" hidden>
-          <div class="saved-query-bar" aria-label="常用筛选">
-            <label for="saved-query">常用筛选</label
-            ><select id="saved-query">
-              <option value="">选择常用筛选</option>
-            </select>
-            <button id="apply-query" disabled>打开筛选</button
-            ><button id="save-query">保存当前筛选</button
-            ><button id="edit-query" disabled>管理此筛选</button>
-          </div>
           <section id="saved-tools" class="saved-tools" aria-label="收藏分组与批量操作" hidden>
             <div>
               <label for="saved-folder">收藏文章分组</label
@@ -231,7 +217,7 @@
                 <option value="unfiled">未分组</option></select
               ><button id="manage-saved-folders">管理收藏分组</button>
             </div>
-            <div>
+            <div id="saved-batch-actions">
               <button id="select-saved">全选当前筛选</button
               ><button id="clear-saved-selection">清除选择</button
               ><button id="assign-saved">加入分组</button
@@ -250,9 +236,18 @@
                 aria-label="搜索标题、作者、摘要、DOI 或笔记"
               /><kbd>/</kbd></label
             >
+            <button id="save-query" class="quiet" aria-label="保存当前筛选">保存筛选</button>
           </section>
-          <details id="advanced-filters" open>
+          <details id="advanced-filters">
             <summary id="filter-summary">筛选与排序</summary>
+            <div class="saved-query-bar" aria-label="常用筛选" hidden>
+              <label for="saved-query">常用筛选</label
+              ><select id="saved-query">
+                <option value="">选择常用筛选</option>
+              </select>
+              <button id="apply-query" disabled hidden>打开筛选</button
+              ><button id="edit-query" disabled hidden>管理此筛选</button>
+            </div>
             <div class="advanced-controls">
               <label class="sr-only" for="journal">选择期刊</label
               ><select id="journal">
@@ -303,13 +298,15 @@
             <button id="finish-check" type="button">本次检查完成</button>
             <button id="undo-check" type="button" hidden>撤销完成检查</button>
           </div>
-          <div id="history-loading" class="history-loading" hidden>
-            <span id="history-message" role="status"></span
-            ><button id="load-history" type="button">加载更早文章</button>
-          </div>
-          <div class="result-info">
-            <span id="result-count" aria-live="polite" tabindex="-1">正在读取文章…</span
-            ><span id="updated"></span>
+          <div class="feed-summary">
+            <div class="result-info">
+              <span id="result-count" aria-live="polite" tabindex="-1">正在读取文章…</span
+              ><span id="updated"></span>
+            </div>
+            <div id="history-loading" class="history-loading" hidden>
+              <span id="history-message" role="status"></span
+              ><button id="load-history" type="button">加载更早文章</button>
+            </div>
           </div>
           <section id="articles" aria-label="文章列表"></section>
           <div class="reading-tools bulk-reading">
