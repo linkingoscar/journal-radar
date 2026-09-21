@@ -6,6 +6,34 @@ from site_data import write_site, expand
 from desktop import cloud_data
 
 
+def test_discovery_bounds_compare_instants_and_omit_unknown_timestamps(tmp_path):
+    rows = [
+        {"id": f"{i:064x}", "journal_id": journal, "first_seen": stamp}
+        for i, (journal, stamp) in enumerate(
+            [
+                ("one", "2026-09-21T10:00:00+08:00"),
+                ("one", "2026-09-21T03:00:00Z"),
+                ("two", "invalid"),
+                ("two", "2026-09-21T03:00:00Z"),
+                ("three", "2026-09-21T10:00:00"),
+            ]
+        )
+    ]
+    index = write_site({"articles": rows, "journals": []}, tmp_path, recent_limit=0)
+    chunks = {c["journal_id"]: c for c in index["history_chunks"]}
+    assert chunks["one"]["first_seen_max"] == "2026-09-21T03:00:00+00:00"
+    assert "first_seen_max" not in chunks["two"]
+    assert "first_seen_max" not in chunks["three"]
+    assert (
+        len(
+            expand(index, lambda name: json.loads((tmp_path / name).read_text()))[
+                "articles"
+            ]
+        )
+        == 5
+    )
+
+
 def test_bounded_recent_and_journal_chunks_preserve_all_metadata(tmp_path):
     rows = [
         {

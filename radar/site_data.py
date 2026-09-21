@@ -1,6 +1,7 @@
 """Bounded recent feed plus immutable, journal-scoped history chunks."""
 
 import hashlib
+import datetime as dt
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -23,6 +24,18 @@ def write_json(path, value):
     temp.replace(path)
 
 
+def discovery_time(article):
+    stamp = article.get("first_seen")
+    if not isinstance(stamp, str):
+        return None
+    try:
+        value = dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+        # Unknown/local time zones cannot safely bound a browser checkpoint.
+        return value.astimezone(dt.timezone.utc) if value.tzinfo else None
+    except (ValueError, TypeError):
+        return None
+
+
 def write_site(payload, destination, recent_limit=RECENT_LIMIT):
     destination = Path(destination)
     rows = sorted(
@@ -41,7 +54,11 @@ def write_site(payload, destination, recent_limit=RECENT_LIMIT):
             body = {"articles": items}
             path = "articles/" + hashlib.sha256(encoded(body)).hexdigest() + ".json"
             write_json(destination / path, body)
-            chunks.append({"url": path, "journal_id": journal, "count": len(items)})
+            chunk = {"url": path, "journal_id": journal, "count": len(items)}
+            times = [discovery_time(a) for a in items]
+            if all(value is not None for value in times):
+                chunk["first_seen_max"] = max(times).isoformat()
+            chunks.append(chunk)
     index = {
         **payload,
         "schema_version": 2,

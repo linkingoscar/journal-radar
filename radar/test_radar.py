@@ -22,6 +22,32 @@ J = {
 }
 
 
+def test_container_metadata_is_not_an_article_but_old_records_remain_addressable(
+    tmp_path,
+):
+    store = RadarStore(tmp_path)
+    registry = {"journals": [J], "ft50_version": "test", "sources": []}
+    for kind in ("journal", "journal-volume", "journal-issue"):
+        assert normalize_crossref({**paper(), "type": kind}, J) is None
+        legacy = {**normalize_crossref(paper(), J), "article_type": kind}
+        assert store.ingest(J, [legacy]) == 0
+    entries = [
+        normalize_crossref(paper(title="Correction to an earlier paper"), J),
+        normalize_rss({"title": J["name"], "link": "https://example.org/paper"}, J),
+    ]
+    assert store.ingest(J, entries) == 2
+    # Simulate metadata already present in a pre-fix database, without deleting it.
+    with store.get_connection("history") as conn:
+        conn.execute(
+            "UPDATE matched_entries SET article_type='journal' WHERE doi IS NOT NULL"
+        )
+    payload = store.export(registry, tmp_path / "site")
+    assert len(payload["articles"]) == payload["journals"][0]["article_count"] == 1
+    assert payload["articles"][0]["article_type"] == "rss-entry"
+    with store.get_connection("history") as conn:
+        assert conn.execute("SELECT COUNT(*) FROM matched_entries").fetchone()[0] == 2
+
+
 def paper(
     doi="10.1037/apl0001234", title="An example paper", abstract="A useful abstract"
 ):

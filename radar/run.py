@@ -22,6 +22,7 @@ os.environ.setdefault("PAPER_FIREHOSE_DATA_DIR", str(ROOT / "radar-data"))
 
 import feedparser
 import requests
+from records import is_container
 from paper_firehose.core.database import DatabaseManager
 from paper_firehose.core.doi_utils import extract_doi_from_entry
 from paper_firehose.core.text_utils import strip_jats
@@ -115,6 +116,8 @@ def citation_metadata(item, journal):
 
 
 def normalize_crossref(item, journal):
+    if is_container(item.get("type")):
+        return None
     if not set(item.get("ISSN", [])) & set(journal["issns"]):
         raise ValueError("Crossref 返回的 ISSN 与期刊不匹配")
     online = date_parts(item.get("published-online"))
@@ -237,7 +240,7 @@ class RadarStore(DatabaseManager):
         inserted = 0
         with self.get_connection("history") as conn:
             for entry in entries:
-                if not entry:
+                if not entry or is_container(entry.get("article_type")):
                     continue
                 entry = dict(entry)
                 key = normalized_title(entry["title"])
@@ -406,6 +409,7 @@ class RadarStore(DatabaseManager):
             r
             for r in rows
             if r["journal_id"] in active
+            and not is_container(r.get("article_type"))
             and not is_supplement(r["title"], r["doi"] or "")
         ]
         health = self.health()

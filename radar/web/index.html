@@ -53,28 +53,31 @@
           <span>全部期刊</span><span class="badge" id="all-count">—</span>
         </button>
       </nav>
-      <div class="sidebar-library-actions">
-        <button id="manage-groups" type="button">管理分组</button
-        ><button id="add-journal" type="button">＋ 新增期刊</button>
-      </div>
-      <div class="sidebar-note">
-        <span class="eyebrow">A LITTLE, EVERY DAY</span>
-        <p>让新研究来到你面前。</p>
-        <small>按期刊追踪，留出阅读的时间。</small>
-      </div>
-      <div class="sidebar-bottom">
-        <button id="manage">管理期刊与数据源 <span>↗</span></button>
-        <button id="backup">导出完整备份 <span>↓</span></button>
-        <div class="backup-status">
-          <small id="backup-time"></small>
-          <p id="backup-reminder" hidden></p>
+      <details id="personal-tools" open>
+        <summary>工具与备份<span id="tools-reminder" hidden> · 待备份</span></summary>
+        <div class="sidebar-library-actions">
+          <button id="manage-groups" type="button">管理分组</button
+          ><button id="add-journal" type="button">＋ 新增期刊</button>
         </div>
-        <button id="restore">导入备份 <span>↑</span></button>
-        <button id="translation-settings">摘要翻译设置 <span>译</span></button>
-        <button id="install">安装到桌面 <span>＋</span></button>
-        <input type="file" id="import-file" accept="application/json,.json" hidden />
-        <small>基于 Paper Firehose · 个人阅读版</small>
-      </div>
+        <div class="sidebar-note">
+          <span class="eyebrow">A LITTLE, EVERY DAY</span>
+          <p>让新研究来到你面前。</p>
+          <small>按期刊追踪，留出阅读的时间。</small>
+        </div>
+        <div class="sidebar-bottom">
+          <button id="manage">管理期刊与数据源 <span>↗</span></button>
+          <button id="backup">导出完整备份 <span>↓</span></button>
+          <div class="backup-status">
+            <small id="backup-time"></small>
+            <p id="backup-reminder" hidden></p>
+          </div>
+          <button id="restore">导入备份 <span>↑</span></button>
+          <button id="translation-settings">摘要翻译设置 <span>译</span></button>
+          <button id="install">安装到桌面 <span>＋</span></button>
+          <input type="file" id="import-file" accept="application/json,.json" hidden />
+          <small>基于 Paper Firehose · 个人阅读版</small>
+        </div>
+      </details>
     </aside>
     <div class="workspace">
       <header class="topbar">
@@ -104,7 +107,10 @@
             <strong id="article-total">—</strong><span id="total-label">本关注期刊</span>
           </div>
         </section>
-        <div id="notice" role="status" hidden></div>
+        <details id="source-status" hidden>
+          <summary id="source-summary">采集状态</summary>
+          <div id="notice" role="status" hidden></div>
+        </details>
         <section id="desktop-bar" class="desktop-bar" aria-label="本机采集" hidden>
           <span id="desktop-status" role="status">正在连接本机采集组件</span
           ><button id="sync-local">本机补采</button
@@ -228,17 +234,38 @@
                 aria-label="搜索标题、作者、摘要或 DOI"
               /><kbd>/</kbd></label
             >
-            <label class="sr-only" for="journal">选择期刊</label
-            ><select id="journal">
-              <option value="">所有期刊</option>
-            </select>
-            <label class="sr-only" for="period">收录时间范围</label
-            ><select id="period">
-              <option value="30">近 30 天</option>
-              <option value="90" selected>近 90 天</option>
-              <option value="all">全部时间</option>
-            </select>
           </section>
+          <details id="advanced-filters" open>
+            <summary id="filter-summary">筛选与排序</summary>
+            <div class="advanced-controls">
+              <label class="sr-only" for="journal">选择期刊</label
+              ><select id="journal">
+                <option value="">所有期刊</option>
+              </select>
+              <label class="sr-only" for="period">收录时间范围</label
+              ><select id="period">
+                <option value="30">近 30 天</option>
+                <option value="90" selected>近 90 天</option>
+                <option value="all">全部时间</option>
+              </select>
+              <label
+                >排序
+                <select id="sort">
+                  <option value="discovered">最新收录</option>
+                  <option value="published">发表时间</option>
+                </select></label
+              >
+              <label
+                >摘要状态
+                <select id="abstract-filter">
+                  <option value="all">全部摘要状态</option>
+                  <option value="missing">缺失或待核对</option>
+                  <option value="suspect">疑似不完整</option>
+                </select></label
+              >
+            </div>
+            <p id="coverage-status" class="archive-note" role="status"></p>
+          </details>
           <section class="list-header">
             <div id="views" class="tabs" aria-label="阅读状态">
               <button data-view="all" class="selected" aria-pressed="true">全部文章</button
@@ -246,33 +273,18 @@
               ><button data-view="unread" aria-pressed="false">未读</button
               ><button data-view="saved" aria-pressed="false">收藏</button>
             </div>
-            <label
-              >排序
-              <select id="sort">
-                <option value="discovered">最新收录</option>
-                <option value="published">发表时间</option>
-              </select></label
-            >
           </section>
           <div id="new-discoveries" class="reading-tools" hidden>
             <span id="check-status" role="status"></span>
             <button id="finish-check" type="button">本次检查完成</button>
+            <button id="undo-check" type="button" hidden>撤销完成检查</button>
           </div>
-          <label
-            >摘要状态
-            <select id="abstract-filter">
-              <option value="all">全部摘要状态</option>
-              <option value="missing">缺失或待核对</option>
-              <option value="suspect">疑似不完整</option>
-            </select></label
-          >
           <div id="history-loading" class="history-loading" hidden>
             <span id="history-message" role="status"></span
             ><button id="load-history" type="button">加载更早文章</button>
           </div>
-          <p id="coverage-status" class="archive-note" role="status"></p>
           <div class="result-info">
-            <span id="result-count" aria-live="polite">正在读取文章…</span
+            <span id="result-count" aria-live="polite" tabindex="-1">正在读取文章…</span
             ><span id="updated"></span>
           </div>
           <section id="articles" aria-label="文章列表"></section>

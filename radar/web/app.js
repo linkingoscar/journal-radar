@@ -1,5 +1,11 @@
 'use strict';
 const $ = (s) => document.querySelector(s);
+const mobileLayout = matchMedia('(max-width: 700px)');
+function adaptControls() {
+  for (const id of ['personal-tools', 'advanced-filters']) $('#' + id).open = !mobileLayout.matches;
+}
+adaptControls();
+mobileLayout.addEventListener('change', adaptControls);
 const KEY = 'journal-radar:reading:v1';
 let data = null,
   group = 'hr35',
@@ -35,6 +41,9 @@ function needsHistory() {
       journalId)
   );
 }
+function historySince() {
+  return browseMode !== 'saved' && view === 'new' ? state.checked[checkpointScope()] || '' : '';
+}
 function ensureHistory(force = false) {
   if (!data || (!force && !needsHistory())) {
     historyTask?.controller.abort();
@@ -44,13 +53,14 @@ function ensureHistory(force = false) {
     if (data) renderHistoryStatus();
     return Promise.resolve();
   }
-  const ids = historyScope();
-  const key = articleData.version + ':' + [...ids].sort().join(',');
+  const ids = historyScope(),
+    since = historySince();
+  const key = articleData.version + ':' + [...ids].sort().join(',') + ':' + since;
   if (historyTask?.key === key) return historyTask.promise;
   historyTask?.controller.abort();
   const task = { key, controller: new AbortController() };
   historyTask = task;
-  historyBusy = !!articleData.pending(ids).length;
+  historyBusy = !!articleData.pending(ids, since).length;
   historyError = '';
   task.promise = (async () => {
     try {
@@ -61,7 +71,7 @@ function ensureHistory(force = false) {
           historyProgress = `${done} / ${total} 份`;
           renderHistoryStatus();
         },
-        { signal: task.controller.signal },
+        { signal: task.controller.signal, since },
       );
       if (rows && data && historyTask === task) {
         data.articles = rows;
@@ -99,6 +109,7 @@ if (!location.hash) history.replaceState(null, '', resume?.route || '#feed=hr35'
 let resumeScroll = resume?.route === location.hash ? resume.scroll : null,
   visibleArticles = [],
   bulkBusy = false,
+  checkBusy = false,
   bulkUndo = [],
   preferenceTimer;
 if (!personal.read().backup) personal.update({ backup: { startedAt: new Date().toISOString() } });
@@ -135,6 +146,7 @@ function showBackupStatus() {
     ? '上次发起导出：' + new Date(meta.exportedAt).toLocaleDateString('zh-CN')
     : '尚未在本设备导出备份';
   $('#backup-reminder').hidden = !hint.due;
+  $('#tools-reminder').hidden = !hint.due;
   $('#backup-reminder').textContent =
     hint.added >= 10
       ? `已有 ${hint.added} 篇新增收藏，建议导出一份备份。`
@@ -242,6 +254,10 @@ function validateState(input) {
     read: map('read'),
     saved,
     checked: JournalPersonal.checked(input.checked),
+    checkActions: JournalPersonal.checkActions(
+      input.checkActions,
+      JournalPersonal.checked(input.checked),
+    ),
     folders: JournalReading.folders(input.folders || [], saved),
     custom: Array.isArray(input.custom)
       ? [...new Set(input.custom.filter((s) => /^(\d{4}-\d{3}[\dX]|rss-[a-f0-9]{16})$/.test(s)))]
@@ -262,11 +278,13 @@ const stateSync = new JournalState.Sync({
   normalize: validateState,
   onChange(next) {
     if (JSON.stringify(state) === JSON.stringify(next)) return;
+    const changedCheck = JSON.stringify(state.checked) !== JSON.stringify(next.checked);
     bulkUndo = bulkUndo.filter((id) => next.read[id]);
     state = next;
     if (data) {
       updateJournals();
       render();
+      if (changedCheck) ensureHistory();
     }
   },
   notify(next) {
@@ -721,7 +739,9 @@ function openArticle(article) {
   $('#reader').showModal();
 }
 function renderHistoryStatus() {
-  const pending = articleData.pending(historyScope()).reduce((n, c) => n + c.count, 0);
+  const pending = articleData
+    .pending(historyScope(), historySince())
+    .reduce((n, c) => n + c.count, 0);
   $('#history-loading').hidden =
     browseMode === 'library' ||
     (browseMode === 'saved' && !needsHistory() && !historyBusy && !historyError) ||
@@ -733,11 +753,13 @@ function renderHistoryStatus() {
       : `还有 ${pending} 篇更早收录的文章，可按需查看。`;
   $('#load-history').disabled = historyBusy;
   $('#finish-check').disabled =
+    checkBusy ||
     historyBusy ||
     !!pending ||
     !!historyError ||
     !!$('#search').value.trim() ||
     $('#abstract-filter').value !== 'all';
+  $('#undo-check').disabled = checkBusy;
 }
 function render() {
   if (!data) return;
@@ -824,9 +846,12 @@ function render() {
     selected = current?.id || $('#journal').value;
   const days = $('#period').value;
   const since = state.checked[checkpointScope()] || '';
+  const lastCheck = state.checkActions?.[checkpointScope()];
+  $('#undo-check').hidden = !lastCheck?.completed || lastCheck.completed !== since;
+  $('#finish-check').disabled ||= Date.parse(data.generated_at) <= Date.parse(since);
   $('#new-discoveries').hidden = isLibrary || browseMode === 'saved' || view !== 'new';
   $('#check-status').textContent = since
-    ? '检查起点：' + new Date(since).toLocaleString('zh-CN') + '；可继续使用筛选。'
+    ? '检查起点：' + new Date(since).toLocaleString('zh-CN')
     : '首次检查：显示当前范围文章。看完后点「本次检查完成」，下次只看新收录。';
   if ($('#search').value.trim() || $('#abstract-filter').value !== 'all')
     $('#check-status').textContent += ' 清除搜索与摘要筛选后可结束本次检查。';
@@ -857,6 +882,17 @@ function render() {
     browseMode === 'saved' && unknown
       ? `${unknown} 条旧收藏暂缺文章信息。本机可从已查询目录恢复；其他设备请导入新版阅读备份。`
       : `当前筛选范围 ${selection.total} 篇 · ${selection.missing} 篇缺摘要 · ${selection.suspect} 篇疑似不完整`;
+  const filters = [
+    selected ? data.journals.find((j) => j.id === selected)?.name : '',
+    view !== 'new' && days !== '90' ? (days === 'all' ? '全部时间' : '近 30 天') : '',
+    $('#sort').value === 'published' ? '按发表时间' : '',
+    $('#abstract-filter').value !== 'all'
+      ? $('#abstract-filter').selectedOptions[0].textContent
+      : '',
+  ].filter(Boolean);
+  $('#filter-summary').textContent = filters.length
+    ? '筛选与排序 · ' + filters.join(' · ')
+    : '筛选与排序';
   $('#period').setAttribute(
     'aria-label',
     $('#sort').value === 'discovered' ? '收录时间范围' : '发表时间范围',
@@ -885,6 +921,10 @@ function render() {
   const stale =
     Date.now() - new Date(data.cloud_updated_at || data.generated_at).getTime() > 48 * 3600000;
   $('#notice').hidden = !failures.length && !pendingJournals.length && !stale;
+  $('#source-status').hidden = $('#notice').hidden;
+  $('#source-summary').textContent =
+    '采集状态 · ' +
+    (stale ? '更新延迟' : `${failures.length + pendingJournals.length} 本期刊需关注`);
   $('#notice').textContent = [
     failures.length
       ? `${failures.length} 本期刊存在来源请求失败，历史文章仍可阅读。详情见「管理期刊与数据源」。`
@@ -895,6 +935,13 @@ function render() {
     .filter(Boolean)
     .join(' ');
   const list = $('#articles');
+  const focused =
+      list.contains(document.activeElement) && !document.querySelector('dialog[open]')
+        ? document.activeElement
+        : null,
+    focusedId = focused?.closest('[data-article-id]')?.dataset.articleId,
+    focusedAction = focused?.dataset.feedAction,
+    previousIds = [...list.children].map((card) => card.dataset.articleId);
   list.replaceChildren();
   if (!articles.length) {
     const box = el('div', undefined, 'empty');
@@ -921,13 +968,19 @@ function render() {
   for (const article of visibleArticles) {
     const j = byId.get(article.journal_id),
       card = el('article', undefined, 'article' + (state.read[article.id] ? ' is-read' : ''));
+    card.dataset.articleId = article.id;
+    const actionButton = (name, text, callback, cls) => {
+      const control = button(text, callback, cls);
+      control.dataset.feedAction = name;
+      return control;
+    };
     const top = el('div', undefined, 'article-top');
     top.append(
       el('span', j.name, 'journal-name'),
       el('time', JournalFeed.dateLabel(article, new Date().toISOString().slice(0, 10)), 'date'),
     );
     const heading = el('h2');
-    heading.append(button(article.title, () => openArticle(article)));
+    heading.append(actionButton('open', article.title, () => openArticle(article)));
     card.append(
       top,
       heading,
@@ -953,14 +1006,15 @@ function render() {
       tags.append(el('span', article.article_type, 'tag'));
     if (article.archive)
       tags.append(el('span', (article.archive_year || '往期') + ' 年历史文章', 'tag'));
-    const read = button(state.read[article.id] ? '✓ 已读' : '标记已读', () =>
+    const read = actionButton('read', state.read[article.id] ? '✓ 已读' : '标记已读', () =>
       toggle('read', article.id),
     );
     read.setAttribute(
       'aria-label',
       (state.read[article.id] ? '标为未读：' : '标为已读：') + article.title,
     );
-    const saved = button(
+    const saved = actionButton(
+      'saved',
       state.saved[article.id] ? '★ 已收藏' : '☆ 收藏',
       () => toggle('saved', article.id),
       state.saved[article.id] ? 'saved' : '',
@@ -971,20 +1025,43 @@ function render() {
       (state.saved[article.id] ? '取消收藏：' : '收藏：') + article.title,
     );
     const link = el('a', '原文 ↗');
+    link.dataset.feedAction = 'source';
     link.href = safeLink(article.link);
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    if (browseMode === 'saved') actions.append(favorites.checkbox(article));
+    if (browseMode === 'saved') {
+      const checkbox = favorites.checkbox(article);
+      checkbox.querySelector('input').dataset.feedAction = 'select';
+      actions.append(checkbox);
+    }
     actions.append(
       read,
       saved,
-      button('APA 引用', () => favorites.cite([article])),
-      button('收藏分组', () => favorites.assign([article.id], article)),
+      actionButton('cite', 'APA 引用', () => favorites.cite([article])),
+      actionButton('folder', '收藏分组', () => favorites.assign([article.id], article)),
       link,
     );
     bottom.append(tags, actions);
     card.append(bottom);
     list.append(card);
+  }
+  if (focusedId && focusedAction) {
+    const cards = [...list.children].filter((card) => card.dataset.articleId),
+      remaining = new Set(cards.map((card) => card.dataset.articleId)),
+      oldPosition = previousIds.indexOf(focusedId),
+      targetId = remaining.has(focusedId)
+        ? focusedId
+        : previousIds.slice(oldPosition + 1).find((id) => remaining.has(id)) ||
+          previousIds
+            .slice(0, oldPosition)
+            .reverse()
+            .find((id) => remaining.has(id)),
+      card = cards.find((card) => card.dataset.articleId === targetId) || cards[0],
+      target =
+        card?.querySelector(`[data-feed-action="${focusedAction}"]`) ||
+        card?.querySelector('button') ||
+        $('#result-count');
+    target.focus({ preventScroll: !!targetId && targetId === focusedId });
   }
   $('#more').hidden = articles.length <= limit;
   if (resumeScroll !== null)
@@ -1175,14 +1252,50 @@ $('#finish-check').addEventListener('click', async () => {
   const scope = checkpointScope(),
     date = new Date(data.generated_at);
   if (!Number.isFinite(date.getTime())) return toast('数据时间无效，请先更新列表。');
-  state.checked[scope] = date.toISOString();
+  checkBusy = true;
+  render();
   try {
-    await persist();
-    toast('已保存检查起点；下次只显示此后新收录的文章。');
-  } catch {
-    /* persist retains pending operations and reports the failure. */
+    const changed = await stateSync.completeCheck(scope, date.toISOString());
+    toast(
+      changed
+        ? '已完成检查；可用「撤销完成检查」恢复之前的新文范围。'
+        : '检查起点已变化或已是最新，请查看当前结果。',
+    );
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    checkBusy = false;
   }
   render();
+  if (
+    scope === checkpointScope() &&
+    !$('#undo-check').hidden &&
+    [document.body, $('#finish-check')].includes(document.activeElement)
+  )
+    $('#undo-check').focus();
+});
+$('#undo-check').addEventListener('click', async () => {
+  const scope = checkpointScope(),
+    action = state.checkActions?.[scope];
+  if (checkBusy || !action?.completed) return;
+  checkBusy = true;
+  render();
+  let changed = false;
+  try {
+    changed = await stateSync.undoCheck(scope, action.revision);
+    toast(changed ? '已恢复上次检查前的新文范围。' : '其他窗口已更新检查记录，已保留最新结果。');
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    checkBusy = false;
+    render();
+    if (
+      changed &&
+      scope === checkpointScope() &&
+      [document.body, $('#undo-check')].includes(document.activeElement)
+    )
+      $('#finish-check').focus();
+  }
 });
 $('#mark-visible-read').addEventListener('click', async () => {
   if (bulkBusy) return;
@@ -1376,6 +1489,7 @@ async function restoreBackup(input) {
     folders: JournalReading.mergeFolders(state.folders, restored.folders, saved),
     custom: [...new Set([...state.custom, ...restored.custom.map((id) => aliases[id] || id)])],
     checked: { ...state.checked },
+    checkActions: { ...state.checkActions },
   };
   for (const [scope, date] of Object.entries(restored.checked)) {
     const target = scope.startsWith('journal:')

@@ -2,6 +2,7 @@ import json, os
 from pathlib import Path
 from collections import Counter
 from site_data import expand, RECENT_LIMIT
+from records import is_container
 
 root = Path(__file__).resolve().parents[1]
 site = root / "site"
@@ -16,6 +17,13 @@ assert {a["id"]: a for a in restored["articles"]} == {
 }, "History chunks do not reproduce the full collection"
 journals = data["journals"]
 articles = data["articles"]
+assert not any(is_container(a.get("article_type")) for a in articles), (
+    "Container metadata in article feed"
+)
+counts = Counter(a["journal_id"] for a in articles)
+assert all(j["article_count"] == counts[j["id"]] for j in journals), (
+    "Incorrect article counts"
+)
 ids = {j["id"] for j in journals}
 registry = json.loads((root / "radar/journals.json").read_text(encoding="utf-8"))
 expected = {j["id"] for j in registry["journals"] if j.get("enabled", True)}

@@ -114,6 +114,69 @@ test('checkpoints merge across scopes and an older tab cannot move a check backw
   assert.equal(shared.stored().checked['journal:0021-9010'], '2026-09-20T00:00:00Z');
 });
 
+test('explicit completion and undo persist, restore first use and preserve other scopes and reads', async () => {
+  const shared = sharedReading(),
+    a = shared.tab(),
+    scope = 'group:hr35';
+  assert.equal(await a.completeCheck(scope, '2026-09-21T01:00:00Z'), true);
+  const fresh = shared.tab();
+  await fresh.flush();
+  const action = fresh.current.checkActions[scope];
+  await fresh.save({ ...fresh.current, read: { [row.id]: true } });
+  await fresh.completeCheck('journal:0021-9010', '2026-09-21T02:00:00Z');
+  assert.equal(await fresh.undoCheck(scope, action.revision), true);
+  assert.equal(shared.stored().checked[scope], undefined);
+  assert.equal(shared.stored().checked['journal:0021-9010'], '2026-09-21T02:00:00.000Z');
+  assert.equal(shared.stored().read[row.id], true);
+  assert.equal(await fresh.undoCheck(scope, action.revision), false);
+  await fresh.completeCheck(scope, '2026-09-21T01:00:00Z');
+  assert.equal(await fresh.undoCheck(scope, action.revision), false);
+  assert.equal(shared.stored().checked[scope], '2026-09-21T01:00:00.000Z');
+});
+
+test('undo rejects a newer completion and stale saves cannot reinstate an undone checkpoint', async () => {
+  const shared = sharedReading(),
+    a = shared.tab(),
+    b = shared.tab(),
+    scope = 'group:hr35';
+  await a.completeCheck(scope, '2026-09-21T01:00:00Z');
+  await b.flush();
+  const stale = structuredClone(a.current),
+    oldAction = a.current.checkActions[scope];
+  await b.completeCheck(scope, '2026-09-21T02:00:00Z');
+  assert.equal(await a.undoCheck(scope, oldAction.revision), false);
+  assert.equal(a.current.checked[scope], '2026-09-21T02:00:00.000Z');
+  assert.equal(await b.undoCheck(scope, b.current.checkActions[scope].revision), true);
+  // A stale tab edits its checkpoint while an unrelated read change is still valid.
+  a.current = stale;
+  await a.save({
+    ...stale,
+    checked: { [scope]: '2026-09-21T03:00:00Z' },
+    read: { [row.id]: true },
+  });
+  assert.equal(shared.stored().checked[scope], '2026-09-21T01:00:00.000Z');
+  assert.equal(shared.stored().read[row.id], true);
+});
+
+test('failed completion or undo does not change the saved range or retry implicitly', async () => {
+  const shared = sharedReading(),
+    a = shared.tab(),
+    scope = 'group:hr35';
+  await a.flush();
+  shared.fail();
+  await assert.rejects(a.completeCheck(scope, '2026-09-21T01:00:00Z'), /Storage/);
+  await a.flush();
+  assert.equal(a.current.checked?.[scope], undefined);
+  await a.completeCheck(scope, '2026-09-21T01:00:00Z');
+  const revision = a.current.checkActions[scope].revision;
+  shared.fail();
+  await assert.rejects(a.undoCheck(scope, revision), /Storage/);
+  await a.flush();
+  assert.equal(a.current.checked[scope], '2026-09-21T01:00:00.000Z');
+  assert.equal(a.current.checkActions[scope].revision, revision);
+  assert.equal(await a.undoCheck(scope, revision), true);
+});
+
 test('independent tabs concurrently save different articles and preserve read and custom changes', async () => {
   const shared = sharedReading(),
     a = shared.tab(),

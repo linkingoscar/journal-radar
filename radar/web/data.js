@@ -31,14 +31,20 @@ const JournalData = (() => {
       this.rows = rows;
       return { ...next, articles: [...rows.values()] };
     }
-    pending(ids) {
+    pending(ids, since = '') {
+      const boundary = Date.parse(since);
       return (this.index?.history_chunks || []).filter(
-        (c) => ids.has(c.journal_id) && !this.loaded.has(c.url),
+        (c) =>
+          ids.has(c.journal_id) &&
+          !this.loaded.has(c.url) &&
+          (!Number.isFinite(boundary) ||
+            !Number.isFinite(Date.parse(c.first_seen_max)) ||
+            Date.parse(c.first_seen_max) > boundary),
       );
     }
-    async history(ids, progress = () => {}, { signal } = {}) {
+    async history(ids, progress = () => {}, { signal, since = '' } = {}) {
       const version = this.version,
-        chunks = this.pending(ids),
+        chunks = this.pending(ids, since),
         controller = new AbortController(),
         requestSignal = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
       // Publish only a complete requested scope; failures retain the existing list.

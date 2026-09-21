@@ -15,6 +15,7 @@ import time
 from urllib.parse import quote, urljoin, urlsplit, urlencode
 
 import requests
+from records import is_container
 
 PUBLISHERS = (
     "doi.org",
@@ -696,7 +697,11 @@ class AbstractService:
         """Cloud-friendly DOI batches; unsuccessful lookups are retried the following day."""
         candidates = []
         for a in payload["articles"]:
-            if usable_abstract(a.get("abstract")) or not doi(a.get("doi")):
+            if (
+                is_container(a.get("article_type"))
+                or usable_abstract(a.get("abstract"))
+                or not doi(a.get("doi"))
+            ):
                 continue
             if not self.due(a):
                 continue
@@ -747,7 +752,10 @@ class AbstractService:
         self.overlay(payload)
         journals = {j["id"]: j for j in payload["journals"]}
         missing = [
-            a for a in payload["articles"] if not usable_abstract(a.get("abstract"))
+            a
+            for a in payload["articles"]
+            if not is_container(a.get("article_type"))
+            and not usable_abstract(a.get("abstract"))
         ]
         missing.sort(key=lambda a: a.get("published_date") or "", reverse=True)
         missing.sort(key=lambda a: "hr35" not in journals[a["journal_id"]]["groups"])
@@ -813,7 +821,9 @@ class AbstractService:
         report["paused"] = stop.is_set()
         self.overlay(payload)
         report["remaining"] = sum(
-            not usable_abstract(a.get("abstract")) for a in payload["articles"]
+            not usable_abstract(a.get("abstract"))
+            for a in payload["articles"]
+            if not is_container(a.get("article_type"))
         )
         report["found"] = report["missing_before"] - report["remaining"]
         return report

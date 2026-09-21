@@ -1030,7 +1030,160 @@
   flex-wrap: wrap;
   gap: 6px 16px;
 }
+#personal-tools {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+#personal-tools > summary {
+  display: none;
+}
+#advanced-filters,
+#source-status {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 10px 0;
+}
+#advanced-filters > summary,
+#source-status > summary {
+  cursor: pointer;
+  padding: 8px 0;
+  color: var(--teal);
+  overflow-wrap: anywhere;
+}
+.advanced-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+}
+.advanced-controls select {
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: white;
+  color: var(--ink);
+}
+.advanced-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 @media (max-width: 700px) {
+  .sidebar {
+    padding: 12px 18px;
+  }
+  .sidebar nav {
+    margin-top: 12px;
+  }
+  .sidebar nav button {
+    font-size: 12px;
+    min-height: 40px;
+  }
+  #personal-tools {
+    display: block;
+    overflow: visible;
+    flex: none;
+  }
+  #personal-tools > summary {
+    display: list-item;
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    padding: 10px 0 10px 10px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  #personal-tools[open] {
+    margin-top: 10px;
+    border-top: 1px solid #ffffff40;
+  }
+  .sidebar-bottom button,
+  .sidebar-library-actions button {
+    padding: 10px;
+    font-size: 13px;
+    min-height: 42px;
+  }
+  .backup-status {
+    width: 100%;
+    order: 1;
+    color: #c1d2ca;
+  }
+  .backup-status p {
+    color: #d9e9dc;
+  }
+  .reading-view .topbar {
+    height: 42px;
+  }
+  .reading-view main {
+    padding-top: 12px;
+  }
+  .reading-view .browse-modes {
+    margin-bottom: 12px;
+    width: 100%;
+  }
+  .reading-view .browse-modes a {
+    flex: 1;
+    text-align: center;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .reading-view .hero {
+    margin-bottom: 12px;
+  }
+  .reading-view .hero p {
+    display: none;
+  }
+  #advanced-filters,
+  #source-status {
+    margin: 4px 0;
+  }
+  #advanced-filters > summary,
+  #source-status > summary {
+    min-height: 40px;
+  }
+  .reading-view .list-header {
+    margin: 4px 0;
+  }
+  #views {
+    width: 100%;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  #views button {
+    font-size: 13px;
+    min-height: 42px;
+  }
+  #new-discoveries {
+    margin: 8px 0;
+    gap: 8px;
+  }
+  #check-status {
+    flex-basis: 100%;
+    font-size: 12px;
+  }
+  #new-discoveries button {
+    min-height: 40px;
+  }
+  .reading-view .result-info {
+    font-size: 12px;
+    margin: 8px 0;
+  }
+  .article .journal-name {
+    font-size: 12px;
+  }
+  .article-actions button,
+  .article-actions a {
+    font-size: 12px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+  }
   .list-header {
     flex-wrap: wrap;
     gap: 8px;

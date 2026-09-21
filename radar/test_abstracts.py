@@ -28,6 +28,20 @@ TEXT = (
 )
 
 
+def test_background_and_batch_skip_legacy_container_metadata_without_requests(tmp_path):
+    def getter(url):
+        raise AssertionError("Container metadata must not request an abstract")
+
+    service = AbstractService(tmp_path, getter)
+    payload = {
+        "articles": [{**A, "journal_id": "0021-9010", "article_type": "journal"}],
+        "journals": [{"id": "0021-9010", "groups": ["hr35"]}],
+    }
+    assert service.batch(payload) == {"checked": 0, "found": 0}
+    report = service.enrich(payload, threading.Event(), lambda _: None)
+    assert report["missing_before"] == report["remaining"] == report["checked"] == 0
+
+
 def work(article=A):
     index = {}
     for i, word in enumerate(TEXT.split()):

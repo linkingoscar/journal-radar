@@ -26,6 +26,12 @@ const JournalState = (() => {
         ([scope, date]) => date !== before.checked?.[scope],
       ),
     );
+    patch.checkBases = Object.fromEntries(
+      Object.keys(patch.checked).map((scope) => [
+        scope,
+        before.checkActions?.[scope]?.revision || '',
+      ]),
+    );
     const old = new Map(before.folders.map((folder) => [folder.id, folder]));
     patch.deleted = before.folders
       .filter((f) => !after.folders.some((n) => n.id === f.id))
@@ -61,9 +67,15 @@ const JournalState = (() => {
     }
     state.custom = applySet(state.custom, patch.custom);
     for (const [scope, date] of Object.entries(patch.checked || {})) {
+      // A delayed save from before a completion/undo must not reinstate its checkpoint.
+      if ((patch.checkBases?.[scope] || '') !== (state.checkActions?.[scope]?.revision || ''))
+        continue;
       state.checked ||= {};
-      if (!state.checked[scope] || Date.parse(date) > Date.parse(state.checked[scope]))
+      if (!state.checked[scope] || Date.parse(date) > Date.parse(state.checked[scope])) {
         state.checked[scope] = date;
+        if (state.checkActions?.[scope])
+          state.checkActions[scope] = { revision: state.checkActions[scope].revision };
+      }
     }
     state.folders = state.folders.filter((f) => !patch.deleted.includes(f.id));
     for (const change of patch.folders) {
@@ -143,16 +155,57 @@ const JournalState = (() => {
       }
       return this.flush();
     }
-    flush() {
+    completeCheck(scope, date) {
+      const expected = this.current.checked?.[scope] || '',
+        revision = this.current.checkActions?.[scope]?.revision || '';
+      let changed = false;
+      return this.flush((latest) => {
+        if (
+          (latest.checked?.[scope] || '') !== expected ||
+          (latest.checkActions?.[scope]?.revision || '') !== revision ||
+          !Number.isFinite(Date.parse(date)) ||
+          (expected && Date.parse(date) <= Date.parse(expected))
+        )
+          return;
+        latest.checked ||= {};
+        latest.checkActions ||= {};
+        latest.checked[scope] = new Date(date).toISOString();
+        latest.checkActions[scope] = {
+          revision: crypto.randomUUID(),
+          previous: expected,
+          completed: latest.checked[scope],
+        };
+        changed = true;
+      }).then(() => changed);
+    }
+    undoCheck(scope, revision) {
+      let changed = false;
+      return this.flush((latest) => {
+        const action = latest.checkActions?.[scope];
+        if (
+          !action?.completed ||
+          action.revision !== revision ||
+          latest.checked?.[scope] !== action.completed
+        )
+          return;
+        if (action.previous) latest.checked[scope] = action.previous;
+        else delete latest.checked[scope];
+        latest.checkActions[scope] = { revision: crypto.randomUUID() };
+        changed = true;
+      }).then(() => changed);
+    }
+    flush(update) {
       const run = async () => {
         const batch = this.pending.slice();
-        const saved = await this.commit((latest) =>
-          this.normalize(batch.reduce(apply, this.normalize(latest || this.seed))),
-        );
+        const saved = await this.commit((latest) => {
+          const merged = this.normalize(batch.reduce(apply, this.normalize(latest || this.seed)));
+          update?.(merged);
+          return this.normalize(merged);
+        });
         this.pending.splice(0, batch.length);
         this.current = this.pending.reduce(apply, saved);
         this.onChange(copy(this.current));
-        if (batch.length) this.notify(saved);
+        if (batch.length || update) this.notify(saved);
         return saved;
       };
       this.tail = this.tail.catch(() => {}).then(run);

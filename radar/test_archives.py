@@ -1,4 +1,5 @@
 import hashlib
+import json
 from types import SimpleNamespace
 import pytest
 from archives import ArchiveService, normalize_archive
@@ -36,6 +37,20 @@ def response(items, cursor="next"):
     return SimpleNamespace(
         json=lambda: {"message": {"items": items, "next-cursor": cursor}}
     )
+
+
+def test_legacy_container_excluded_from_directory_but_saved_metadata_is_recoverable(
+    tmp_path,
+):
+    archive = service(tmp_path, lambda *_: None)
+    article = {**normalize_archive(record(), J), "article_type": "journal"}
+    with archive.connection() as conn:
+        conn.execute(
+            "INSERT INTO archive_articles VALUES (?,?,?,?)",
+            (article["id"], J["id"], 1980, json.dumps(article)),
+        )
+    assert archive.result(J["id"], 1980, {"complete": True})["articles"] == []
+    assert archive.article(article["id"])["title"] == article["title"]
 
 
 def test_archive_year_uses_print_year_and_preserves_volume_only_and_combined_issues():

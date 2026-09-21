@@ -378,3 +378,20 @@ def test_reading_metadata_recovers_cached_history_without_external_requests(tmp_
         and migrated["articles"][0]["doi"] == canonical["doi"]
     )
     assert migrated["reading_aliases"][legacy["id"]] == canonical["id"]
+    # Filtering the feed must not orphan an old saved container record by ID.
+    from run import normalize_crossref
+
+    app.store.ingest(J, [normalize_crossref(record(doi="10.1000/legacy"), J)])
+    with app.store.get_connection("history") as conn:
+        conn.execute(
+            "UPDATE matched_entries SET article_type='journal' WHERE doi='10.1000/legacy'"
+        )
+        identifier = conn.execute(
+            "SELECT entry_id FROM matched_entries WHERE doi='10.1000/legacy'"
+        ).fetchone()[0]
+    recovered = app.reading_articles([identifier])["articles"]
+    assert len(recovered) == 1 and recovered[0]["id"] == identifier
+    assert (
+        recovered[0]["article_type"] == "journal"
+        and recovered[0]["citation"]["year"] == "1980"
+    )

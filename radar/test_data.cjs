@@ -7,6 +7,41 @@ const chunk = (i, journal) => ({
   journal_id: journal,
   count: 1,
 });
+
+test('new-discovery history skips older and equal instants but keeps unknown bounds and other modes complete', async () => {
+  const chunks = [
+    { ...chunk(1, 'one'), first_seen_max: '2026-09-21T09:59:00+08:00' },
+    { ...chunk(2, 'one'), first_seen_max: '2026-09-21T02:00:00Z' },
+    { ...chunk(3, 'one'), first_seen_max: '2026-09-21T10:01:00+08:00' },
+    chunk(4, 'one'),
+    { ...chunk(5, 'one'), first_seen_max: 'invalid' },
+    chunk(6, 'two'),
+  ];
+  const requested = [];
+  const library = new Library(async (url) => ({
+    ok: true,
+    json: async () => {
+      if (url.startsWith('index.json'))
+        return { articles: [], journals: [], history_chunks: chunks };
+      requested.push(url);
+      return { articles: [{ id: url.slice(9, -5), journal_id: 'one' }] };
+    },
+  }));
+  await library.refresh();
+  const ids = new Set(['one']);
+  const since = '2026-09-21T10:00:00+08:00';
+  assert.equal(library.pending(ids).length, 5);
+  assert.equal(library.pending(ids, 'invalid').length, 5);
+  const rows = await library.history(ids, () => {}, { since });
+  assert.deepEqual(rows.map((a) => a.id).sort(), [id(3), id(4), id(5)]);
+  assert.deepEqual(
+    requested.sort(),
+    chunks.slice(2, 5).map((c) => c.url),
+  );
+  assert.equal(library.pending(ids, since).length, 0);
+  assert.equal(library.pending(ids).length, 2);
+  assert.equal((await library.history(ids)).length, 5);
+});
 test('history fetches at most three chunks concurrently and reports completion without losing rows', async () => {
   const chunks = Array.from({ length: 8 }, (_, i) => chunk(i + 1, 'one'));
   let active = 0,

@@ -39,6 +39,29 @@ const JournalPersonal = (() => {
         .map(([key, value]) => [key, new Date(value).toISOString()]),
     );
   }
+  function checkActions(input, checkpoints) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+    const actions = {};
+    for (const [scope, action] of Object.entries(input)) {
+      if (
+        !checked({ [scope]: '2000-01-01T00:00:00Z' })[scope] ||
+        !action ||
+        !/^[a-f0-9-]{36}$/.test(action.revision)
+      )
+        continue;
+      const clean = { revision: action.revision },
+        completed = checked({ [scope]: action.completed })[scope],
+        previous = checked({ [scope]: action.previous })[scope] || '';
+      if (
+        completed &&
+        checkpoints[scope] === completed &&
+        (action.previous === '' || (previous && Date.parse(previous) < Date.parse(completed)))
+      )
+        Object.assign(clean, { completed, previous });
+      actions[scope] = clean;
+    }
+    return actions;
+  }
   function reminder(state, meta, now = Date.now()) {
     const saved = Object.keys(state.saved),
       previous = new Set(Array.isArray(meta.saved) ? meta.saved : []);
@@ -88,6 +111,6 @@ const JournalPersonal = (() => {
   function undoRead(state, ids) {
     for (const id of ids) delete state.read[id];
   }
-  return { Store, preferences, checked, reminder, markRead, undoRead };
+  return { Store, preferences, checked, checkActions, reminder, markRead, undoRead };
 })();
 if (typeof module !== 'undefined') module.exports = JournalPersonal;

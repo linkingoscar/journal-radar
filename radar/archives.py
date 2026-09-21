@@ -9,6 +9,7 @@ import sqlite3
 import threading
 import time
 from run import get, date_parts, normalize_crossref, plain
+from records import is_container
 
 PAGE_SIZE = 250
 
@@ -282,6 +283,7 @@ class ArchiveService:
                     (identifier, year),
                 )
             ]
+        articles = [a for a in articles if not is_container(a.get("article_type"))]
         original_dois = {a["id"]: a["doi"] for a in articles}
         articles, source_aliases = merge_apa_aliases(articles)
         aliases = {}

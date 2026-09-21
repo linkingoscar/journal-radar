@@ -282,10 +282,16 @@ class Companion:
     def abstract_article(self, identifier):
         with self.store.get_connection("history") as c:
             row = c.execute(
-                "SELECT entry_id AS id,title,doi,link,abstract,journal_id FROM matched_entries WHERE entry_id=?",
+                "SELECT entry_id AS id,journal_id,title,link,authors,abstract,doi,published_date,matched_date AS first_seen,online_date,print_date,article_type,sources,citation FROM matched_entries WHERE entry_id=?",
                 (identifier,),
             ).fetchone()
-        return dict(row) if row else self.archives.article(identifier)
+        if not row:
+            return self.archives.article(identifier)
+        article = {key: value or "" for key, value in dict(row).items()}
+        citation = article.pop("citation", "")
+        if citation:
+            article["citation"] = json.loads(citation)
+        return article
 
     def reading_articles(self, identifiers):
         # Read existing caches only; opening saved items never starts an archive crawl.
@@ -297,7 +303,11 @@ class Companion:
         aliases = dict(payload.get("reading_aliases", {}))
         for identifier in dict.fromkeys(identifiers):
             canonical = payload.get("reading_aliases", {}).get(identifier, identifier)
-            article = recent.get(canonical) or self.archives.article(identifier)
+            article = (
+                recent.get(canonical)
+                or self.archives.article(identifier)
+                or self.abstract_article(canonical)
+            )
             if article:
                 if article.get("doi", "").startswith("10.1037//"):
                     import hashlib
