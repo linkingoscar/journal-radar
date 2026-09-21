@@ -320,10 +320,12 @@ function safeLink(s) {
 }
 function updateJournals() {
   libraryUI.sidebar(state.custom);
-  const select = $('#journal');
+  const select = $('#journal'),
+    previous = select.value;
   select.replaceChildren(new Option('所有期刊', ''));
   for (const j of data.journals.filter(inGroup).sort((a, b) => a.name.localeCompare(b.name)))
     select.add(new Option(j.name, j.id));
+  if ([...select.options].some((option) => option.value === previous)) select.value = previous;
   $('#custom-count').textContent = state.custom.length;
   $('#all-count').textContent = data.journals.length;
 }
