@@ -47,9 +47,14 @@ const JournalFeed = (() => {
         matches(a) &&
         (!cutoff || date >= cutoff.slice(0, date.length)) &&
         (!query ||
-          [a.title, a.authors, a.abstract, a.doi].some((s) =>
-            (s || '').toLowerCase().includes(query),
-          )) &&
+          [
+            a.title,
+            a.authors,
+            a.abstract,
+            a.doi,
+            state.annotations?.[a.id]?.note,
+            ...(state.annotations?.[a.id]?.tags || []),
+          ].some((s) => (s || '').toLowerCase().includes(query))) &&
         (view !== 'unread' || !state.read[a.id]) &&
         (view !== 'saved' || state.saved[a.id])
       );

@@ -191,7 +191,7 @@ const JournalReading = (() => {
   function backup(input) {
     if (
       !input ||
-      ![1, 2, 3, 4].includes(input.version) ||
+      ![1, 2, 3, 4, 5].includes(input.version) ||
       !input.read ||
       !input.saved ||
       !Array.isArray(input.custom)
@@ -230,6 +230,33 @@ const JournalReading = (() => {
       abstract_url: value.link,
     });
   }
-  return { article, citation, folders, mergeFolders, remapFolders, merge, store, backup, manual };
+  class Sequence {
+    start(article, rows = []) {
+      this.rows = [...new Map(rows.map((row) => [row.id, row])).values()];
+      this.index = this.rows.findIndex((row) => row.id === article.id);
+      if (this.index < 0) {
+        this.rows = [article];
+        this.index = 0;
+      }
+    }
+    move(delta) {
+      const next = this.index + delta;
+      if (next < 0 || next >= this.rows.length) return null;
+      this.index = next;
+      return this.rows[this.index];
+    }
+  }
+  return {
+    article,
+    citation,
+    folders,
+    mergeFolders,
+    remapFolders,
+    merge,
+    store,
+    backup,
+    manual,
+    Sequence,
+  };
 })();
 if (typeof module !== 'undefined') module.exports = JournalReading;

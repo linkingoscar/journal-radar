@@ -76,7 +76,7 @@ test('one portable backup carries readings, citations, translations, journal gro
     folders: x.folders,
     custom: x.custom,
   }));
-  assert.equal(result.version, 4);
+  assert.equal(result.version, 5);
   assert.deepEqual(restored.state, state);
   assert.equal(restored.articles[0].citation.title, 'Manual correction');
   assert.equal(restored.translations[0].text, '缓存译文');

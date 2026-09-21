@@ -12,11 +12,15 @@ const JournalPersonal = (() => {
     return {
       route: route(input.route) ? input.route : '#feed=hr35',
       view: choose(input.view, ['all', 'unread', 'saved', 'new'], 'all'),
-      period: choose(input.period, ['30', '90', 'all'], '90'),
+      period: choose(input.period, ['7', '30', '90', 'all'], '90'),
       sort: choose(input.sort, ['discovered', 'published'], 'discovered'),
       abstract: choose(input.abstract, ['all', 'missing', 'suspect'], 'all'),
       journal: typeof input.journal === 'string' ? input.journal.slice(0, 80) : '',
       search: typeof input.search === 'string' ? input.search.slice(0, 2000) : '',
+      tag: typeof input.tag === 'string' ? input.tag.slice(0, 40) : '',
+      folder: /^(?:all|unfiled|folder-[a-z0-9-]{1,80})$/.test(input.folder || '')
+        ? input.folder
+        : 'all',
       catalogSearch:
         typeof input.catalogSearch === 'string' ? input.catalogSearch.slice(0, 200) : '',
       layout: choose(input.layout, ['grid', 'list'], 'grid'),
@@ -69,7 +73,12 @@ const JournalPersonal = (() => {
     const last = Date.parse(meta.exportedAt || meta.startedAt);
     const changed = JSON.stringify(state) !== meta.state;
     const hasRecords =
-      saved.length || Object.keys(state.read).length || state.folders.length || state.custom.length;
+      saved.length ||
+      Object.keys(state.read).length ||
+      state.folders.length ||
+      state.custom.length ||
+      Object.keys(state.queries || {}).length ||
+      Object.keys(state.annotations || {}).length;
     return {
       added,
       due:

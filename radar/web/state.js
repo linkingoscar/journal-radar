@@ -21,6 +21,17 @@ const JournalState = (() => {
       patch[key] = difference(Object.keys(before[key]), Object.keys(after[key]));
     }
     patch.custom = difference(before.custom, after.custom);
+    patch.records = {};
+    for (const key of ['queries', 'annotations']) {
+      patch.records[key] = Object.fromEntries(
+        [...new Set([...Object.keys(before[key] || {}), ...Object.keys(after[key] || {})])]
+          .filter((id) => JSON.stringify(before[key]?.[id]) !== JSON.stringify(after[key]?.[id]))
+          .map((id) => [
+            id,
+            { before: before[key]?.[id] || null, after: after[key]?.[id] || null },
+          ]),
+      );
+    }
     patch.checked = Object.fromEntries(
       Object.entries(after.checked || {}).filter(
         ([scope, date]) => date !== before.checked?.[scope],
@@ -66,6 +77,15 @@ const JournalState = (() => {
       );
     }
     state.custom = applySet(state.custom, patch.custom);
+    for (const [key, rows] of Object.entries(patch.records || {})) {
+      state[key] ||= {};
+      for (const [id, change] of Object.entries(rows)) {
+        // Imports must not overwrite a concurrently edited personal record.
+        if (JSON.stringify(state[key][id] || null) !== JSON.stringify(change.before)) continue;
+        if (change.after) state[key][id] = change.after;
+        else delete state[key][id];
+      }
+    }
     for (const [scope, date] of Object.entries(patch.checked || {})) {
       // A delayed save from before a completion/undo must not reinstate its checkpoint.
       if ((patch.checkBases?.[scope] || '') !== (state.checkActions?.[scope]?.revision || ''))
@@ -96,8 +116,13 @@ const JournalState = (() => {
     let connection;
     const open = () =>
       (connection ||= new Promise((resolve, reject) => {
-        const request = indexedDB.open('journal-radar-reading-state', 1);
-        request.onupgradeneeded = () => request.result.createObjectStore('state');
+        // v1 clients normalize away notes and saved filters. A version upgrade closes
+        // their connections and prevents them from silently overwriting v2 records.
+        const request = indexedDB.open('journal-radar-reading-state', 2);
+        request.onupgradeneeded = () => {
+          if (!request.result.objectStoreNames.contains('state'))
+            request.result.createObjectStore('state');
+        };
         request.onsuccess = () => {
           request.result.onversionchange = () => {
             request.result.close();
@@ -177,6 +202,18 @@ const JournalState = (() => {
         };
         changed = true;
       }).then(() => changed);
+    }
+    editRecord(key, id, expected, value) {
+      if (!['queries', 'annotations'].includes(key))
+        return Promise.reject(new Error('个人配置类型无效'));
+      return this.flush((latest) => {
+        latest[key] ||= {};
+        if (JSON.stringify(latest[key][id] || null) !== JSON.stringify(expected))
+          throw new Error('这条记录已在其他窗口修改，草稿已保留。请复制草稿后重新打开编辑。');
+        if (value === null) delete latest[key][id];
+        else latest[key][id] = value;
+        if (key === 'annotations' && value) latest.saved[id] = true;
+      });
     }
     undoCheck(scope, revision) {
       let changed = false;

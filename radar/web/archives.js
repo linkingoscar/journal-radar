@@ -275,7 +275,7 @@ class JournalArchives {
       const row = node('li', '', 'archive-row'),
         title = node('button', article.title, 'archive-title');
       title.type = 'button';
-      title.addEventListener('click', () => this.open(article));
+      title.addEventListener('click', () => this.open(article, rows));
       title.dataset.archiveFocus = 'open:' + article.id;
       const heading = node('h4', '');
       heading.append(title);

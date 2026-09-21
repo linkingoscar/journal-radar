@@ -26,6 +26,7 @@ from run import (
 from abstracts import AbstractService
 from archives import ArchiveService
 from library import Library, lookup, public_feed_get
+from covers import CoverService, IMAGE_NAME, MAX_BYTES
 from site_data import write_site, expand, CHUNK_PATH, write_json, encoded
 
 PORT = 8766
@@ -135,6 +136,9 @@ class Companion:
             self.directory / "library.json",
         )
         self.registry = self.library.registry()
+        self.covers = CoverService(
+            self.directory, ROOT / "radar/web", self.library.base["journals"]
+        )
         self.library_lock = threading.RLock()
         self.candidates = {}
         self.resync_requested = False
@@ -271,6 +275,8 @@ class Companion:
                 j["id"]: j for j in self.registry["journals"] if j.get("enabled", True)
             }
             self.publish()
+            if action in ("journals", "restore"):
+                self.covers.schedule(self.registry["journals"])
         if action == "journals" and not result["existing"]:
             with self.guard:
                 if self.status["running"]:
@@ -406,8 +412,15 @@ class Companion:
                     h["source"]: h for h in byid.get(j["id"], {}).get("health", [])
                 }
                 h = health.get("rss", {})
-                if j.get("rss_url") and (
-                    cloud_failed or stale or not h.get("last_success") or h.get("error")
+                if (
+                    j.get("rss_url")
+                    and self.store.rss.due(j, now())
+                    and (
+                        cloud_failed
+                        or stale
+                        or not h.get("last_success")
+                        or h.get("error")
+                    )
                 ):
                     jobs.append((j, "rss", None))
                 crossref = health.get("crossref", {})
@@ -428,26 +441,37 @@ class Companion:
                         j,
                         source,
                         (
-                            collect_rss(j, getter=public_feed_get)
+                            collect_rss(
+                                j, getter=public_feed_get, **self.store.rss.options(j)
+                            )
                             if j.get("user_added")
-                            else collect_rss(j)
+                            else collect_rss(j, **self.store.rss.options(j))
                         )
                         if source == "rss"
                         else collect_crossref(j, last_success, attempt, 90),
                         None,
                     )
                 except Exception as exc:
-                    return j, source, [], str(exc)[:200]
+                    return j, source, [], exc
 
             failed = 0
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
                 for j, source, entries, error in pool.map(fetch, jobs):
                     if not error:
-                        self.store.ingest(j, entries)
-                    else:
+                        try:
+                            self.store.ingest(j, entries)
+                        except Exception as exc:
+                            error = exc
+                    if error:
                         failed += 1
+                    if source == "rss":
+                        self.store.rss.record(j, attempt, entries, error)
                     self.store.record_health(
-                        j["id"], source, attempt, error, len(entries)
+                        j["id"],
+                        source,
+                        attempt,
+                        str(error)[:200] if error else None,
+                        len(entries),
                     )
                     self.status["completed"] += 1
             self.publish()
@@ -533,6 +557,7 @@ def make_handler(app, port):
                 return self.respond(403, {"error": "仅允许本机应用访问"})
             path = urlsplit(self.path).path
             if path == "/api/session":
+                app.covers.schedule(app.registry["journals"])
                 return self.respond(
                     200,
                     {
@@ -540,8 +565,26 @@ def make_handler(app, port):
                         "version": 1,
                         "token": app.token,
                         **app.status,
+                        "covers_revision": app.covers.revision,
                     },
                 )
+            if path == "/api/covers":
+                return self.respond(200, app.covers.snapshot(app.registry["journals"]))
+            if path == "/api/covers/backup":
+                try:
+                    with app.library_lock:
+                        result = app.covers.backup(app.registry["journals"])
+                    return self.respond(200, result)
+                except (ValueError, OSError) as exc:
+                    return self.respond(500, {"error": str(exc)[:200]})
+            if path.startswith("/api/covers/image/"):
+                name = path.removeprefix("/api/covers/image/")
+                if not IMAGE_NAME.fullmatch(name):
+                    return self.respond(404, {"error": "封面不存在"})
+                file = app.covers.directory / name
+                if not file.is_file():
+                    return self.respond(404, {"error": "封面不存在"})
+                return self.respond(200, file.read_bytes(), "image/png")
             if path == "/api/reading-articles":
                 query = parse_qs(urlsplit(self.path).query)
                 ids = query.get("ids", [""])[0].split(",")
@@ -604,6 +647,58 @@ def make_handler(app, port):
             ):
                 return self.respond(403, {"error": "无效的本机请求"})
             path = urlsplit(self.path).path
+            if path == "/api/covers/restore":
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                    if (
+                        not 0 < length <= 50_000_000
+                        or self.headers.get("Transfer-Encoding")
+                        or self.headers.get("Content-Type", "").split(";")[0]
+                        != "application/json"
+                    ):
+                        raise ValueError("封面备份请求格式错误或超过 50 MB")
+                    body = json.loads(self.rfile.read(length))
+                    with app.library_lock:
+                        result = app.covers.restore(body, app.registry["journals"])
+                    return self.respond(200, result)
+                except (ValueError, TypeError) as exc:
+                    return self.respond(400, {"error": str(exc)[:200]})
+                except OSError:
+                    return self.respond(
+                        500, {"error": "封面备份未能保存，请检查本机存储后重试"}
+                    )
+            cover = re.fullmatch(
+                r"/api/covers/(\d{4}-\d{3}[\dX]|rss-[a-f0-9]{16})", path
+            )
+            if cover:
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                    if (
+                        not 0 < length <= MAX_BYTES
+                        or self.headers.get("Transfer-Encoding")
+                        or self.headers.get("Content-Type")
+                        != "application/octet-stream"
+                    ):
+                        raise ValueError("请上传不超过 2 MB 的图片")
+                    with app.library_lock:
+                        journal = next(
+                            (
+                                j
+                                for j in app.registry["journals"]
+                                if j["id"] == cover[1]
+                            ),
+                            None,
+                        )
+                    if journal is None:
+                        raise ValueError("期刊未收录，请先添加期刊")
+                    result = app.covers.manual(journal, self.rfile.read(length))
+                    return self.respond(200, result)
+                except (ValueError, TypeError) as exc:
+                    return self.respond(400, {"error": str(exc)[:200]})
+                except OSError:
+                    return self.respond(
+                        500, {"error": "封面未能保存，请检查本机存储后重试"}
+                    )
             if path in (
                 "/api/library/lookup",
                 "/api/library/groups",
@@ -708,6 +803,8 @@ def main():
     server = ThreadingHTTPServer(("127.0.0.1", args.port), BaseHTTPRequestHandler)
     app = Companion(args.data_dir)
     server.RequestHandlerClass = make_handler(app, args.port)
+    app.covers.schedule(app.registry["journals"])
+    app.covers.start()
     app.start_sync()
     server.serve_forever()
 

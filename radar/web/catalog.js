@@ -1,5 +1,6 @@
 'use strict';
-// Selected metadata and covers from linkingoscar/paper; see radar/CATALOG_SOURCES.md.
+// Metadata and covers from linkingoscar/paper, with additional covers from Third Iron.
+// Source URLs and retrieval details: radar/CATALOG_SOURCES.md.
 const JOURNAL_CATALOG = {
   "1941-6520": {
     "cover": "cover-1941-6520.jpg",
@@ -941,7 +942,7 @@ const JOURNAL_CATALOG = {
     ]
   },
   "0048-3486": {
-    "cover": "",
+    "cover": "cover-0048-3486.png",
     "discipline": "HRM&EMP、人力资源管理",
     "ratings": [
       {
@@ -1000,7 +1001,7 @@ const JOURNAL_CATALOG = {
     ]
   },
   "1038-4111": {
-    "cover": "",
+    "cover": "cover-1038-4111.png",
     "discipline": "HRM&EMP、人力资源管理",
     "ratings": [
       {
@@ -1225,87 +1226,87 @@ const JOURNAL_CATALOG = {
     ]
   },
   "0167-8116": {
-    "cover": "",
+    "cover": "cover-0167-8116.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "0022-4359": {
-    "cover": "",
+    "cover": "cover-0022-4359.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "0022-3514": {
-    "cover": "",
+    "cover": "cover-0022-3514.png",
     "discipline": "Psychology",
     "ratings": []
   },
   "2378-1815": {
-    "cover": "",
+    "cover": "cover-2378-1815.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "0742-6046": {
-    "cover": "",
+    "cover": "cover-0742-6046.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "1472-0817": {
-    "cover": "",
+    "cover": "cover-1472-0817.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "0923-0645": {
-    "cover": "",
+    "cover": "cover-0923-0645.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "0091-3367": {
-    "cover": "",
+    "cover": "cover-0091-3367.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "1094-9968": {
-    "cover": "",
+    "cover": "cover-1094-9968.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "0743-9156": {
-    "cover": "",
+    "cover": "cover-0743-9156.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "0309-0566": {
-    "cover": "",
+    "cover": "cover-0309-0566.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "0265-1335": {
-    "cover": "",
+    "cover": "cover-0265-1335.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "0969-6989": {
-    "cover": "",
+    "cover": "cover-0969-6989.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "1350-231X": {
-    "cover": "",
+    "cover": "cover-1350-231X.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "1470-6423": {
-    "cover": "",
+    "cover": "cover-1470-6423.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "0265-0487": {
-    "cover": "",
+    "cover": "cover-0265-0487.png",
     "discipline": "Marketing",
     "ratings": []
   },
   "0747-5632": {
-    "cover": "",
+    "cover": "cover-0747-5632.png",
     "discipline": "Psychology / Human–Computer Interaction",
     "ratings": []
   }

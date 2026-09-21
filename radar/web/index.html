@@ -16,12 +16,15 @@
     <script src="translation.js" defer></script>
     <script src="catalog.js" defer></script>
     <script src="reading.js" defer></script>
+    <script src="notes.js" defer></script>
     <script src="state.js" defer></script>
     <script src="personal.js" defer></script>
+    <script src="filters.js" defer></script>
     <script src="data.js" defer></script>
     <script src="feed.js" defer></script>
     <script src="archives.js" defer></script>
     <script src="library.js" defer></script>
+    <script src="covers.js" defer></script>
     <script src="backup.js" defer></script>
     <script src="citations.js" defer></script>
     <script src="favorites.js" defer></script>
@@ -134,18 +137,22 @@
             </div>
           </div>
           <div class="result-info">
+            <button id="manage-covers" class="quiet" hidden>管理封面</button>
             <span id="catalog-count" aria-live="polite">正在读取期刊…</span
             ><span>点击期刊，查看已收录文章</span>
           </div>
           <div id="catalog-cards" class="catalog-grid"></div>
           <p class="catalog-source">
-            封面与学科、评级资料复用自
+            学科、评级与部分封面来自
             <a
               href="https://github.com/linkingoscar/paper"
               target="_blank"
               rel="noopener noreferrer"
               >paper 期刊库 ↗</a
-            >；评级年份见标签。封面仅用于识别期刊。
+            >；补充封面来自
+            <a href="https://thirdiron.com/browzine/" target="_blank" rel="noopener noreferrer"
+              >BrowZine / Third Iron ↗</a
+            >。评级年份见标签；封面用于识别期刊，不代表最新一期。
           </p>
         </section>
         <section id="journal-archive" aria-label="期刊历史目录" hidden>
@@ -207,6 +214,15 @@
           </div>
         </section>
         <div id="article-feed" hidden>
+          <div class="saved-query-bar" aria-label="常用筛选">
+            <label for="saved-query">常用筛选</label
+            ><select id="saved-query">
+              <option value="">选择常用筛选</option>
+            </select>
+            <button id="apply-query" disabled>打开筛选</button
+            ><button id="save-query">保存当前筛选</button
+            ><button id="edit-query" disabled>管理此筛选</button>
+          </div>
           <section id="saved-tools" class="saved-tools" aria-label="收藏分组与批量操作" hidden>
             <div>
               <label for="saved-folder">收藏文章分组</label
@@ -230,8 +246,8 @@
               ><input
                 type="search"
                 id="search"
-                placeholder="搜索标题、作者、摘要或 DOI"
-                aria-label="搜索标题、作者、摘要或 DOI"
+                placeholder="搜索标题、作者、摘要、DOI 或笔记"
+                aria-label="搜索标题、作者、摘要、DOI 或笔记"
               /><kbd>/</kbd></label
             >
           </section>
@@ -244,10 +260,18 @@
               </select>
               <label class="sr-only" for="period">收录时间范围</label
               ><select id="period">
+                <option value="7">近 7 天</option>
                 <option value="30">近 30 天</option>
                 <option value="90" selected>近 90 天</option>
                 <option value="all">全部时间</option>
               </select>
+              <label for="note-tag" class="sr-only">个人标签</label
+              ><input
+                id="note-tag"
+                list="personal-tags"
+                maxlength="40"
+                placeholder="按个人标签筛选"
+              /><datalist id="personal-tags"></datalist>
               <label
                 >排序
                 <select id="sort">
@@ -307,6 +331,11 @@
         <span>文章速览</span><button class="close" aria-label="关闭文章速览">✕</button>
       </div>
       <div id="reader-content"></div>
+      <nav class="reader-navigation" aria-label="连续阅读">
+        <button id="reader-prev">← 上一篇</button><span id="reader-position" role="status"></span
+        ><button id="reader-next">下一篇 →</button>
+      </nav>
+      <p class="hint">快捷键 J 下一篇、K 上一篇。阅读顺序沿用打开时的筛选结果。</p>
     </dialog>
     <dialog id="saved-folder-dialog" aria-labelledby="saved-folder-title">
       <div class="dialog-head">
@@ -355,7 +384,12 @@
         <button id="copy-bibliography" class="primary">复制参考文献</button
         ><button id="download-citations-txt">下载 TXT</button
         ><button id="download-citations-html">下载 HTML（Word 可打开）</button>
+        <button id="download-citations-ris">下载 RIS</button>
+        <button id="download-citations-bib">下载 BibTeX</button>
       </div>
+      <p class="hint">
+        RIS / BibTeX 可导入文献管理工具，包含摘要、个人笔记与标签；缺失书目信息会附上待核对说明。
+      </p>
       <details open>
         <summary>正文引用与书目信息核对</summary>
         <p class="hint">
@@ -414,6 +448,94 @@
       </form>
     </dialog>
 
+    <dialog id="note-editor" aria-labelledby="note-editor-title">
+      <div class="dialog-head">
+        <span id="note-editor-title">文章笔记与标签</span
+        ><button class="close" aria-label="关闭笔记编辑">✕</button>
+      </div>
+      <p id="note-article-title"></p>
+      <form id="note-form">
+        <fieldset id="note-controls" class="library-controls">
+          <label for="article-note">个人笔记</label
+          ><textarea
+            id="article-note"
+            rows="7"
+            maxlength="20000"
+            placeholder="为什么收藏？研究方法是什么？可以用于哪个选题？"
+          ></textarea>
+          <label for="article-note-tags">标签（用逗号分隔）</label
+          ><input
+            id="article-note-tags"
+            maxlength="820"
+            placeholder="例如：领导力, 实验研究, 博士论文"
+          />
+          <p class="hint">
+            保存笔记时将文章加入收藏；清空笔记不会取消收藏。笔记与标签仅保存在本设备，随完整备份迁移。
+          </p>
+          <button type="submit" class="primary">保存笔记</button>
+        </fieldset>
+      </form>
+      <p id="note-message" role="status"></p>
+      <div id="discard-note" hidden>
+        <p>有尚未保存的修改。是否放弃这份草稿？</p>
+        <button id="discard-note-confirm">放弃草稿并关闭</button
+        ><button id="keep-note-editing">继续编辑</button>
+      </div>
+    </dialog>
+    <dialog id="query-editor" aria-labelledby="query-editor-title">
+      <div class="dialog-head">
+        <span id="query-editor-title">保存常用筛选</span
+        ><button class="close" aria-label="关闭筛选编辑">✕</button>
+      </div>
+      <form id="query-form">
+        <fieldset id="query-controls" class="library-controls">
+          <label for="query-name">筛选名称</label
+          ><input id="query-name" required maxlength="60" placeholder="例如：人力与组织每周未读" />
+          <label id="query-replace-label"
+            ><input id="query-replace" type="checkbox" />同时用当前条件替换已保存的筛选</label
+          >
+          <p class="hint">
+            保存分组、期刊、时间、关键词和阅读状态；每次打开显示最新匹配结果。配置随完整备份迁移。
+          </p>
+          <div class="library-form-actions">
+            <button type="submit" class="primary">保存筛选</button
+            ><button id="delete-query" type="button">删除此筛选</button>
+          </div>
+        </fieldset>
+      </form>
+      <p id="query-message" role="status"></p>
+    </dialog>
+    <dialog id="cover-manager" aria-labelledby="cover-manager-title">
+      <div class="dialog-head">
+        <span id="cover-manager-title">期刊封面</span>
+        <button class="close" aria-label="关闭封面管理">✕</button>
+      </div>
+      <p class="hint">新增期刊后会按 ISSN 自动匹配代表封面，找到后长期保留，不追踪最新一期。</p>
+      <form id="cover-form">
+        <fieldset id="cover-controls" class="library-controls">
+          <label for="cover-journal">选择期刊</label>
+          <select id="cover-journal" required></select>
+          <div class="cover-summary">
+            <img id="cover-preview" width="120" height="168" alt="" hidden />
+            <p id="cover-state" role="status"></p>
+          </div>
+          <label for="cover-file">上传或更换封面</label>
+          <input
+            id="cover-file"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            required
+            aria-describedby="cover-file-help"
+          />
+          <p id="cover-file-help" class="hint">
+            PNG、JPEG 或 WebP，最多 2
+            MB。手动封面保存在本机，自动匹配不会覆盖，并随完整备份一起迁移。
+          </p>
+          <button type="submit" class="primary">保存封面</button>
+        </fieldset>
+      </form>
+      <p id="cover-message" role="status" aria-live="polite"></p>
+    </dialog>
     <dialog id="group-manager" aria-labelledby="group-manager-title">
       <div class="dialog-head">
         <span id="group-manager-title">管理分组</span

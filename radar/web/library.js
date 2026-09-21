@@ -502,7 +502,7 @@ const JournalLibrary = (() => {
                   '#journal-add-message',
                   saved.existing
                     ? '已使用现有期刊，并保存所选分组。'
-                    : '期刊已添加，正在后台采集文章。',
+                    : '期刊已添加，正在后台采集文章并匹配封面。',
                 );
                 $('#journal-candidates').replaceChildren();
                 this.options.toast('期刊已保存。');

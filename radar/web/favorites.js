@@ -176,6 +176,14 @@ class JournalFavorites {
         'html',
       ),
     );
+    for (const extension of ['ris', 'bib'])
+      this.$('#download-citations-' + extension).addEventListener('click', () =>
+        this.download(
+          JournalCitations.exportRecords(this.output.rows, extension, this.state().annotations),
+          'text/plain;charset=utf-8',
+          extension,
+        ),
+      );
   }
   node(tag, text) {
     const n = document.createElement(tag);
@@ -301,7 +309,7 @@ class JournalFavorites {
     const assets = await this.citationEngine.assetsFor();
     if (version !== this.citationVersion) return;
     const rows = this.citationArticles.map((a) => ({
-      id: a.id,
+      ...a,
       citation: JournalCitations.metadata(
         a,
         this.journals().find((j) => j.id === a.journal_id),
@@ -365,7 +373,13 @@ class JournalFavorites {
     }
   }
   enableExports(enabled) {
-    for (const id of ['copy-bibliography', 'download-citations-txt', 'download-citations-html'])
+    for (const id of [
+      'copy-bibliography',
+      'download-citations-txt',
+      'download-citations-html',
+      'download-citations-ris',
+      'download-citations-bib',
+    ])
       this.$('#' + id).disabled = !enabled;
   }
   editCitation(id) {
@@ -461,7 +475,11 @@ class JournalFavorites {
     const url = URL.createObjectURL(new Blob([body], { type })),
       a = this.node('a');
     a.href = url;
-    a.download = 'APA-references-' + new Date().toISOString().slice(0, 10) + '.' + extension;
+    a.download =
+      (['ris', 'bib'].includes(extension) ? 'references-' : 'APA-references-') +
+      new Date().toISOString().slice(0, 10) +
+      '.' +
+      extension;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }

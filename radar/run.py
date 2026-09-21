@@ -23,6 +23,7 @@ os.environ.setdefault("PAPER_FIREHOSE_DATA_DIR", str(ROOT / "radar-data"))
 import feedparser
 import requests
 from records import is_container
+from rss_state import FeedResult, RSSState
 from paper_firehose.core.database import DatabaseManager
 from paper_firehose.core.doi_utils import extract_doi_from_entry
 from paper_firehose.core.text_utils import strip_jats
@@ -226,11 +227,16 @@ class RadarStore(DatabaseManager):
             conn.execute("""CREATE TABLE IF NOT EXISTS radar_health (
               journal_id TEXT, source TEXT, last_attempt TEXT, last_success TEXT,
               error TEXT, item_count INTEGER, PRIMARY KEY(journal_id,source))""")
+        self.rss = RSSState(self)
 
     def health(self):
+        rss = self.rss.statuses()
         with self.get_connection("history") as conn:
             return {
-                (r["journal_id"], r["source"]): dict(r)
+                (r["journal_id"], r["source"]): {
+                    **dict(r),
+                    **(rss.get(r["journal_id"], {}) if r["source"] == "rss" else {}),
+                }
                 for r in conn.execute("SELECT * FROM radar_health")
             }
 
@@ -521,9 +527,9 @@ _rate_lock = threading.Lock()
 _last_request = 0.0
 
 
-def get(url, params=None):
+def get(url, params=None, headers=None, *, attempts=3):
     global _last_request
-    for attempt in range(3):
+    for attempt in range(attempts):
         with _rate_lock:
             time.sleep(max(0, 0.5 - (time.monotonic() - _last_request)))
             _last_request = time.monotonic()
@@ -535,10 +541,11 @@ def get(url, params=None):
                 headers={
                     "User-Agent": "JournalRadar/1.0 (+https://github.com/linkingoscar/journal-radar)",
                     "Accept": "application/json, application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.1",
+                    **(headers or {}),
                 },
             )
             if response.status_code == 429 or response.status_code >= 500:
-                if attempt < 2:
+                if attempt + 1 < attempts:
                     try:
                         delay = min(
                             30,
@@ -553,7 +560,7 @@ def get(url, params=None):
             response.raise_for_status()
             return response
         except requests.RequestException:
-            if attempt == 2:
+            if attempt + 1 == attempts:
                 raise
             time.sleep(2**attempt)
     raise RuntimeError("request attempts exhausted")
@@ -600,8 +607,21 @@ def collect_crossref_window(journal, filters, getter):
     raise ValueError("Crossref 超过单次 5000 条；需缩短同步区间")
 
 
-def collect_rss(journal, getter=get):
-    response = getter(journal["rss_url"])
+def get_rss(url, headers=None):
+    # RSSState schedules retries durably, including long/date-based Retry-After.
+    # Retrying here would contact rate-limited sources before that deadline.
+    return get(url, headers=headers, attempts=1)
+
+
+def collect_rss(journal, getter=get_rss, validators=None):
+    response = getter(
+        journal["rss_url"], **({"headers": validators} if validators else {})
+    )
+    headers = getattr(response, "headers", {})
+    if getattr(response, "status_code", 200) == 304:
+        if not validators:
+            raise ValueError("RSS 返回 304，但本机尚无成功保存的订阅校验信息")
+        return FeedResult(headers=headers, unchanged=True)
     parsed = feedparser.parse(response.content)
     if not parsed.version:
         raise ValueError("返回内容不是有效 RSS/Atom")
@@ -609,7 +629,10 @@ def collect_rss(journal, getter=get):
         parsed.bozo_exception, feedparser.CharacterEncodingOverride
     ):
         raise ValueError("RSS 解析不完整：" + str(parsed.bozo_exception)[:100])
-    return [x for x in (normalize_rss(entry, journal) for entry in parsed.entries) if x]
+    return FeedResult(
+        [x for x in (normalize_rss(entry, journal) for entry in parsed.entries) if x],
+        headers=headers,
+    )
 
 
 def sync(registry, store, days=90, workers=3):
@@ -621,7 +644,7 @@ def sync(registry, store, days=90, workers=3):
             continue
         if j.get("crossref_enabled", True):
             jobs.append((j, "crossref"))
-        if j.get("rss_url"):
+        if j.get("rss_url") and store.rss.due(j, attempt):
             jobs.append((j, "rss"))
 
     def collect(job):
@@ -635,11 +658,11 @@ def sync(registry, store, days=90, workers=3):
                     days,
                 )
                 if source == "crossref"
-                else collect_rss(j)
+                else collect_rss(j, **store.rss.options(j))
             )
             return j, source, entries, None
         except Exception as exc:
-            return j, source, [], str(exc)[:240]
+            return j, source, [], exc
 
     successes = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
@@ -650,13 +673,22 @@ def sync(registry, store, days=90, workers=3):
                     successes += 1
                 except Exception as exc:
                     error = "保存失败：" + str(exc)[:180]
-            store.record_health(j["id"], source, attempt, error, len(entries))
+            if source == "rss":
+                store.rss.record(j, attempt, entries, error)
+            message = str(error)[:240] if error else None
+            store.record_health(j["id"], source, attempt, message, len(entries))
             print(
                 f"{j['short_name']} [{source}] "
-                + (error if error else f"{len(entries)} 条，新增 {added} 条"),
+                + (
+                    message
+                    if error
+                    else "来源未变化"
+                    if getattr(entries, "unchanged", False)
+                    else f"{len(entries)} 条，新增 {added} 条"
+                ),
                 flush=True,
             )
-    return successes
+    return successes if jobs else None
 
 
 def main():

@@ -76,7 +76,13 @@ def public_target(url):
         raise ValueError("RSS 必须是公网 HTTP/HTTPS 地址，不能访问本机或内网") from None
 
 
-def public_feed_get(url):
+class FeedHTTPError(ValueError):
+    def __init__(self, status, headers):
+        super().__init__(f"RSS 来源返回 HTTP {status}")
+        self.status_code, self.headers = status, dict(headers)
+
+
+def public_feed_get(url, headers=None):
     for _ in range(6):
         parsed, port, address = public_target(url)
         # Connect to the validated IP, preserving the TLS hostname. DNS cannot change
@@ -99,6 +105,11 @@ def public_feed_get(url):
                     "Host": parsed.netloc,
                     "User-Agent": "JournalRadar/1.0",
                     "Accept-Encoding": "identity",
+                    **{
+                        k: v
+                        for k, v in (headers or {}).items()
+                        if k in ("If-None-Match", "If-Modified-Since")
+                    },
                 },
                 redirect=False,
                 retries=False,
@@ -109,12 +120,18 @@ def public_feed_get(url):
                 if response.status in (301, 302, 303, 307, 308):
                     url = urljoin(url, response.headers.get("Location", ""))
                     continue
+                if response.status == 304:
+                    return SimpleNamespace(
+                        content=b"", status_code=304, headers=dict(response.headers)
+                    )
                 if response.status != 200:
-                    raise ValueError(f"RSS 来源返回 HTTP {response.status}")
+                    raise FeedHTTPError(response.status, response.headers)
                 content = response.read(5_000_001)
                 if len(content) > 5_000_000:
                     raise ValueError("RSS 超过 5 MB，请使用期刊专属订阅地址")
-                return SimpleNamespace(content=content)
+                return SimpleNamespace(
+                    content=content, status_code=200, headers=dict(response.headers)
+                )
             finally:
                 response.close()
     raise ValueError("RSS 重定向次数过多")

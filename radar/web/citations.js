@@ -148,6 +148,98 @@ const JournalCitations = (() => {
       }),
     };
   }
+  function exportRecords(rows, mode, annotations = {}) {
+    if (!['ris', 'bib'].includes(mode)) throw new Error('不支持的引用导出格式');
+    const plain = (value) =>
+      String(value || '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const escape = (value) =>
+      plain(value).replace(
+        /[\\{}%&#_$~^]/g,
+        (c) =>
+          ({ '\\': '\\textbackslash{}', '~': '\\textasciitilde{}', '^': '\\textasciicircum{}' })[
+            c
+          ] || '\\' + c,
+      );
+    return unique(rows)
+      .map((row) => {
+        const c = row.citation,
+          personal = annotations[row.id] || {},
+          problems = warnings(c),
+          notes = [
+            personal.note,
+            c.status,
+            c.article_number ? 'Article number: ' + c.article_number : '',
+            problems.length ? '待核对：' + problems.join('；') : '',
+          ].filter(Boolean),
+          url = c.doi
+            ? 'https://doi.org/' + doi(c.doi)
+            : /^https?:\/\//i.test(row.link || '')
+              ? row.link
+              : '';
+        if (mode === 'ris') {
+          const lines = ['TY  - JOUR'],
+            add = (key, value) => {
+              const clean = ['N1', 'KW'].includes(key) ? plain(value) : text(value);
+              if (clean) lines.push(key + '  - ' + clean);
+            },
+            pages = text(c.pages).match(/^([A-Za-z]*\d+)\s*[-–—]+\s*([A-Za-z]*\d+)$/);
+          add('TI', c.title);
+          add('JO', c.journal);
+          for (const a of c.authors)
+            add('AU', a.literal || a.family + (a.given ? ', ' + a.given : ''));
+          add('PY', c.year);
+          add('VL', c.volume);
+          add('IS', c.issue);
+          add('SP', pages ? pages[1] : c.pages || c.article_number);
+          if (pages) add('EP', pages[2]);
+          add('DO', doi(c.doi));
+          add('UR', url);
+          add('AB', row.abstract);
+          for (const tag of personal.tags || []) add('KW', tag);
+          for (const note of notes) add('N1', note);
+          lines.push('ER  - ');
+          return lines.join('\r\n') + '\r\n';
+        }
+        const fields = [],
+          add = (key, value, escaped = false) => {
+            const clean = ['note', 'keywords'].includes(key) ? plain(value) : text(value);
+            if (clean) fields.push('  ' + key + ' = {' + (escaped ? value : escape(clean)) + '}');
+          };
+        add('title', c.title);
+        add('journal', c.journal);
+        add(
+          'author',
+          c.authors
+            .map((a) =>
+              a.literal
+                ? '{' + escape(a.literal) + '}'
+                : escape(a.family) + (a.given ? ', ' + escape(a.given) : ''),
+            )
+            .join(' and '),
+          true,
+        );
+        add('year', c.year);
+        add('volume', c.volume);
+        add('number', c.issue);
+        add('pages', text(c.pages).replace(/\s*[-–—]+\s*/g, '--'));
+        add('eid', c.article_number);
+        add('doi', doi(c.doi));
+        add('url', url);
+        add('abstract', row.abstract);
+        add('keywords', (personal.tags || []).join(', '));
+        add('note', notes.join('；'));
+        return (
+          '@article{radar' +
+          row.id.replace(/[^a-z0-9]/gi, '') +
+          ',\n' +
+          fields.join(',\n') +
+          '\n}\n'
+        );
+      })
+      .join('\n');
+  }
   let processorLoading;
   function loadProcessor() {
     if (typeof CSL !== 'undefined') return Promise.resolve(CSL);
@@ -218,6 +310,6 @@ const JournalCitations = (() => {
       }
     }
   }
-  return { doi, fromCrossref, metadata, warnings, toCSL, unique, format, Engine };
+  return { doi, fromCrossref, metadata, warnings, toCSL, unique, format, exportRecords, Engine };
 })();
 if (typeof module !== 'undefined') module.exports = JournalCitations;

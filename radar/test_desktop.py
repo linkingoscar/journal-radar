@@ -127,6 +127,8 @@ def test_loopback_api_rejects_cross_origin_rebinding_and_unauthenticated_mutatio
         status={},
         directory=tmp_path,
         start_sync=lambda: calls.append(True) or True,
+        registry={"journals": []},
+        covers=SimpleNamespace(schedule=lambda journals: None, revision="test"),
     )
     app.abstract_article = (
         lambda identifier: {"id": identifier} if identifier == "a" * 64 else None

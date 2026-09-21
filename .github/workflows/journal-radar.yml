@@ -39,7 +39,7 @@ jobs:
       - name: Check Python formatting
         run: ruff format --check radar
       - name: Verify collection behavior
-        run: python -m pytest radar/test_radar.py radar/test_desktop.py radar/test_abstracts.py radar/test_archives.py radar/test_library.py radar/test_site_data.py radar/test_snapshots.py -q
+        run: python -m pytest radar/test_radar.py radar/test_rss.py radar/test_desktop.py radar/test_abstracts.py radar/test_archives.py radar/test_library.py radar/test_covers.py radar/test_site_data.py radar/test_snapshots.py -q
       - uses: actions/setup-node@v4
         with:
           node-version: '24'

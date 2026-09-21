@@ -35,6 +35,7 @@ function needsHistory() {
     browseMode !== 'library' &&
     (view === 'new' ||
       $('#search').value.trim() ||
+      $('#note-tag').value.trim() ||
       $('#period').value === 'all' ||
       $('#sort').value === 'published' ||
       $('#journal').value ||
@@ -130,6 +131,8 @@ function savePreferences() {
       abstract: $('#abstract-filter').value,
       journal: $('#journal').value,
       search: $('#search').value,
+      tag: $('#note-tag').value,
+      folder: favorites.folder,
       catalogSearch: $('#catalog-search').value,
       layout: $('#catalog-cards').classList.contains('catalog-list') ? 'list' : 'grid',
     }),
@@ -167,9 +170,9 @@ function rememberArticle(a) {
   try {
     const row = JournalReading.article(a);
     remembered = JournalReading.merge([row], remembered);
-    readingWrites = readingWrites
-      .then(() => readingStore.put([row]))
-      .catch((error) => toast(error.message));
+    readingWrites = readingWrites.catch(() => {}).then(() => readingStore.put([row]));
+    readingWrites.catch((error) => toast(error.message));
+    return readingWrites;
   } catch (error) {
     toast(error.message);
   }
@@ -179,7 +182,7 @@ function hydrateReading() {
   if (!data) return Promise.resolve();
   hydration = (async () => {
     try {
-      const ids = Object.keys({ ...state.read, ...state.saved });
+      const ids = Object.keys({ ...state.read, ...state.saved, ...state.annotations });
       if (isDesktop)
         for (let i = 0; i < ids.length; i += 100) {
           const r = await fetch('api/reading-articles?ids=' + ids.slice(i, i + 100).join(','), {
@@ -191,7 +194,8 @@ function hydrateReading() {
           applyReadingAliases();
           for (const a of result.articles) rememberArticle(a);
         }
-      for (const a of allKnown()) if (state.read[a.id] || state.saved[a.id]) rememberArticle(a);
+      for (const a of allKnown())
+        if (state.read[a.id] || state.saved[a.id] || state.annotations?.[a.id]) rememberArticle(a);
       await readingWrites;
     } catch (error) {
       toast(error.message);
@@ -214,6 +218,13 @@ const libraryUI = new JournalLibrary.Manager({
   toast,
 });
 libraryUI.bind();
+const coverUI = new JournalCovers.Manager({
+  desktop: isDesktop,
+  catalog: JOURNAL_CATALOG,
+  data: () => data,
+  render: () => render(),
+});
+coverUI.bind();
 let desktopSession = null,
   desktopRevision = null,
   migrationWindow = null,
@@ -259,6 +270,8 @@ function validateState(input) {
       JournalPersonal.checked(input.checked),
     ),
     folders: JournalReading.folders(input.folders || [], saved),
+    queries: JournalFilters.records(input.queries),
+    annotations: JournalNotes.records(input.annotations),
     custom: Array.isArray(input.custom)
       ? [...new Set(input.custom.filter((s) => /^(\d{4}-\d{3}[\dX]|rss-[a-f0-9]{16})$/.test(s)))]
       : [],
@@ -294,6 +307,38 @@ const stateSync = new JournalState.Sync({
     } catch {}
   },
 });
+const filtersUI = new JournalFilters.Manager({
+  state: () => state,
+  capture: () => {
+    savePreferences();
+    return {
+      ...personal.read().preferences,
+      route: browseMode === 'saved' ? '#saved' : '#feed=' + group,
+      journal: journalId || $('#journal').value,
+    };
+  },
+  apply: (preferences) => {
+    const target = preferences.route.slice(6);
+    if (preferences.route !== '#saved' && !libraryUI.has(target))
+      return toast('该筛选的期刊分组已删除，请修改筛选。');
+    if (preferences.journal && !data.journals.some((j) => j.id === preferences.journal))
+      return toast('该筛选中的期刊尚未收录，请先添加。');
+    history.pushState(null, '', preferences.route);
+    applyRoute(true, preferences);
+  },
+  save: (id, expected, row) => stateSync.editRecord('queries', id, expected, row),
+  toast,
+});
+filtersUI.bind();
+const notesUI = new JournalNotes.Manager({
+  state: () => state,
+  save: async (article, expected, value) => {
+    await rememberArticle(article);
+    await stateSync.editRecord('annotations', article.id, expected, value);
+  },
+  toast,
+});
+notesUI.bind();
 function persist() {
   const saving = stateSync.save(state);
   saving.catch((error) => toast(error.message));
@@ -363,12 +408,14 @@ function applyRoute(focus = false, preferences = null) {
     $('#search').value = '';
     $('#period').value = 'all';
     $('#abstract-filter').value = 'all';
+    $('#note-tag').value = '';
   } else if (journal) {
     browseMode = 'journal';
     if (!inGroup(journal)) group = 'all';
     $('#search').value = '';
     $('#period').value = 'all';
     $('#abstract-filter').value = 'all';
+    $('#note-tag').value = '';
     view = 'all';
   } else {
     if (wasSaved) view = 'all';
@@ -382,12 +429,14 @@ function applyRoute(focus = false, preferences = null) {
   updateJournals();
   $('#journal').value = journalId || '';
   if (preferences) {
+    favorites.folder = preferences.folder || 'all';
     view = browseMode === 'saved' ? 'saved' : preferences.view;
     limit = preferences.limit;
     $('#period').value = preferences.period;
     $('#sort').value = preferences.sort;
     $('#abstract-filter').value = preferences.abstract;
     $('#search').value = preferences.search;
+    $('#note-tag').value = preferences.tag || '';
     $('#catalog-search').value = preferences.catalogSearch;
     if (!journalId && [...$('#journal').options].some((o) => o.value === preferences.journal))
       $('#journal').value = preferences.journal;
@@ -433,9 +482,10 @@ function renderCatalog(journals) {
     const cover = el('div', undefined, 'catalog-cover');
     cover.setAttribute('aria-hidden', 'true');
     cover.append(el('span', j.short_name || j.name, 'cover-fallback'));
-    if (meta.cover) {
+    const coverURL = coverUI.url(j);
+    if (coverURL) {
       const img = el('img');
-      img.src = meta.cover;
+      img.src = coverURL;
       img.alt = '';
       img.loading = 'lazy';
       img.width = 120;
@@ -510,6 +560,7 @@ function applyReadingAliases() {
       }
   }
   state.folders = JournalReading.remapFolders(state.folders, aliases, state.saved);
+  state.annotations = JournalNotes.merge({}, state.annotations, aliases);
   return persist();
 }
 function abstractText(article, journal) {
@@ -687,7 +738,18 @@ function renderAbstract(article, journal, content) {
   content.append(action);
   retrieve();
 }
-function openArticle(article) {
+const readerSequence = new JournalReading.Sequence();
+let readerCandidates = [],
+  readerReturn = null;
+function openArticle(article, candidates = readerCandidates, navigating = false) {
+  if (!navigating) {
+    readerSequence.start(article, candidates);
+    readerReturn = {
+      id: article.id,
+      scroll: window.scrollY,
+      archive: !!document.activeElement?.dataset.archiveFocus,
+    };
+  }
   bulkUndo = bulkUndo.filter((id) => id !== article.id);
   article = JournalReading.merge([article], remembered).find((a) => a.id === article.id);
   translationController?.abort();
@@ -700,6 +762,8 @@ function openArticle(article) {
     el('h2', article.title, 'reader-title'),
     el('p', article.authors || '作者信息暂缺', 'reader-meta'),
   );
+  const readerTitle = content.querySelector('h2');
+  readerTitle.tabIndex = -1;
   content.append(
     el(
       'p',
@@ -720,24 +784,50 @@ function openArticle(article) {
   link.href = safeLink(article.link);
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
-  actions.append(
-    link,
-    button(state.saved[article.id] ? '★ 已收藏' : '☆ 收藏', (e) => {
-      toggle('saved', article.id);
-      e.currentTarget.textContent = state.saved[article.id] ? '★ 已收藏' : '☆ 收藏';
-    }),
-  );
+  const bookmark = button(state.saved[article.id] ? '★ 已收藏' : '☆ 收藏', () => {
+    toggle('saved', article.id);
+  });
+  bookmark.id = 'reader-bookmark';
+  bookmark.dataset.articleId = article.id;
+  actions.append(link, bookmark);
   actions.append(
     button('APA 引用', () => favorites.cite([article])),
     button('收藏分组', () => favorites.assign([article.id], article)),
+    button('笔记与标签', () => notesUI.open(article)),
   );
   content.append(actions);
   state.read[article.id] = true;
   rememberArticle(article);
   persist();
   render();
-  $('#reader').showModal();
+  $('#reader-position').textContent =
+    `${readerSequence.index + 1} / ${readerSequence.rows.length} 篇`;
+  $('#reader-prev').disabled = readerSequence.index === 0;
+  $('#reader-next').disabled = readerSequence.index === readerSequence.rows.length - 1;
+  if (!$('#reader').open) $('#reader').showModal();
+  $('#reader').scrollTop = 0;
+  readerTitle.focus({ preventScroll: true });
 }
+function moveReader(delta) {
+  const next = readerSequence.move(delta);
+  if (next) openArticle(next, null, true);
+}
+$('#reader-prev').addEventListener('click', () => moveReader(-1));
+$('#reader-next').addEventListener('click', () => moveReader(1));
+$('#reader').addEventListener('keydown', (event) => {
+  if (
+    event.ctrlKey ||
+    event.metaKey ||
+    event.altKey ||
+    event.target.closest('input,textarea,select,[contenteditable]') ||
+    [...document.querySelectorAll('dialog[open]')].some((d) => d.id !== 'reader')
+  )
+    return;
+  if (event.key.toLowerCase() === 'j' || event.key.toLowerCase() === 'k') {
+    event.preventDefault();
+    moveReader(event.key.toLowerCase() === 'j' ? 1 : -1);
+  }
+});
 function renderHistoryStatus() {
   const pending = articleData
     .pending(historyScope(), historySince())
@@ -758,6 +848,7 @@ function renderHistoryStatus() {
     !!pending ||
     !!historyError ||
     !!$('#search').value.trim() ||
+    !!$('#note-tag').value.trim() ||
     $('#abstract-filter').value !== 'all';
   $('#undo-check').disabled = checkBusy;
 }
@@ -822,6 +913,9 @@ function renderArticleCard(article, journal) {
     tags = el('div', undefined, 'tags'),
     actions = el('div', undefined, 'article-actions');
   journal.groups.forEach((g) => tags.append(el('span', label(g), 'tag')));
+  for (const tag of state.annotations?.[article.id]?.tags || [])
+    tags.append(el('span', tag, 'tag personal-tag'));
+  if (state.annotations?.[article.id]?.note) tags.append(el('span', '有笔记', 'tag personal-tag'));
   if (
     article.article_type &&
     article.article_type !== 'journal-article' &&
@@ -863,6 +957,7 @@ function renderArticleCard(article, journal) {
     saved,
     actionButton('cite', 'APA 引用', () => favorites.cite([article])),
     actionButton('folder', '收藏分组', () => favorites.assign([article.id], article)),
+    actionButton('note', '笔记', () => notesUI.open(article)),
     link,
   );
   bottom.append(tags, actions);
@@ -870,6 +965,7 @@ function renderArticleCard(article, journal) {
   return card;
 }
 function renderArticleList(articles, since) {
+  readerCandidates = articles;
   const list = $('#articles');
   const focus = captureFeedFocus(list);
   list.replaceChildren();
@@ -901,6 +997,11 @@ function renderArticleList(articles, since) {
 }
 function render() {
   if (!data) return;
+  filtersUI.sync();
+  notesUI.sync();
+  const bookmark = $('#reader-bookmark');
+  if (bookmark)
+    bookmark.textContent = state.saved[bookmark.dataset.articleId] ? '★ 已收藏' : '☆ 收藏';
   const journals = data.journals.filter(inGroup),
     ids = new Set(journals.map((j) => j.id));
   const current = data.journals.find((j) => j.id === journalId),
@@ -940,7 +1041,11 @@ function render() {
   const all = allKnown().filter(
     (a) =>
       ids.has(a.journal_id) &&
-      (view === 'saved' || browseMode === 'saved' || recentIds.has(a.id)) &&
+      (view === 'saved' ||
+        browseMode === 'saved' ||
+        recentIds.has(a.id) ||
+        (state.annotations?.[a.id] &&
+          ($('#search').value.trim() || $('#note-tag').value.trim()))) &&
       (browseMode !== 'saved' || state.saved[a.id]),
   );
   const counts = JournalFeed.counts(journals, data.articles, journalId || $('#journal').value);
@@ -991,8 +1096,12 @@ function render() {
   $('#check-status').textContent = since
     ? '检查起点：' + new Date(since).toLocaleString('zh-CN')
     : '首次检查：显示当前范围文章。看完后点「本次检查完成」，下次只看新收录。';
-  if ($('#search').value.trim() || $('#abstract-filter').value !== 'all')
-    $('#check-status').textContent += ' 清除搜索与摘要筛选后可结束本次检查。';
+  if (
+    $('#search').value.trim() ||
+    $('#note-tag').value.trim() ||
+    $('#abstract-filter').value !== 'all'
+  )
+    $('#check-status').textContent += ' 清除搜索、标签与摘要筛选后可结束本次检查。';
   const cutoff =
     days === 'all' || view === 'new'
       ? ''
@@ -1006,7 +1115,12 @@ function render() {
     view,
     since,
     state,
-    matches: (a) => browseMode !== 'saved' || favorites.matches(a),
+    matches: (a) =>
+      (browseMode !== 'saved' || favorites.matches(a)) &&
+      (!$('#note-tag').value.trim() ||
+        (state.annotations?.[a.id]?.tags || []).some(
+          (t) => t.toLowerCase() === $('#note-tag').value.trim().toLowerCase(),
+        )),
     abstract: $('#abstract-filter').value,
   });
   const articles = selection.articles;
@@ -1022,7 +1136,8 @@ function render() {
       : `当前筛选范围 ${selection.total} 篇 · ${selection.missing} 篇缺摘要 · ${selection.suspect} 篇疑似不完整`;
   const filters = [
     selected ? data.journals.find((j) => j.id === selected)?.name : '',
-    view !== 'new' && days !== '90' ? (days === 'all' ? '全部时间' : '近 30 天') : '',
+    $('#note-tag').value.trim() ? '标签：' + $('#note-tag').value.trim() : '',
+    view !== 'new' && days !== '90' ? (days === 'all' ? '全部时间' : `近 ${days} 天`) : '',
     $('#sort').value === 'published' ? '按发表时间' : '',
     $('#abstract-filter').value !== 'all'
       ? $('#abstract-filter').selectedOptions[0].textContent
@@ -1207,9 +1322,14 @@ function settings() {
               ? '等待首次采集'
               : h.error
                 ? '本次失败：' + h.error
-                : `请求完成，返回 ${h.item_count} 条`) +
+                : h.outcome === 'unchanged'
+                  ? '来源未变化，继续使用已保存文章'
+                  : `请求完成，返回 ${h.item_count} 条`) +
             (h.last_success
               ? ' · 上次成功 ' + new Date(h.last_success).toLocaleString('zh-CN')
+              : '') +
+            (h.next_check
+              ? ' · 下次检查不早于 ' + new Date(h.next_check).toLocaleString('zh-CN')
               : ''),
           h.error ? 'health-error' : 'health-ok',
         ),
@@ -1361,7 +1481,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) savePreferences();
 });
 let searchTimer;
-['search', 'journal', 'period', 'sort', 'abstract-filter'].forEach((id) =>
+['search', 'journal', 'period', 'sort', 'abstract-filter', 'note-tag'].forEach((id) =>
   $('#' + id).addEventListener(id === 'search' ? 'input' : 'change', () => {
     limit = 40;
     render();
@@ -1381,6 +1501,17 @@ $('#refresh').addEventListener('click', load);
 $('#reader').addEventListener('close', () => {
   translationController?.abort();
   abstractController?.abort();
+  if (readerReturn) {
+    const selector = readerReturn.archive
+      ? `[data-archive-focus="open:${readerReturn.id}"]`
+      : `[data-article-id="${readerReturn.id}"] [data-feed-action="open"]`;
+    const target =
+      $(selector) ||
+      $(readerReturn.archive ? '#archive-articles button' : '#articles button') ||
+      $('#group-title');
+    target?.focus({ preventScroll: true });
+    window.scrollTo({ top: readerReturn.scroll, behavior: 'instant' });
+  }
 });
 $('#auto-translate').checked = autoTranslate;
 $('#auto-translate').addEventListener('change', (event) => {
@@ -1457,7 +1588,12 @@ async function makeBackup() {
   await readingWrites;
   await hydrateReading();
   const known = new Set(allKnown().map((a) => a.id));
-  if (!isDesktop && Object.keys({ ...state.read, ...state.saved }).some((id) => !known.has(id))) {
+  if (
+    !isDesktop &&
+    Object.keys({ ...state.read, ...state.saved, ...state.annotations }).some(
+      (id) => !known.has(id),
+    )
+  ) {
     try {
       const rows = await articleData.history(new Set(data.journals.map((j) => j.id)));
       if (rows) data.articles = rows;
@@ -1474,6 +1610,7 @@ async function makeBackup() {
     autoTranslate,
     translator,
     preferences: personal.read().preferences,
+    covers: await coverUI.backup(),
   });
 }
 async function restoreBackup(input) {
@@ -1485,7 +1622,9 @@ async function restoreBackup(input) {
     backup.articles.some((a) => !data.journals.some((j) => j.id === a.journal_id))
   )
     throw new Error('旧备份缺少期刊配置，请先添加所属期刊或从原设备导出完整备份');
+  await coverUI.validate(backup.covers);
   const aliases = backup.library ? await libraryUI.restore(backup.library) : {};
+  await coverUI.restore(backup.covers, aliases);
   const incoming = backup.articles.map((a) => ({
     ...a,
     journal_id: aliases[a.journal_id] || a.journal_id,
@@ -1499,6 +1638,19 @@ async function restoreBackup(input) {
     read: { ...state.read, ...restored.read },
     saved,
     folders: JournalReading.mergeFolders(state.folders, restored.folders, saved),
+    queries: {
+      ...Object.fromEntries(
+        Object.entries(restored.queries).map(([id, row]) => [
+          id,
+          {
+            ...row,
+            preferences: JournalBackup.remapPreferences(row.preferences, aliases),
+          },
+        ]),
+      ),
+      ...state.queries,
+    },
+    annotations: JournalNotes.merge(state.annotations, restored.annotations),
     custom: [...new Set([...state.custom, ...restored.custom.map((id) => aliases[id] || id)])],
     checked: { ...state.checked },
     checkActions: { ...state.checkActions },
@@ -1521,7 +1673,7 @@ async function restoreBackup(input) {
   }
   await hydrateReading();
   if (backup.settings?.preferences) {
-    const preferences = backup.settings.preferences;
+    const preferences = JournalBackup.remapPreferences(backup.settings.preferences, aliases);
     personal.update({ preferences });
     history.replaceState(null, '', preferences.route);
     resumeScroll = preferences.scroll;
@@ -1547,7 +1699,9 @@ $('#backup').addEventListener('click', async () => {
       },
     });
     showBackupStatus();
-    toast(`已发起完整备份下载（${backup.articles.length} 篇文章），请确认文件已保存。`);
+    toast(
+      `已发起完整备份下载（${backup.articles.length} 篇文章、${backup.covers.length} 张手动封面），请确认文件已保存。`,
+    );
   } catch (error) {
     toast('导出未完成：' + error.message);
   } finally {
@@ -1561,7 +1715,7 @@ $('#import-file').addEventListener('change', async (event) => {
   try {
     if (file.size > 50e6) throw new Error('备份超过 50 MB');
     await restoreBackup(JSON.parse(await file.text()));
-    toast('已合并阅读记录、文章、译文和备份中的期刊配置。');
+    toast('已合并阅读记录、笔记、常用筛选和期刊配置，并恢复手动封面。');
   } catch (error) {
     toast('导入未全部完成，可修正后重新导入：' + error.message);
   }
@@ -1624,6 +1778,9 @@ async function pollDesktop() {
     if (next.data_revision !== desktopRevision) {
       desktopRevision = next.data_revision;
       await load();
+    }
+    if (next.covers_revision) {
+      await coverUI.refresh(next.covers_revision).catch(() => {});
     }
   } catch {
     $('#desktop-status').textContent = '本机组件未连接，请重新双击桌面图标启动。';
@@ -1697,6 +1854,7 @@ async function boot() {
     toast(error.message);
   }
   await load();
+  if (!isDesktop) await coverUI.refresh().catch((error) => toast(error.message));
   if (
     location.origin === 'https://linkingoscar.github.io' &&
     location.pathname === '/journal-radar/' &&
