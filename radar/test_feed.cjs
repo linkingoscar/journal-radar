@@ -2,6 +2,32 @@ const test = require('node:test'),
   assert = require('node:assert/strict');
 const Feed = require('./web/feed.js');
 const state = { read: {}, saved: {} };
+test('total collected counts stay stable as history loads and follow the selected journal', () => {
+  const journals = [
+    { id: 'one', article_count: 62 },
+    { id: 'two', article_count: 40 },
+  ];
+  const first = [{ journal_id: 'one' }, { journal_id: 'two' }];
+  assert.deepEqual(Feed.counts(journals, first), { total: 102, loaded: 2 });
+  assert.deepEqual(Feed.counts(journals, [...first, { journal_id: 'one' }], 'one'), {
+    total: 62,
+    loaded: 2,
+  });
+});
+test('since-last-check uses discovery instants across timezones, including newly collected old publications', () => {
+  const rows = [
+    { id: 'old', first_seen: '2026-09-20T23:00:00Z', published_date: '2027-01' },
+    { id: 'boundary', first_seen: '2026-09-21T08:00:00+08:00' },
+    { id: 'new', first_seen: '2026-09-21T00:01:00Z', published_date: '1999-01' },
+  ];
+  assert.deepEqual(
+    Feed.select(rows, { state, view: 'new', since: '2026-09-21T00:00:00Z' }).articles.map(
+      (a) => a.id,
+    ),
+    ['new'],
+  );
+  assert.equal(Feed.select(rows, { state, view: 'new' }).total, 3);
+});
 const old = {
   id: 'old',
   journal_id: 'one',

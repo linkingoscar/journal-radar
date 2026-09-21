@@ -992,3 +992,53 @@
 .history-loading button {
   flex-shrink: 0;
 }
+.backup-status {
+  padding: 0 12px 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.backup-status p {
+  margin: 4px 0 0;
+  color: var(--teal);
+}
+.reading-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.reading-tools span,
+.reading-tools small {
+  color: var(--muted);
+}
+.reading-tools button {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--white);
+  padding: 7px 10px;
+}
+.bulk-reading {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.bulk-reading small {
+  flex-basis: 100%;
+}
+.result-info {
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+@media (max-width: 700px) {
+  .list-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  #views {
+    flex-wrap: wrap;
+  }
+  .history-loading {
+    flex-wrap: wrap;
+  }
+}

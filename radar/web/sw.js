@@ -1,5 +1,5 @@
 importScripts('catalog.js');
-const SHELL = 'journal-radar-shell-v20',
+const SHELL = 'journal-radar-shell-v21',
   DATA = 'journal-radar-data-v2';
 const FILES = [
   './',
@@ -10,6 +10,7 @@ const FILES = [
   'catalog.js',
   'reading.js',
   'state.js',
+  'personal.js',
   'data.js',
   'feed.js',
   'archives.js',

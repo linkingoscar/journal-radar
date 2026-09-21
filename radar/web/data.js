@@ -36,29 +36,53 @@ const JournalData = (() => {
         (c) => ids.has(c.journal_id) && !this.loaded.has(c.url),
       );
     }
-    async history(ids, progress = () => {}) {
+    async history(ids, progress = () => {}, { signal } = {}) {
       const version = this.version,
-        chunks = this.pending(ids);
+        chunks = this.pending(ids),
+        controller = new AbortController(),
+        requestSignal = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
       // Publish only a complete requested scope; failures retain the existing list.
       const incoming = [];
-      for (const [i, chunk] of chunks.entries()) {
-        if (!/^articles\/[a-f0-9]{64}\.json$/.test(chunk.url)) throw new Error('历史数据地址无效');
-        let rows = this.cache.get(chunk.url);
-        if (!rows) {
-          const value = await this.json(chunk.url);
-          rows = value.articles;
-          if (
-            !Array.isArray(rows) ||
-            rows.length !== chunk.count ||
-            rows.some((a) => a.journal_id !== chunk.journal_id || !/^[a-f0-9]{64}$/.test(a.id))
-          )
-            throw new Error('历史数据与期刊不匹配');
-          this.cache.set(chunk.url, rows);
+      let cursor = 0,
+        completed = 0,
+        failure;
+      progress(0, chunks.length);
+      const worker = async () => {
+        while (cursor < chunks.length) {
+          requestSignal.throwIfAborted();
+          const chunk = chunks[cursor++];
+          if (!/^articles\/[a-f0-9]{64}\.json$/.test(chunk.url))
+            throw new Error('历史数据地址无效');
+          let rows = this.cache.get(chunk.url);
+          if (!rows) {
+            const value = await this.json(chunk.url, {
+              signal: AbortSignal.any([requestSignal, AbortSignal.timeout(30000)]),
+            });
+            rows = value.articles;
+            if (
+              !Array.isArray(rows) ||
+              rows.length !== chunk.count ||
+              rows.some((a) => a.journal_id !== chunk.journal_id || !/^[a-f0-9]{64}$/.test(a.id))
+            )
+              throw new Error('历史数据与期刊不匹配');
+            if (version === this.version) this.cache.set(chunk.url, rows);
+          }
+          requestSignal.throwIfAborted();
+          incoming.push([chunk.url, rows]);
+          if (version === this.version) progress(++completed, chunks.length);
         }
-        incoming.push([chunk.url, rows]);
-        progress(i + 1, chunks.length);
-      }
+      };
+      await Promise.allSettled(
+        Array.from({ length: Math.min(3, chunks.length) }, () =>
+          worker().catch((error) => {
+            failure ||= error;
+            controller.abort();
+          }),
+        ),
+      );
+      signal?.throwIfAborted();
       if (version !== this.version) return null;
+      if (failure) throw failure;
       for (const [url, rows] of incoming) {
         for (const a of rows) this.rows.set(a.id, a);
         this.loaded.add(url);

@@ -7,9 +7,10 @@ let data = null,
   limit = 40,
   installPrompt = null;
 const articleData = new JournalData.Library();
-let historyTail = Promise.resolve(),
+let historyTask = null,
   historyBusy = false,
-  historyError = '';
+  historyError = '',
+  historyProgress = '';
 function historyScope() {
   return new Set(
     data.journals
@@ -26,7 +27,8 @@ function needsHistory() {
   }
   return (
     browseMode !== 'library' &&
-    ($('#search').value.trim() ||
+    (view === 'new' ||
+      $('#search').value.trim() ||
       $('#period').value === 'all' ||
       $('#sort').value === 'published' ||
       $('#journal').value ||
@@ -34,35 +36,110 @@ function needsHistory() {
   );
 }
 function ensureHistory(force = false) {
-  if (!data || (!force && !needsHistory())) return historyTail;
+  if (!data || (!force && !needsHistory())) {
+    historyTask?.controller.abort();
+    historyTask = null;
+    historyBusy = false;
+    historyError = '';
+    if (data) renderHistoryStatus();
+    return Promise.resolve();
+  }
   const ids = historyScope();
-  historyTail = historyTail
-    .catch(() => {})
-    .then(async () => {
-      if (!articleData.pending(ids).length) return;
-      historyBusy = true;
-      historyError = '';
-      render();
-      try {
-        const rows = await articleData.history(ids);
-        if (rows && data) {
-          data.articles = rows;
-          applyReadingAliases();
-          await hydrateReading();
-        }
-      } catch (error) {
-        historyError = error.message;
-      } finally {
+  const key = articleData.version + ':' + [...ids].sort().join(',');
+  if (historyTask?.key === key) return historyTask.promise;
+  historyTask?.controller.abort();
+  const task = { key, controller: new AbortController() };
+  historyTask = task;
+  historyBusy = !!articleData.pending(ids).length;
+  historyError = '';
+  task.promise = (async () => {
+    try {
+      const rows = await articleData.history(
+        ids,
+        (done, total) => {
+          if (historyTask !== task) return;
+          historyProgress = `${done} / ${total} 份`;
+          renderHistoryStatus();
+        },
+        { signal: task.controller.signal },
+      );
+      if (rows && data && historyTask === task) {
+        data.articles = rows;
+        applyReadingAliases();
+        await hydrateReading();
+      }
+    } catch (error) {
+      if (historyTask === task && !task.controller.signal.aborted)
+        historyError = error.name === 'TimeoutError' ? '历史读取超时，请重试。' : error.message;
+    } finally {
+      if (historyTask === task) {
+        historyTask = null;
         historyBusy = false;
         render();
       }
-    });
-  return historyTail;
+    }
+  })();
+  return task.promise;
 }
 let browseMode = 'library',
   journalId = null;
 let archiveReadingAliases = {};
-let state = { read: {}, saved: {}, custom: [], folders: [] };
+let state = { read: {}, saved: {}, custom: [], folders: [], checked: {} };
+const personal = new JournalPersonal.Store(
+  {
+    getItem: (key) => localStorage.getItem(key),
+    setItem: (key, value) => localStorage.setItem(key, value),
+  },
+  toast,
+);
+const resume = personal.read().preferences
+  ? JournalPersonal.preferences(personal.read().preferences)
+  : null;
+if (!location.hash) history.replaceState(null, '', resume?.route || '#feed=hr35');
+let resumeScroll = resume?.route === location.hash ? resume.scroll : null,
+  visibleArticles = [],
+  bulkBusy = false,
+  bulkUndo = [],
+  preferenceTimer;
+if (!personal.read().backup) personal.update({ backup: { startedAt: new Date().toISOString() } });
+function checkpointScope() {
+  const selected = journalId || $('#journal').value;
+  return selected ? 'journal:' + selected : 'group:' + group;
+}
+function savePreferences() {
+  if (!data || resumeScroll !== null) return;
+  personal.update({
+    preferences: JournalPersonal.preferences({
+      route: location.hash,
+      view,
+      limit,
+      scroll: window.scrollY,
+      period: $('#period').value,
+      sort: $('#sort').value,
+      abstract: $('#abstract-filter').value,
+      journal: $('#journal').value,
+      search: $('#search').value,
+      catalogSearch: $('#catalog-search').value,
+      layout: $('#catalog-cards').classList.contains('catalog-list') ? 'list' : 'grid',
+    }),
+  });
+}
+function queuePreferences() {
+  clearTimeout(preferenceTimer);
+  preferenceTimer = setTimeout(savePreferences, 200);
+}
+function showBackupStatus() {
+  const meta = personal.read().backup || {},
+    hint = JournalPersonal.reminder(state, meta);
+  $('#backup-time').textContent = meta.exportedAt
+    ? '上次发起导出：' + new Date(meta.exportedAt).toLocaleDateString('zh-CN')
+    : '尚未在本设备导出备份';
+  $('#backup-reminder').hidden = !hint.due;
+  $('#backup-reminder').textContent =
+    hint.added >= 10
+      ? `已有 ${hint.added} 篇新增收藏，建议导出一份备份。`
+      : '阅读记录有变化，已两周未备份，建议导出。';
+}
 const readingStore = JournalReading.store();
 let remembered = [],
   readingWrites = Promise.resolve(),
@@ -164,6 +241,7 @@ function validateState(input) {
   return {
     read: map('read'),
     saved,
+    checked: JournalPersonal.checked(input.checked),
     folders: JournalReading.folders(input.folders || [], saved),
     custom: Array.isArray(input.custom)
       ? [...new Set(input.custom.filter((s) => /^(\d{4}-\d{3}[\dX]|rss-[a-f0-9]{16})$/.test(s)))]
@@ -184,6 +262,7 @@ const stateSync = new JournalState.Sync({
   normalize: validateState,
   onChange(next) {
     if (JSON.stringify(state) === JSON.stringify(next)) return;
+    bulkUndo = bulkUndo.filter((id) => next.read[id]);
     state = next;
     if (data) {
       updateJournals();
@@ -248,7 +327,7 @@ function updateJournals() {
   $('#custom-count').textContent = state.custom.length;
   $('#all-count').textContent = data.journals.length;
 }
-function applyRoute(focus = false) {
+function applyRoute(focus = false, preferences = null) {
   if (!data) return;
   const legacy = /^#(library|feed)=core10$/.exec(location.hash);
   if (legacy) history.replaceState(null, '', '#' + legacy[1] + '=hr35');
@@ -282,9 +361,28 @@ function applyRoute(focus = false) {
   limit = 40;
   updateJournals();
   $('#journal').value = journalId || '';
+  if (preferences) {
+    view = browseMode === 'saved' ? 'saved' : preferences.view;
+    limit = preferences.limit;
+    $('#period').value = preferences.period;
+    $('#sort').value = preferences.sort;
+    $('#abstract-filter').value = preferences.abstract;
+    $('#search').value = preferences.search;
+    $('#catalog-search').value = preferences.catalogSearch;
+    if (!journalId && [...$('#journal').options].some((o) => o.value === preferences.journal))
+      $('#journal').value = preferences.journal;
+    $('#catalog-cards').classList.toggle('catalog-list', preferences.layout === 'list');
+    document
+      .querySelectorAll('[data-layout]')
+      .forEach((b) =>
+        b.setAttribute('aria-pressed', String(b.dataset.layout === preferences.layout)),
+      );
+  }
+  if (focus) resumeScroll = null;
   render();
   ensureHistory();
   if (focus) $('#group-title').focus({ preventScroll: false });
+  queuePreferences();
 }
 function renderCatalog(journals) {
   const q = $('#catalog-search').value.trim().toLowerCase();
@@ -365,6 +463,7 @@ function renderCatalog(journals) {
   }
 }
 function toggle(kind, id) {
+  if (kind === 'read') bulkUndo = bulkUndo.filter((value) => value !== id);
   const enabled = !state[kind][id];
   const aliases = Object.entries({ ...archiveReadingAliases, ...data?.reading_aliases })
     .filter(([, target]) => target === id)
@@ -569,6 +668,7 @@ function renderAbstract(article, journal, content) {
   retrieve();
 }
 function openArticle(article) {
+  bulkUndo = bulkUndo.filter((id) => id !== article.id);
   article = JournalReading.merge([article], remembered).find((a) => a.id === article.id);
   translationController?.abort();
   abstractController?.abort();
@@ -618,6 +718,25 @@ function openArticle(article) {
   render();
   $('#reader').showModal();
 }
+function renderHistoryStatus() {
+  const pending = articleData.pending(historyScope()).reduce((n, c) => n + c.count, 0);
+  $('#history-loading').hidden =
+    browseMode === 'library' ||
+    (browseMode === 'saved' && !needsHistory() && !historyBusy && !historyError) ||
+    (!pending && !historyError);
+  $('#history-message').textContent = historyBusy
+    ? '正在读取更早文章 · ' + historyProgress
+    : historyError
+      ? historyError + '；当前文章仍可阅读。'
+      : `还有 ${pending} 篇更早收录的文章，可按需查看。`;
+  $('#load-history').disabled = historyBusy;
+  $('#finish-check').disabled =
+    historyBusy ||
+    !!pending ||
+    !!historyError ||
+    !!$('#search').value.trim() ||
+    $('#abstract-filter').value !== 'all';
+}
 function render() {
   if (!data) return;
   const journals = data.journals.filter(inGroup),
@@ -625,17 +744,8 @@ function render() {
   const current = data.journals.find((j) => j.id === journalId),
     isLibrary = browseMode === 'library';
   document.body.classList.toggle('reading-view', !isLibrary);
-  const pending = articleData.pending(historyScope()).reduce((n, c) => n + c.count, 0);
-  $('#history-loading').hidden =
-    isLibrary ||
-    (browseMode === 'saved' && !needsHistory() && !historyBusy && !historyError) ||
-    (!pending && !historyError);
-  $('#history-message').textContent = historyBusy
-    ? '正在读取更早文章…'
-    : historyError
-      ? historyError + '；当前文章仍可阅读。'
-      : `还有 ${pending} 篇更早收录的文章，可按需查看。`;
-  $('#load-history').disabled = historyBusy;
+  renderHistoryStatus();
+  showBackupStatus();
   archives.sync();
   $('#journal-library').hidden = !isLibrary;
   $('#article-feed').hidden = isLibrary || (!!current && archives.mode === 'archive');
@@ -671,7 +781,8 @@ function render() {
       (view === 'saved' || browseMode === 'saved' || recentIds.has(a.id)) &&
       (browseMode !== 'saved' || state.saved[a.id]),
   );
-  $('#article-total').textContent = all.length.toLocaleString();
+  const counts = JournalFeed.counts(journals, data.articles, journalId || $('#journal').value);
+  $('#article-total').textContent = counts.total.toLocaleString();
   const title = $('#group-title');
   title.replaceChildren(document.createTextNode(label(group)), el('span', '的新进展'));
   $('#group-description').textContent =
@@ -686,7 +797,7 @@ function render() {
             : group === 'all'
               ? '全部期刊汇聚于此，重叠清单合并展示。'
               : `${label(group)} · ${journals.length} 本期刊，可在「管理分组」中调整。`;
-  $('#total-label').textContent = isLibrary ? '本关注期刊' : '篇已收录文章';
+  $('#total-label').textContent = isLibrary ? '本关注期刊' : '篇总收录';
   if (isLibrary) {
     title.replaceChildren(document.createTextNode(label(group)), el('span', '的期刊库'));
     $('#article-total').textContent = journals.length;
@@ -698,11 +809,7 @@ function render() {
       (current.issns.length ? 'ISSN ' + current.issns.join(' / ') : 'RSS 订阅') +
       ' · ' +
       current.groups.map(label).join(' · ');
-    $('#article-total').textContent = all
-      .filter((a) => a.journal_id === current.id)
-      .length.toLocaleString();
   }
-  if (current) $('#total-label').textContent = '篇近期已收录';
   if (browseMode === 'saved') {
     title.textContent = '我的全部收藏';
     $('#group-description').textContent =
@@ -714,14 +821,25 @@ function render() {
   const q = $('#search').value.trim().toLowerCase(),
     selected = current?.id || $('#journal').value;
   const days = $('#period').value;
+  const since = state.checked[checkpointScope()] || '';
+  $('#new-discoveries').hidden = isLibrary || browseMode === 'saved' || view !== 'new';
+  $('#check-status').textContent = since
+    ? '检查起点：' + new Date(since).toLocaleString('zh-CN') + '；可继续使用筛选。'
+    : '首次检查：显示当前范围文章。看完后点「本次检查完成」，下次只看新收录。';
+  if ($('#search').value.trim() || $('#abstract-filter').value !== 'all')
+    $('#check-status').textContent += ' 清除搜索与摘要筛选后可结束本次检查。';
   const cutoff =
-    days === 'all' ? '' : new Date(Date.now() - Number(days) * 86400000).toISOString().slice(0, 10);
+    days === 'all' || view === 'new'
+      ? ''
+      : new Date(Date.now() - Number(days) * 86400000).toISOString().slice(0, 10);
+  $('#period').disabled = view === 'new';
   const selection = JournalFeed.select(all, {
     journal: selected,
     cutoff,
     query: q,
     sort: $('#sort').value,
     view,
+    since,
     state,
     matches: (a) => browseMode !== 'saved' || favorites.matches(a),
     abstract: $('#abstract-filter').value,
@@ -747,7 +865,9 @@ function render() {
       ? '按首次收录时间筛选'
       : '按在线或发表时间筛选；仅有未来刊期时使用收录日期';
   $('#result-count').textContent =
-    `${articles.length.toLocaleString()} 篇文章 · ${selected ? 1 : journals.length} 本期刊`;
+    browseMode === 'saved'
+      ? `${articles.length.toLocaleString()} 篇收藏符合筛选`
+      : `总收录 ${counts.total.toLocaleString()} 篇 · 已加载 ${counts.loaded.toLocaleString()} 篇 · 筛选结果 ${articles.length.toLocaleString()} 篇`;
   $('#updated').textContent =
     '数据生成于 ' +
     new Date(data.generated_at).toLocaleString('zh-CN', {
@@ -780,15 +900,23 @@ function render() {
       el('strong', '这里暂时没有文章'),
       el(
         'p',
-        view === 'saved'
-          ? '点击文章旁的「收藏」，把值得细读的研究留在这里。'
-          : '试试放宽时间范围、清除关键词，或切换期刊分组。',
+        view === 'new' && since
+          ? '上次检查后暂无符合筛选的新文章。可更新列表或清除其他筛选。'
+          : view === 'saved'
+            ? '点击文章旁的「收藏」，把值得细读的研究留在这里。'
+            : '试试放宽时间范围、清除关键词，或切换期刊分组。',
       ),
     );
     list.append(box);
   }
   const byId = new Map(data.journals.map((j) => [j.id, j]));
-  for (const article of articles.slice(0, limit)) {
+  visibleArticles = articles.slice(0, limit);
+  const unreadVisible = visibleArticles.filter((a) => !state.read[a.id]).length;
+  $('#mark-visible-read').textContent = `将当前显示的 ${unreadVisible} 篇未读标为已读`;
+  $('#mark-visible-read').disabled = bulkBusy || !unreadVisible;
+  $('#undo-visible-read').hidden = !bulkUndo.length;
+  $('#undo-visible-read').disabled = bulkBusy;
+  for (const article of visibleArticles) {
     const j = byId.get(article.journal_id),
       card = el('article', undefined, 'article' + (state.read[article.id] ? ' is-read' : ''));
     const top = el('div', undefined, 'article-top');
@@ -857,6 +985,12 @@ function render() {
     list.append(card);
   }
   $('#more').hidden = articles.length <= limit;
+  if (resumeScroll !== null)
+    requestAnimationFrame(() => {
+      if (resumeScroll === null) return;
+      window.scrollTo(0, resumeScroll);
+      if (!historyBusy) resumeScroll = null;
+    });
 }
 const archives = new JournalArchives({
   root: $('#journal-archive'),
@@ -916,7 +1050,7 @@ async function load() {
     updateJournals();
     if ([...$('#journal').options].some((o) => o.value === previous))
       $('#journal').value = previous;
-    if (firstLoad) applyRoute();
+    if (firstLoad) applyRoute(false, resume?.route === location.hash ? resume : null);
     else render();
     if (firstLoad && location.hash === '#add-journal') libraryUI.openAdd();
     if (firstLoad) hydrateReading();
@@ -1004,6 +1138,7 @@ window.addEventListener('hashchange', () => {
 });
 $('#catalog-search').addEventListener('input', () => {
   if (data) renderCatalog(data.journals.filter(inGroup));
+  queuePreferences();
 });
 document.querySelector('.catalog-layout').addEventListener('click', (event) => {
   const b = event.target.closest('[data-layout]');
@@ -1012,11 +1147,16 @@ document.querySelector('.catalog-layout').addEventListener('click', (event) => {
   document
     .querySelectorAll('[data-layout]')
     .forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  queuePreferences();
 });
 $('#views').addEventListener('click', (event) => {
   const b = event.target.closest('[data-view]');
   if (!b) return;
   view = b.dataset.view;
+  if (view === 'new') {
+    $('#period').value = 'all';
+    $('#sort').value = 'discovered';
+  }
   limit = 40;
   $('#views')
     .querySelectorAll('button')
@@ -1025,6 +1165,73 @@ $('#views').addEventListener('click', (event) => {
       x.setAttribute('aria-pressed', String(x === b));
     });
   render();
+  ensureHistory();
+  queuePreferences();
+});
+$('#finish-check').addEventListener('click', async () => {
+  if (!data || $('#finish-check').disabled) return;
+  const scope = checkpointScope(),
+    date = new Date(data.generated_at);
+  if (!Number.isFinite(date.getTime())) return toast('数据时间无效，请先更新列表。');
+  state.checked[scope] = date.toISOString();
+  try {
+    await persist();
+    toast('已保存检查起点；下次只显示此后新收录的文章。');
+  } catch {
+    /* persist retains pending operations and reports the failure. */
+  }
+  render();
+});
+$('#mark-visible-read').addEventListener('click', async () => {
+  if (bulkBusy) return;
+  const rows = [...visibleArticles];
+  bulkBusy = true;
+  render();
+  try {
+    await stateSync.flush();
+    bulkUndo = JournalPersonal.markRead(
+      state,
+      rows.map((a) => a.id),
+    );
+    for (const article of rows) if (bulkUndo.includes(article.id)) rememberArticle(article);
+    await persist();
+    toast(`已将 ${bulkUndo.length} 篇标为已读，可撤销本次操作。`);
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    bulkBusy = false;
+    render();
+  }
+});
+$('#undo-visible-read').addEventListener('click', async () => {
+  if (bulkBusy) return;
+  bulkBusy = true;
+  render();
+  try {
+    await stateSync.flush();
+    JournalPersonal.undoRead(state, bulkUndo);
+    await persist();
+    bulkUndo = [];
+    toast('已撤销上次批量已读，原来已读的文章不受影响。');
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    bulkBusy = false;
+    render();
+  }
+});
+window.addEventListener('scroll', queuePreferences, { passive: true });
+for (const name of ['wheel', 'touchstart', 'pointerdown', 'keydown'])
+  document.addEventListener(
+    name,
+    () => {
+      resumeScroll = null;
+    },
+    { passive: true },
+  );
+window.addEventListener('pagehide', savePreferences);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) savePreferences();
 });
 let searchTimer;
 ['search', 'journal', 'period', 'sort', 'abstract-filter'].forEach((id) =>
@@ -1034,12 +1241,14 @@ let searchTimer;
     clearTimeout(searchTimer);
     if (id === 'search') searchTimer = setTimeout(() => ensureHistory(), 350);
     else ensureHistory();
+    queuePreferences();
   }),
 );
 $('#load-history').addEventListener('click', () => ensureHistory(true));
 $('#more').addEventListener('click', () => {
   limit += 40;
   render();
+  queuePreferences();
 });
 $('#refresh').addEventListener('click', load);
 $('#reader').addEventListener('close', () => {
@@ -1116,6 +1325,7 @@ document
   .forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
 async function makeBackup() {
   if (!data) throw new Error('请等待期刊数据载入后再备份');
+  savePreferences();
   await stateSync.flush().catch(() => {});
   await readingWrites;
   await hydrateReading();
@@ -1136,6 +1346,7 @@ async function makeBackup() {
     library: libraryUI.backup(),
     autoTranslate,
     translator,
+    preferences: personal.read().preferences,
   });
 }
 async function restoreBackup(input) {
@@ -1162,7 +1373,15 @@ async function restoreBackup(input) {
     saved,
     folders: JournalReading.mergeFolders(state.folders, restored.folders, saved),
     custom: [...new Set([...state.custom, ...restored.custom.map((id) => aliases[id] || id)])],
+    checked: { ...state.checked },
   };
+  for (const [scope, date] of Object.entries(restored.checked)) {
+    const target = scope.startsWith('journal:')
+      ? 'journal:' + (aliases[scope.slice(8)] || scope.slice(8))
+      : scope;
+    if (!state.checked[target] || Date.parse(date) > Date.parse(state.checked[target]))
+      state.checked[target] = date;
+  }
   await applyReadingAliases();
   updateJournals();
   render();
@@ -1173,6 +1392,13 @@ async function restoreBackup(input) {
     localStorage.setItem('journal-radar:auto-translate', String(autoTranslate));
   }
   await hydrateReading();
+  if (backup.settings?.preferences) {
+    const preferences = backup.settings.preferences;
+    personal.update({ preferences });
+    history.replaceState(null, '', preferences.route);
+    resumeScroll = preferences.scroll;
+    applyRoute(false, preferences);
+  }
 }
 $('#backup').addEventListener('click', async () => {
   $('#backup').disabled = true;
@@ -1185,7 +1411,15 @@ $('#backup').addEventListener('click', async () => {
     a.download = 'journal-radar-backup-' + new Date().toISOString().slice(0, 10) + '.json';
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast(`已备份阅读记录、${backup.articles.length} 篇文章、缓存译文和个人期刊配置。`);
+    personal.update({
+      backup: {
+        exportedAt: backup.exported_at,
+        saved: Object.keys(backup.saved),
+        state: JSON.stringify(validateState(backup)),
+      },
+    });
+    showBackupStatus();
+    toast(`已发起完整备份下载（${backup.articles.length} 篇文章），请确认文件已保存。`);
   } catch (error) {
     toast('导出未完成：' + error.message);
   } finally {

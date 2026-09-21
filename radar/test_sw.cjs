@@ -68,6 +68,7 @@ test('offline upgrade caches the new entry and visited history without preloadin
   events.install({ waitUntil: (p) => (pending = p) });
   await pending;
   assert.ok(requested.includes(scope + 'index.json'));
+  assert.ok(requested.includes(scope + 'personal.js'));
   assert.equal(requested.includes(scope + 'data.json'), false);
   assert.equal(requested.includes(scope + 'citeproc.js'), false);
   events.activate({ waitUntil: (p) => (pending = p) });

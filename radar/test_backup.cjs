@@ -27,6 +27,29 @@ const library = {
   groups: [{ id: 'my-papers', name: 'My papers', journal_ids: [journal.id] }],
   deleted: [],
 };
+test('v4 carries per-scope checkpoints and sanitized browsing preferences alongside old reading records', async () => {
+  const P = require('./web/personal.js');
+  const result = await B.create({
+    state: { ...state, checked: { 'group:hr35': '2026-09-21T08:00:00+08:00' } },
+    articles: [article],
+    library,
+    autoTranslate: false,
+    translator: { cached: async () => null },
+    preferences: { route: '#feed=custom', view: 'new', scroll: 234 },
+  });
+  const restored = await B.parse(result, (value) => ({
+    ...state,
+    checked: P.checked(value.checked),
+  }));
+  assert.equal(restored.state.checked['group:hr35'], '2026-09-21T00:00:00.000Z');
+  assert.equal(restored.settings.preferences.route, '#feed=custom');
+  assert.equal(restored.settings.preferences.scroll, 234);
+  const old = await B.parse({ version: 1, ...state }, (value) => ({
+    ...state,
+    checked: P.checked(value.checked),
+  }));
+  assert.deepEqual(old.state.checked, {});
+});
 
 test('the live registry can be backed up despite malformed legacy secondary ISSNs', async () => {
   const registry = require('./journals.json');

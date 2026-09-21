@@ -101,6 +101,18 @@ function sharedReading(initial = { read: {}, saved: {}, custom: [], folders: [] 
     },
   };
 }
+test('checkpoints merge across scopes and an older tab cannot move a check backwards', async () => {
+  const shared = sharedReading(),
+    a = shared.tab(),
+    b = shared.tab();
+  await Promise.all([
+    a.save({ ...a.current, checked: { 'group:hr35': '2026-09-21T00:00:00Z' } }),
+    b.save({ ...b.current, checked: { 'journal:0021-9010': '2026-09-20T00:00:00Z' } }),
+  ]);
+  await a.save({ ...a.current, checked: { 'group:hr35': '2026-09-19T00:00:00Z' } });
+  assert.equal(shared.stored().checked['group:hr35'], '2026-09-21T00:00:00Z');
+  assert.equal(shared.stored().checked['journal:0021-9010'], '2026-09-20T00:00:00Z');
+});
 
 test('independent tabs concurrently save different articles and preserve read and custom changes', async () => {
   const shared = sharedReading(),

@@ -21,6 +21,11 @@ const JournalState = (() => {
       patch[key] = difference(Object.keys(before[key]), Object.keys(after[key]));
     }
     patch.custom = difference(before.custom, after.custom);
+    patch.checked = Object.fromEntries(
+      Object.entries(after.checked || {}).filter(
+        ([scope, date]) => date !== before.checked?.[scope],
+      ),
+    );
     const old = new Map(before.folders.map((folder) => [folder.id, folder]));
     patch.deleted = before.folders
       .filter((f) => !after.folders.some((n) => n.id === f.id))
@@ -55,6 +60,11 @@ const JournalState = (() => {
       );
     }
     state.custom = applySet(state.custom, patch.custom);
+    for (const [scope, date] of Object.entries(patch.checked || {})) {
+      state.checked ||= {};
+      if (!state.checked[scope] || Date.parse(date) > Date.parse(state.checked[scope]))
+        state.checked[scope] = date;
+    }
     state.folders = state.folders.filter((f) => !patch.deleted.includes(f.id));
     for (const change of patch.folders) {
       let folder = state.folders.find((f) => f.id === change.id);

@@ -17,6 +17,7 @@
     <script src="catalog.js" defer></script>
     <script src="reading.js" defer></script>
     <script src="state.js" defer></script>
+    <script src="personal.js" defer></script>
     <script src="data.js" defer></script>
     <script src="feed.js" defer></script>
     <script src="archives.js" defer></script>
@@ -64,6 +65,10 @@
       <div class="sidebar-bottom">
         <button id="manage">管理期刊与数据源 <span>↗</span></button>
         <button id="backup">导出完整备份 <span>↓</span></button>
+        <div class="backup-status">
+          <small id="backup-time"></small>
+          <p id="backup-reminder" hidden></p>
+        </div>
         <button id="restore">导入备份 <span>↑</span></button>
         <button id="translation-settings">摘要翻译设置 <span>译</span></button>
         <button id="install">安装到桌面 <span>＋</span></button>
@@ -237,6 +242,7 @@
           <section class="list-header">
             <div id="views" class="tabs" aria-label="阅读状态">
               <button data-view="all" class="selected" aria-pressed="true">全部文章</button
+              ><button data-view="new" aria-pressed="false">上次检查后</button
               ><button data-view="unread" aria-pressed="false">未读</button
               ><button data-view="saved" aria-pressed="false">收藏</button>
             </div>
@@ -248,6 +254,10 @@
               </select></label
             >
           </section>
+          <div id="new-discoveries" class="reading-tools" hidden>
+            <span id="check-status" role="status"></span>
+            <button id="finish-check" type="button">本次检查完成</button>
+          </div>
           <label
             >摘要状态
             <select id="abstract-filter">
@@ -266,6 +276,11 @@
             ><span id="updated"></span>
           </div>
           <section id="articles" aria-label="文章列表"></section>
+          <div class="reading-tools bulk-reading">
+            <button id="mark-visible-read" type="button">将当前显示的未读标为已读</button>
+            <button id="undo-visible-read" type="button" hidden>撤销上次批量已读</button>
+            <small>仅处理当前已显示的文章；撤销保留到关闭或刷新页面。</small>
+          </div>
           <button id="more" class="load-more" hidden>加载更多文章</button>
         </div>
         <footer>

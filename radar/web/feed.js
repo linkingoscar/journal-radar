@@ -32,6 +32,7 @@ const JournalFeed = (() => {
       sort = 'discovered',
       query = '',
       view = 'all',
+      since = '',
       state,
       matches = () => true,
       abstract = 'all',
@@ -42,6 +43,7 @@ const JournalFeed = (() => {
         sort === 'discovered' ? (a.first_seen || '').slice(0, 10) : publicationDate(a, today);
       return (
         (!journal || a.journal_id === journal) &&
+        (view !== 'new' || !since || Date.parse(a.first_seen) > Date.parse(since)) &&
         matches(a) &&
         (!cutoff || date >= cutoff.slice(0, date.length)) &&
         (!query ||
@@ -65,6 +67,14 @@ const JournalFeed = (() => {
     articles.sort((a, b) => date(b).localeCompare(date(a)) || a.id.localeCompare(b.id));
     return { articles, total: base.length, missing, suspect };
   }
-  return { abstractInfo, future, publicationDate, dateLabel, select };
+  function counts(journals, rows, selected = '') {
+    const scope = journals.filter((j) => !selected || j.id === selected),
+      ids = new Set(scope.map((j) => j.id));
+    return {
+      total: scope.reduce((sum, j) => sum + (j.article_count || 0), 0),
+      loaded: rows.filter((a) => ids.has(a.journal_id)).length,
+    };
+  }
+  return { abstractInfo, future, publicationDate, dateLabel, select, counts };
 })();
 if (typeof module !== 'undefined') module.exports = JournalFeed;

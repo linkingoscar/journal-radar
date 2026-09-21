@@ -2,6 +2,7 @@
 const JournalBackup = (() => {
   const Reading = typeof module !== 'undefined' ? require('./reading.js') : JournalReading;
   const Library = typeof module !== 'undefined' ? require('./library.js') : JournalLibrary;
+  const Personal = typeof module !== 'undefined' ? require('./personal.js') : JournalPersonal;
   async function parse(input, validateState) {
     const reading = Reading.backup(input),
       state = validateState(input);
@@ -17,9 +18,21 @@ const JournalBackup = (() => {
       reading.articles.some((a) => !library.journals.some((j) => j.id === a.journal_id))
     )
       throw new Error('备份文章缺少对应期刊配置');
-    return { ...reading, state, library, settings };
+    return {
+      ...reading,
+      state,
+      library,
+      settings: settings
+        ? {
+            auto_translate: settings.auto_translate,
+            ...(settings.preferences
+              ? { preferences: Personal.preferences(settings.preferences) }
+              : {}),
+          }
+        : null,
+    };
   }
-  async function create({ state, articles, library, autoTranslate, translator }) {
+  async function create({ state, articles, library, autoTranslate, translator, preferences }) {
     const rows = articles
         .filter((a) => state.read[a.id] || state.saved[a.id] || a.citation?.manual)
         .map(Reading.article),
@@ -35,7 +48,10 @@ const JournalBackup = (() => {
       articles: rows,
       translations,
       library: await Library.validateBackup(library),
-      settings: { auto_translate: autoTranslate },
+      settings: {
+        auto_translate: autoTranslate,
+        ...(preferences ? { preferences: Personal.preferences(preferences) } : {}),
+      },
     };
     if (new TextEncoder().encode(JSON.stringify(result)).byteLength > 50e6)
       throw new Error('备份超过 50 MB');

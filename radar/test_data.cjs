@@ -7,6 +7,66 @@ const chunk = (i, journal) => ({
   journal_id: journal,
   count: 1,
 });
+test('history fetches at most three chunks concurrently and reports completion without losing rows', async () => {
+  const chunks = Array.from({ length: 8 }, (_, i) => chunk(i + 1, 'one'));
+  let active = 0,
+    maximum = 0;
+  const progress = [];
+  const library = new Library(async (url) => {
+    if (url.startsWith('index.json'))
+      return {
+        ok: true,
+        json: async () => ({ journals: [], articles: [], history_chunks: chunks }),
+      };
+    active++;
+    maximum = Math.max(maximum, active);
+    await new Promise((resolve) => setImmediate(resolve));
+    active--;
+    return {
+      ok: true,
+      json: async () => ({ articles: [{ id: url.slice(9, -5), journal_id: 'one' }] }),
+    };
+  });
+  await library.refresh();
+  const rows = await library.history(new Set(['one']), (done, total) =>
+    progress.push([done, total]),
+  );
+  assert.equal(maximum, 3);
+  assert.equal(new Set(rows.map((a) => a.id)).size, 8);
+  assert.deepEqual(progress.at(-1), [8, 8]);
+});
+test('cancelling one scope stops its requests and lets a new scope finish independently', async () => {
+  const chunks = [...Array.from({ length: 6 }, (_, i) => chunk(i + 1, 'old')), chunk(7, 'new')];
+  const requested = [];
+  const library = new Library(async (url, options) => {
+    if (url.startsWith('index.json'))
+      return {
+        ok: true,
+        json: async () => ({ journals: [], articles: [], history_chunks: chunks }),
+      };
+    requested.push(url);
+    if (url !== chunks[6].url)
+      await new Promise((resolve, reject) =>
+        options.signal.addEventListener('abort', () => reject(options.signal.reason), {
+          once: true,
+        }),
+      );
+    return { ok: true, json: async () => ({ articles: [{ id: id(7), journal_id: 'new' }] }) };
+  });
+  await library.refresh();
+  const controller = new AbortController();
+  const previous = library.history(new Set(['old']), () => {}, { signal: controller.signal });
+  const rejection = assert.rejects(previous, { name: 'AbortError' });
+  controller.abort();
+  const rows = await library.history(new Set(['new']));
+  await rejection;
+  assert.deepEqual(
+    rows.map((a) => a.id),
+    [id(7)],
+  );
+  assert.equal(requested.length, 4);
+  assert.equal(library.pending(new Set(['old'])).length, 6);
+});
 test('recent feed is independent of history and loads only the requested journals', async () => {
   const calls = [],
     one = chunk(1, 'one'),

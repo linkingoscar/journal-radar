@@ -49,7 +49,7 @@ jobs:
       - name: Check frontend formatting
         run: npm run format:check
       - name: Verify translation caching and quota behavior
-        run: node --test radar/test_translation.cjs radar/test_archives_ui.cjs radar/test_reading.cjs radar/test_feed.cjs radar/test_library.cjs radar/test_citations.cjs radar/test_data.cjs radar/test_backup.cjs radar/test_sw.cjs
+        run: npm test
       - name: Restore verified durable history
         run: python radar/snapshots.py restore
       - name: Collect journals and build reading site

@@ -35,6 +35,7 @@ for name in [
     "archives.js",
     "reading.js",
     "state.js",
+    "personal.js",
     "data.js",
     "backup.js",
     "feed.js",
