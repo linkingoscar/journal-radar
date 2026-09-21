@@ -153,3 +153,7 @@ GitHub fork 保留上游历史与 MIT LICENSE。基线为 Paper Firehose v0.4.2�
 应用代码集中在 `radar/`，上游 CLI 保留在 `src/`。阅读状态、数据加载、筛选、备份分别位于 `radar/web/state.js`、`data.js`、`feed.js`、`backup.js`；快照与网站分片分别由 `radar/snapshots.py`、`site_data.py` 处理。
 
 手工维护的前端使用固定版本 Prettier，Python 使用固定版本 Ruff；执行 `npm run format` 和 `ruff format radar` 整理源码。CI 检查格式与行为回归。citeproc.js 及生成的 catalog.js 不参与格式化，保留第三方和生成文件原状。
+
+`app.js` 的页面协调、文章列表、单篇卡片和键盘焦点恢复分开维护。`run.py` 的本机发布事务负责推进检查时间并记录新到达文章，公开导出继续使用来源收录时间。
+
+开发缓存（`__pycache__/`、`.pytest_cache/`、`.ruff_cache/`）与 setuptools 生成的 `*.egg-info/` 不入库，可重新生成。测试临时目录应使用系统临时目录，验证结束后清理；保留必要的结论与复现脚本即可，无需长期保存整站预览副本。`site/` 可由构建重新生成；`.desktop-data/`、`radar-data/` 和恢复备份属于持久数据，不能按缓存清理。云端 Pages 构建附件只作短期交付，恢复数据仍以 Release 快照为准。

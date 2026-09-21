@@ -3,6 +3,9 @@
 __pycache__/
 *.pyc
 *.backup*
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
 
 agents.md
 archive/

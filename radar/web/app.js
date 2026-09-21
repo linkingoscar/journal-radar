@@ -761,6 +761,144 @@ function renderHistoryStatus() {
     $('#abstract-filter').value !== 'all';
   $('#undo-check').disabled = checkBusy;
 }
+function captureFeedFocus(list) {
+  const active = document.activeElement;
+  if (!list.contains(active) || document.querySelector('dialog[open]')) return null;
+  return {
+    articleId: active.closest('[data-article-id]')?.dataset.articleId,
+    action: active.dataset.feedAction,
+    previousIds: [...list.children].map((card) => card.dataset.articleId),
+  };
+}
+function restoreFeedFocus(list, focus) {
+  if (!focus?.articleId || !focus.action) return;
+  const { articleId, action, previousIds } = focus;
+  const cards = [...list.children].filter((card) => card.dataset.articleId),
+    remaining = new Set(cards.map((card) => card.dataset.articleId)),
+    oldPosition = previousIds.indexOf(articleId),
+    targetId = remaining.has(articleId)
+      ? articleId
+      : previousIds.slice(oldPosition + 1).find((id) => remaining.has(id)) ||
+        previousIds
+          .slice(0, oldPosition)
+          .reverse()
+          .find((id) => remaining.has(id)),
+    card = cards.find((card) => card.dataset.articleId === targetId) || cards[0],
+    target =
+      card?.querySelector(`[data-feed-action="${action}"]`) ||
+      card?.querySelector('button') ||
+      $('#result-count');
+  target.focus({ preventScroll: !!targetId && targetId === articleId });
+}
+function renderArticleCard(article, journal) {
+  const card = el('article', undefined, 'article' + (state.read[article.id] ? ' is-read' : ''));
+  card.dataset.articleId = article.id;
+  const actionButton = (name, text, callback, cls) => {
+    const control = button(text, callback, cls);
+    control.dataset.feedAction = name;
+    return control;
+  };
+  const top = el('div', undefined, 'article-top');
+  top.append(
+    el('span', journal.name, 'journal-name'),
+    el('time', JournalFeed.dateLabel(article, new Date().toISOString().slice(0, 10)), 'date'),
+  );
+  const heading = el('h2');
+  heading.append(actionButton('open', article.title, () => openArticle(article)));
+  card.append(
+    top,
+    heading,
+    el('p', article.authors || '作者信息暂缺', 'authors'),
+    el(
+      'p',
+      abstractText(article, journal) ||
+        (JournalFeed.abstractInfo(article).status === 'suspect'
+          ? '摘要疑似不完整，打开文章查看原片段或补取。'
+          : '当前来源未提供摘要，打开文章查看补取方式。'),
+      'abstract-preview',
+    ),
+  );
+  const bottom = el('div', undefined, 'article-bottom'),
+    tags = el('div', undefined, 'tags'),
+    actions = el('div', undefined, 'article-actions');
+  journal.groups.forEach((g) => tags.append(el('span', label(g), 'tag')));
+  if (
+    article.article_type &&
+    article.article_type !== 'journal-article' &&
+    article.article_type !== 'rss-entry'
+  )
+    tags.append(el('span', article.article_type, 'tag'));
+  if (article.archive)
+    tags.append(el('span', (article.archive_year || '往期') + ' 年历史文章', 'tag'));
+  const read = actionButton('read', state.read[article.id] ? '✓ 已读' : '标记已读', () =>
+    toggle('read', article.id),
+  );
+  read.setAttribute(
+    'aria-label',
+    (state.read[article.id] ? '标为未读：' : '标为已读：') + article.title,
+  );
+  const saved = actionButton(
+    'saved',
+    state.saved[article.id] ? '★ 已收藏' : '☆ 收藏',
+    () => toggle('saved', article.id),
+    state.saved[article.id] ? 'saved' : '',
+  );
+  saved.setAttribute('aria-pressed', String(!!state.saved[article.id]));
+  saved.setAttribute(
+    'aria-label',
+    (state.saved[article.id] ? '取消收藏：' : '收藏：') + article.title,
+  );
+  const link = el('a', '原文 ↗');
+  link.dataset.feedAction = 'source';
+  link.href = safeLink(article.link);
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  if (browseMode === 'saved') {
+    const checkbox = favorites.checkbox(article);
+    checkbox.querySelector('input').dataset.feedAction = 'select';
+    actions.append(checkbox);
+  }
+  actions.append(
+    read,
+    saved,
+    actionButton('cite', 'APA 引用', () => favorites.cite([article])),
+    actionButton('folder', '收藏分组', () => favorites.assign([article.id], article)),
+    link,
+  );
+  bottom.append(tags, actions);
+  card.append(bottom);
+  return card;
+}
+function renderArticleList(articles, since) {
+  const list = $('#articles');
+  const focus = captureFeedFocus(list);
+  list.replaceChildren();
+  if (!articles.length) {
+    const box = el('div', undefined, 'empty');
+    box.append(
+      el('strong', '这里暂时没有文章'),
+      el(
+        'p',
+        view === 'new' && since
+          ? '上次检查后暂无符合筛选的新文章。可更新列表或清除其他筛选。'
+          : view === 'saved'
+            ? '点击文章旁的「收藏」，把值得细读的研究留在这里。'
+            : '试试放宽时间范围、清除关键词，或切换期刊分组。',
+      ),
+    );
+    list.append(box);
+  }
+  const byId = new Map(data.journals.map((j) => [j.id, j]));
+  visibleArticles = articles.slice(0, limit);
+  const unreadVisible = visibleArticles.filter((a) => !state.read[a.id]).length;
+  $('#mark-visible-read').textContent = `将当前显示的 ${unreadVisible} 篇未读标为已读`;
+  $('#mark-visible-read').disabled = bulkBusy || !unreadVisible;
+  $('#undo-visible-read').hidden = !bulkUndo.length;
+  $('#undo-visible-read').disabled = bulkBusy;
+  for (const article of visibleArticles)
+    list.append(renderArticleCard(article, byId.get(article.journal_id)));
+  restoreFeedFocus(list, focus);
+}
 function render() {
   if (!data) return;
   const journals = data.journals.filter(inGroup),
@@ -936,135 +1074,7 @@ function render() {
   ]
     .filter(Boolean)
     .join(' ');
-  const list = $('#articles');
-  const focused =
-      list.contains(document.activeElement) && !document.querySelector('dialog[open]')
-        ? document.activeElement
-        : null,
-    focusedId = focused?.closest('[data-article-id]')?.dataset.articleId,
-    focusedAction = focused?.dataset.feedAction,
-    previousIds = [...list.children].map((card) => card.dataset.articleId);
-  list.replaceChildren();
-  if (!articles.length) {
-    const box = el('div', undefined, 'empty');
-    box.append(
-      el('strong', '这里暂时没有文章'),
-      el(
-        'p',
-        view === 'new' && since
-          ? '上次检查后暂无符合筛选的新文章。可更新列表或清除其他筛选。'
-          : view === 'saved'
-            ? '点击文章旁的「收藏」，把值得细读的研究留在这里。'
-            : '试试放宽时间范围、清除关键词，或切换期刊分组。',
-      ),
-    );
-    list.append(box);
-  }
-  const byId = new Map(data.journals.map((j) => [j.id, j]));
-  visibleArticles = articles.slice(0, limit);
-  const unreadVisible = visibleArticles.filter((a) => !state.read[a.id]).length;
-  $('#mark-visible-read').textContent = `将当前显示的 ${unreadVisible} 篇未读标为已读`;
-  $('#mark-visible-read').disabled = bulkBusy || !unreadVisible;
-  $('#undo-visible-read').hidden = !bulkUndo.length;
-  $('#undo-visible-read').disabled = bulkBusy;
-  for (const article of visibleArticles) {
-    const j = byId.get(article.journal_id),
-      card = el('article', undefined, 'article' + (state.read[article.id] ? ' is-read' : ''));
-    card.dataset.articleId = article.id;
-    const actionButton = (name, text, callback, cls) => {
-      const control = button(text, callback, cls);
-      control.dataset.feedAction = name;
-      return control;
-    };
-    const top = el('div', undefined, 'article-top');
-    top.append(
-      el('span', j.name, 'journal-name'),
-      el('time', JournalFeed.dateLabel(article, new Date().toISOString().slice(0, 10)), 'date'),
-    );
-    const heading = el('h2');
-    heading.append(actionButton('open', article.title, () => openArticle(article)));
-    card.append(
-      top,
-      heading,
-      el('p', article.authors || '作者信息暂缺', 'authors'),
-      el(
-        'p',
-        abstractText(article, j) ||
-          (JournalFeed.abstractInfo(article).status === 'suspect'
-            ? '摘要疑似不完整，打开文章查看原片段或补取。'
-            : '当前来源未提供摘要，打开文章查看补取方式。'),
-        'abstract-preview',
-      ),
-    );
-    const bottom = el('div', undefined, 'article-bottom'),
-      tags = el('div', undefined, 'tags'),
-      actions = el('div', undefined, 'article-actions');
-    j.groups.forEach((g) => tags.append(el('span', label(g), 'tag')));
-    if (
-      article.article_type &&
-      article.article_type !== 'journal-article' &&
-      article.article_type !== 'rss-entry'
-    )
-      tags.append(el('span', article.article_type, 'tag'));
-    if (article.archive)
-      tags.append(el('span', (article.archive_year || '往期') + ' 年历史文章', 'tag'));
-    const read = actionButton('read', state.read[article.id] ? '✓ 已读' : '标记已读', () =>
-      toggle('read', article.id),
-    );
-    read.setAttribute(
-      'aria-label',
-      (state.read[article.id] ? '标为未读：' : '标为已读：') + article.title,
-    );
-    const saved = actionButton(
-      'saved',
-      state.saved[article.id] ? '★ 已收藏' : '☆ 收藏',
-      () => toggle('saved', article.id),
-      state.saved[article.id] ? 'saved' : '',
-    );
-    saved.setAttribute('aria-pressed', String(!!state.saved[article.id]));
-    saved.setAttribute(
-      'aria-label',
-      (state.saved[article.id] ? '取消收藏：' : '收藏：') + article.title,
-    );
-    const link = el('a', '原文 ↗');
-    link.dataset.feedAction = 'source';
-    link.href = safeLink(article.link);
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    if (browseMode === 'saved') {
-      const checkbox = favorites.checkbox(article);
-      checkbox.querySelector('input').dataset.feedAction = 'select';
-      actions.append(checkbox);
-    }
-    actions.append(
-      read,
-      saved,
-      actionButton('cite', 'APA 引用', () => favorites.cite([article])),
-      actionButton('folder', '收藏分组', () => favorites.assign([article.id], article)),
-      link,
-    );
-    bottom.append(tags, actions);
-    card.append(bottom);
-    list.append(card);
-  }
-  if (focusedId && focusedAction) {
-    const cards = [...list.children].filter((card) => card.dataset.articleId),
-      remaining = new Set(cards.map((card) => card.dataset.articleId)),
-      oldPosition = previousIds.indexOf(focusedId),
-      targetId = remaining.has(focusedId)
-        ? focusedId
-        : previousIds.slice(oldPosition + 1).find((id) => remaining.has(id)) ||
-          previousIds
-            .slice(0, oldPosition)
-            .reverse()
-            .find((id) => remaining.has(id)),
-      card = cards.find((card) => card.dataset.articleId === targetId) || cards[0],
-      target =
-        card?.querySelector(`[data-feed-action="${focusedAction}"]`) ||
-        card?.querySelector('button') ||
-        $('#result-count');
-    target.focus({ preventScroll: !!targetId && targetId === focusedId });
-  }
+  renderArticleList(articles, since);
   $('#more').hidden = articles.length <= limit;
   if (resumeScroll !== null)
     requestAnimationFrame(() => {

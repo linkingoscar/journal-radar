@@ -399,36 +399,47 @@ class RadarStore(DatabaseManager):
                 inserted += not bool(previous)
         return inserted
 
+    def _begin_local_publication(self, conn, generated_at):
+        """Stamp arrivals and keep the transaction open until export reads its rows."""
+        conn.execute("BEGIN IMMEDIATE")
+        previous = conn.execute(
+            "SELECT generated_at FROM radar_local_publication WHERE id=1"
+        ).fetchone()
+        stamp = dt.datetime.fromisoformat(generated_at)
+        if previous:
+            # A publication must advance even within one clock tick or after rollback
+            # of the system clock; otherwise a completed check could hide arrivals.
+            stamp = max(
+                stamp,
+                dt.datetime.fromisoformat(previous[0]) + dt.timedelta(milliseconds=1),
+            )
+        generated_at = stamp.isoformat(timespec="milliseconds")
+        conn.execute(
+            "INSERT OR REPLACE INTO radar_local_publication VALUES (1,?)",
+            (generated_at,),
+        )
+        conn.execute(
+            "UPDATE matched_entries SET local_first_seen=? WHERE local_first_seen IS NULL",
+            (generated_at,),
+        )
+        return generated_at
+
     def export(self, registry, destination, *, local=False):
         generated_at = now()
         with self.get_connection("history") as conn:
             if local:
-                # Stamp arrivals in the same snapshot transaction as the rows.
-                # Ingestion may finish after an earlier page was generated.
-                conn.execute("BEGIN IMMEDIATE")
-                previous = conn.execute(
-                    "SELECT generated_at FROM radar_local_publication WHERE id=1"
-                ).fetchone()
-                stamp = dt.datetime.fromisoformat(generated_at)
-                if previous:
-                    stamp = max(
-                        stamp,
-                        dt.datetime.fromisoformat(previous[0])
-                        + dt.timedelta(milliseconds=1),
-                    )
-                generated_at = stamp.isoformat(timespec="milliseconds")
-                conn.execute(
-                    "INSERT OR REPLACE INTO radar_local_publication VALUES (1,?)",
-                    (generated_at,),
-                )
-                conn.execute(
-                    "UPDATE matched_entries SET local_first_seen=? WHERE local_first_seen IS NULL",
-                    (generated_at,),
-                )
+                generated_at = self._begin_local_publication(conn, generated_at)
             rows = [
                 dict(r)
                 for r in conn.execute(
-                    "SELECT entry_id AS id,journal_id,title,link,authors,abstract,doi,published_date,matched_date AS first_seen,local_first_seen,online_date,print_date,article_type,sources,citation FROM matched_entries ORDER BY published_date DESC,entry_id"
+                    """
+                    SELECT entry_id AS id, journal_id, title, link, authors, abstract,
+                           doi, published_date, matched_date AS first_seen,
+                           local_first_seen, online_date, print_date, article_type,
+                           sources, citation
+                    FROM matched_entries
+                    ORDER BY published_date DESC, entry_id
+                    """
                 )
             ]
         for row in rows:

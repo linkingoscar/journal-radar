@@ -87,6 +87,7 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+          retention-days: 1
       - name: Write source summary
         run: python radar/verify_site.py --summary
   deploy:
