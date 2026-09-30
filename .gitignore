@@ -51,3 +51,7 @@ site/
 !radar/web/*.html
 .desktop-data/
 .desktop-venv/
+
+# Local recovery packages and maintenance records stay private.
+/backups/
+/project-review/
