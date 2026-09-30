@@ -1,11 +1,12 @@
 importScripts('catalog.js');
-const SHELL = 'journal-radar-shell-v32',
+const SHELL = 'journal-radar-shell-v33',
   DATA = 'journal-radar-data-v2';
 const FILES = [
   './',
   'index.html',
   'style.css',
   'enhancements.css',
+  'appearance.js',
   'inter-var-latin.woff2',
   'source-serif-var-latin.woff2',
   'source-serif-var-italic-latin.woff2',

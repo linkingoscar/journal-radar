@@ -40,6 +40,7 @@ assert all(
 for name in [
     "index.html",
     "app.js",
+    "appearance.js",
     "archives.js",
     "reading.js",
     "notes.js",

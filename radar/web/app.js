@@ -1,5 +1,15 @@
 'use strict';
 const $ = (s) => document.querySelector(s);
+JournalAppearance.bind({
+  root: document.documentElement,
+  control: $('#simplify-effects'),
+  storage: {
+    getItem: (key) => localStorage.getItem(key),
+    setItem: (key, value) => localStorage.setItem(key, value),
+  },
+  events: window,
+  notify: toast,
+});
 const mobileLayout = matchMedia('(max-width: 700px)');
 function adaptControls() {
   $('#personal-tools').open = !mobileLayout.matches;
@@ -1277,6 +1287,9 @@ const archives = new JournalArchives({
 });
 async function load() {
   $('#refresh').disabled = true;
+  $('#connection').setAttribute('aria-busy', 'true');
+  $('#connection').dataset.state = 'loading';
+  $('#connection').textContent = data ? '正在更新' : '正在载入';
   try {
     const next = await articleData.refresh();
     for (const journal of next.journals)
@@ -1301,6 +1314,7 @@ async function load() {
     if (firstLoad && location.hash === '#add-journal') libraryUI.openAdd();
     if (firstLoad) hydrateReading();
     $('#connection').textContent = navigator.onLine ? '阅读数据已载入' : '离线阅读';
+    $('#connection').dataset.state = navigator.onLine ? 'ready' : 'offline';
     if (pendingArticleId) {
       let article = allKnown().find((a) => a.id === pendingArticleId);
       if (!article) {
@@ -1315,9 +1329,11 @@ async function load() {
     ensureHistory();
   } catch (error) {
     $('#connection').textContent = '暂时无法更新';
+    $('#connection').dataset.state = 'error';
     $('#notice').hidden = false;
     $('#notice').textContent = '读取失败，请检查网络后重试。' + (data ? ' 已保留当前文章。' : '');
   } finally {
+    $('#connection').setAttribute('aria-busy', 'false');
     $('#refresh').disabled = false;
   }
 }

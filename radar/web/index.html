@@ -12,6 +12,7 @@
     <title>期刊雷达 · Journal Radar</title>
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="manifest.webmanifest" />
+    <script src="appearance.js"></script>
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="enhancements.css" />
     <script src="translation.js" defer></script>
@@ -72,6 +73,9 @@
           </div>
           <button id="restore">导入备份 <span>↑</span></button>
           <button id="translation-settings">摘要翻译设置 <span>译</span></button>
+          <label class="effects-setting" title="关闭透明与动态效果，设置保存在此设备。">
+            <input type="checkbox" id="simplify-effects" />简化界面效果
+          </label>
           <button id="install">安装到桌面 <span>＋</span></button>
           <input type="file" id="import-file" accept="application/json,.json" hidden />
           <small>基于 Paper Firehose · 个人阅读版</small>
@@ -82,7 +86,7 @@
       <header class="topbar">
         <span id="edition-label">期刊雷达 · 网页阅读版</span>
         <div>
-          <span id="connection" class="status-dot">正在载入</span
+          <span id="connection" class="status-dot" role="status" aria-busy="true">正在载入</span
           ><button id="refresh" class="quiet" title="读取最新采集结果">更新列表</button>
         </div>
       </header>
@@ -324,9 +328,10 @@
         </footer>
       </main>
     </div>
-    <dialog id="reader">
+    <dialog id="reader" aria-labelledby="reader-label">
       <div class="dialog-head">
-        <span>文章速览</span><button class="close" aria-label="关闭文章速览">✕</button>
+        <span id="reader-label">文章速览</span
+        ><button class="close" aria-label="关闭文章速览">✕</button>
       </div>
       <div id="reader-content"></div>
       <nav class="reader-navigation" aria-label="连续阅读">
@@ -611,9 +616,10 @@
       <div id="journal-candidates"></div>
     </dialog>
 
-    <dialog id="settings">
+    <dialog id="settings" aria-labelledby="settings-label">
       <div class="dialog-head">
-        <span>期刊与数据源</span><button class="close" aria-label="关闭期刊管理">✕</button>
+        <span id="settings-label">期刊与数据源</span
+        ><button class="close" aria-label="关闭期刊管理">✕</button>
       </div>
       <p>
         勾选期刊可加入「我的选刊」。后台仍收集全部启用的期刊。侧边栏的「新增期刊」可接入新来源，「管理分组」可创建多个个人清单。
@@ -636,9 +642,10 @@
         >
       </div>
     </dialog>
-    <dialog id="help">
+    <dialog id="help" aria-labelledby="help-label">
       <div class="dialog-head">
-        <span>选择阅读方式</span><button class="close" aria-label="关闭安装说明">✕</button>
+        <span id="help-label">选择阅读方式</span
+        ><button class="close" aria-label="关闭安装说明">✕</button>
       </div>
       <p>
         用 Microsoft Edge
@@ -650,9 +657,10 @@
       </p>
       <p>两种版本的阅读记录分别保存；换版本前导出完整备份，再在目标版本导入。</p>
     </dialog>
-    <dialog id="translation-options">
+    <dialog id="translation-options" aria-labelledby="translation-label">
       <div class="dialog-head">
-        <span>摘要翻译</span><button class="close" aria-label="关闭翻译设置">✕</button>
+        <span id="translation-label">摘要翻译</span
+        ><button class="close" aria-label="关闭翻译设置">✕</button>
       </div>
       <label class="translation-setting"
         ><input type="checkbox" id="auto-translate" checked />打开文章时自动翻译摘要</label

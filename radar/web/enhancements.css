@@ -37,7 +37,7 @@
   transition:
     box-shadow var(--dur) var(--ease),
     border-color var(--dur) var(--ease),
-    transform var(--dur) var(--ease);
+    transform var(--dur-press) var(--ease-out);
 }
 .catalog-card:hover {
   border-color: var(--line-strong);
@@ -602,16 +602,7 @@
 }
 #citation-dialog {
   width: min(900px, calc(100vw - 32px));
-  max-height: 90vh;
   overflow: auto;
-}
-#citation-dialog > .dialog-head {
-  position: sticky;
-  top: -24px;
-  background: var(--surface);
-  z-index: 2;
-  margin: 0 -28px;
-  padding: 14px 28px;
 }
 .citation-preview {
   margin: 20px 0;
@@ -647,11 +638,6 @@
   .citation-preview {
     padding: 16px;
     font-size: 14px;
-  }
-  #citation-dialog > .dialog-head {
-    top: -20px;
-    margin: 0 -20px;
-    padding: 12px 20px;
   }
 }
 
