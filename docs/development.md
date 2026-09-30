@@ -81,6 +81,8 @@ npm test
 
 `npm run format` 与 `ruff format radar --no-cache` 用于整理格式。第三方 `citeproc.js` 和生成的 `catalog.js` 不参与 Prettier 格式化。只改文档时检查链接、命令和实际渲染即可；行为变更运行相关测试，界面变更同时检查桌面与手机视口。
 
+界面字体为同源自托管的 WOFF2 子集，位于 `radar/web/*.woff2`，共约 190 KB。`index.html` 的 CSP 不含 `font-src` 且为 `default-src 'self'`，因此不要改用 Google Fonts 等外部字体源，那会被策略拦截。升级或重新裁剪字体的步骤、字符集范围与许可证见 [`radar/web/FONTS.md`](../radar/web/FONTS.md)；改动字体文件后需要同步提升 `radar/web/sw.js` 中的 shell 版本号。
+
 ## 部署自己的实例
 
 ### 1. Fork 与 Pages 设置
