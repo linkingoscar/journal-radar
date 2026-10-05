@@ -44,7 +44,7 @@
   box-shadow: var(--shadow-2);
 }
 .catalog-card:active {
-  transform: scale(0.995);
+  transform: scale(0.985);
 }
 .catalog-cover {
   width: 104px;
@@ -642,14 +642,11 @@
 }
 
 /* Reading view keeps a denser rhythm for long sessions. */
-.reading-view .topbar {
-  height: 48px;
+.reading-view {
+  --topbar-h: 48px;
 }
 .reading-view main {
   padding-top: 22px;
-}
-.reading-view .browse-modes {
-  margin-bottom: 16px;
 }
 .reading-view .hero {
   margin-bottom: 18px;
@@ -698,14 +695,11 @@
   font-size: 12px;
 }
 @media (max-width: 700px) {
-  .reading-view .topbar {
-    height: 44px;
+  .reading-view {
+    --topbar-h: 44px;
   }
   .reading-view main {
     padding-top: 14px;
-  }
-  .reading-view .browse-modes {
-    margin-bottom: 12px;
   }
   .reading-view .hero {
     margin-bottom: 14px;

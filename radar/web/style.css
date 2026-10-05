@@ -33,10 +33,10 @@
 :root {
   color-scheme: light dark;
 
-  --bg: #f2f2f7;
+  --bg: #f5f6f8;
   --surface: #fff;
-  --surface-2: #f7f7fa;
-  --surface-3: #e8e8ed;
+  --surface-2: #f7f8fa;
+  --surface-3: #e9ecef;
   --surface-hover: rgb(0 0 0 / 4%);
   --surface-active: rgb(0 0 0 / 8%);
 
@@ -45,7 +45,7 @@
   --text-3: #6c6c72;
   --text-on-accent: #fff;
 
-  --line: rgb(60 60 67 / 14%);
+  --line: rgb(40 47 54 / 12%);
   --line-strong: rgb(60 60 67 / 24%);
 
   --accent: #14615c;
@@ -61,33 +61,38 @@
   --danger-weak: #fbe9e7;
 
   --r-xs: 6px;
-  --r-sm: 9px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --r-xl: 20px;
+  --r-sm: 11px;
+  --r-md: 15px;
+  --r-lg: 20px;
+  --r-xl: 28px;
   --r-pill: 999px;
 
   --scrim: rgb(0 0 0 / 42%);
 
-  --shadow-1: 0 1px 2px rgb(0 0 0 / 4%), 0 1px 3px rgb(0 0 0 / 5%);
-  --shadow-2: 0 2px 6px rgb(0 0 0 / 5%), 0 8px 20px rgb(0 0 0 / 6%);
+  --shadow-1: 0 2px 8px rgb(30 42 52 / 4%);
+  --shadow-2: 0 4px 12px rgb(30 42 52 / 5%), 0 12px 28px rgb(30 42 52 / 7%);
   --shadow-3: 0 18px 50px rgb(0 0 0 / 16%);
 
   /* Materials belong to controls above the content, not to reading surfaces. */
-  --chrome-tint: rgb(250 250 253 / 90%);
-  --material-edge: rgb(255 255 255 / 80%);
-  --material-filter: blur(20px) saturate(130%);
-  --shadow-chrome: inset 0 1px 0 var(--material-edge), 0 4px 16px rgb(0 0 0 / 4%);
+  --chrome-tint: rgb(255 255 255 / 72%);
+  --material-edge: rgb(255 255 255 / 90%);
+  --material-filter: blur(12px) saturate(150%);
+  --glass-glint: rgb(255 255 255 / 36%);
+  --glass-selection: rgb(255 255 255 / 94%);
+  --shadow-chrome:
+    inset 0 1px 0 var(--material-edge), inset 0 -1px 0 rgb(255 255 255 / 18%),
+    0 4px 8px rgb(25 47 45 / 5%), 0 12px 28px rgb(25 47 45 / 10%);
 
   --dur: 160ms;
   --dur-slow: 300ms;
   --dur-press: 120ms;
-  --dur-panel: 240ms;
+  --dur-panel: 360ms;
   --dur-exit: 180ms;
-  --panel-distance: 12px;
-  --panel-scale: 0.985;
+  --panel-distance: 28px;
+  --panel-scale: 0.96;
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-panel: var(--ease-out);
 
   --font:
     'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI',
@@ -107,7 +112,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0d0d0f;
+    --bg: #101215;
     --surface: #1c1c1e;
     --surface-2: #161618;
     --surface-3: #2c2c2e;
@@ -139,9 +144,42 @@
     --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
     --shadow-2: 0 2px 6px rgb(0 0 0 / 45%), 0 8px 20px rgb(0 0 0 / 40%);
     --shadow-3: 0 18px 50px rgb(0 0 0 / 60%);
-    --chrome-tint: rgb(28 28 30 / 92%);
-    --material-edge: rgb(255 255 255 / 10%);
-    --shadow-chrome: inset 0 1px 0 var(--material-edge), 0 4px 16px rgb(0 0 0 / 22%);
+    --chrome-tint: rgb(28 32 34 / 76%);
+    --material-edge: rgb(255 255 255 / 32%);
+    --glass-glint: rgb(255 255 255 / 14%);
+    --glass-selection: rgb(49 57 59 / 96%);
+    --shadow-chrome:
+      inset 0 1px 0 var(--material-edge), inset 0 -1px 0 rgb(255 255 255 / 6%),
+      0 4px 8px rgb(0 0 0 / 16%), 0 12px 28px rgb(0 0 0 / 30%);
+  }
+}
+@supports (animation-timing-function: linear(0, 1)) {
+  :root {
+    /* A sampled, lightly damped spring for native dialog transitions.
+       Interactive selection uses the live integrator in motion.js. */
+    --ease-panel: linear(
+      0,
+      0.1292,
+      0.3414,
+      0.557,
+      0.7369,
+      0.8687,
+      0.9547,
+      1.0038,
+      1.0267,
+      1.0331,
+      1.0305,
+      1.024,
+      1.0167,
+      1.0103,
+      1.0055,
+      1.0022,
+      1.0003,
+      0.9993,
+      0.9989,
+      0.9989,
+      1
+    );
   }
 }
 
@@ -226,7 +264,7 @@ button {
    reverse immediately when the user releases or moves off the control. */
 button:enabled:active:not(.article h2 button),
 :where(.primary, .quiet, .browse-modes a, .article-actions a):active {
-  transform: scale(0.98);
+  transform: scale(0.96);
 }
 button:enabled:active {
   transition-duration: var(--dur-press);
@@ -446,10 +484,11 @@ summary:hover {
 }
 .topbar {
   position: sticky;
-  top: 0;
+  top: 12px;
   z-index: 20;
   height: var(--topbar-h);
-  padding: 0 var(--page-pad);
+  padding: 6px 12px;
+  margin: 12px var(--page-pad) 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -457,13 +496,31 @@ summary:hover {
   font-size: 12px;
   color: var(--text-2);
   background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
   box-shadow: var(--shadow-chrome);
 }
 .topbar > div {
   display: flex;
   gap: 14px;
   align-items: center;
+  min-width: 0;
+}
+.topbar #connection {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+#edition-label {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.topbar #refresh {
+  border-radius: var(--r-pill);
+  flex-shrink: 0;
 }
 .status-dot {
   display: inline-flex;
@@ -472,6 +529,8 @@ summary:hover {
 }
 .status-dot:before {
   content: '';
+  display: inline-block;
+  vertical-align: middle;
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -659,12 +718,42 @@ main {
   box-shadow: var(--shadow-1);
 }
 .browse-modes {
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+  position: relative;
+  margin: 0;
+  border-radius: var(--r-pill);
+  padding: 5px;
+  flex-wrap: nowrap;
+}
+.topbar .browse-modes {
+  border: 0;
+  padding: 3px;
+  background: transparent;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.topbar .browse-modes > .glass-warp,
+.topbar .browse-modes::before,
+.topbar .browse-modes::after {
+  display: none;
 }
 .browse-modes a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: var(--r-pill);
   text-decoration: none;
   font-weight: 500;
+}
+.browse-modes svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .back-library {
   display: inline-block;
@@ -872,9 +961,9 @@ main {
   display: flex;
   align-items: center;
   gap: 9px;
-  background: var(--surface-3);
-  border: 1px solid transparent;
-  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   padding: 0 12px;
   flex: 1;
   min-width: 220px;
@@ -1008,9 +1097,9 @@ select {
 .article {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 17px 22px 0;
-  margin-bottom: 10px;
+  border-radius: var(--r-lg);
+  padding: 20px 24px 0;
+  margin-bottom: 14px;
   box-shadow: var(--shadow-1);
   transition:
     box-shadow var(--dur) var(--ease),
@@ -1204,7 +1293,7 @@ html:has(dialog:modal) {
   overflow: hidden;
 }
 dialog[open] {
-  animation: panel-in var(--dur-panel) var(--ease-out);
+  animation: panel-in var(--dur-panel) var(--ease-panel);
 }
 dialog::backdrop {
   background: var(--scrim);
@@ -1213,7 +1302,7 @@ dialog[open]::backdrop {
   animation: scrim-in var(--dur-panel) var(--ease-out);
 }
 #reader {
-  --dur-panel: 300ms;
+  --dur-panel: 400ms;
 }
 @keyframes panel-in {
   from {
@@ -1242,7 +1331,7 @@ dialog[open]::backdrop {
     opacity: 1;
     transform: none;
     transition-duration: var(--dur-panel);
-    transition-timing-function: var(--ease-out);
+    transition-timing-function: var(--ease-panel);
     animation: none;
   }
   dialog::backdrop {
@@ -1281,6 +1370,7 @@ dialog[open]::backdrop {
   padding: 14px 28px;
   margin: -24px -28px 20px;
   background: var(--surface);
+  border-radius: var(--r-xl) var(--r-xl) var(--r-md) var(--r-md);
   box-shadow: inset 0 1px 0 var(--material-edge);
 }
 .close {
@@ -1353,23 +1443,155 @@ dialog[open]::backdrop {
   color: var(--text);
 }
 .reader-navigation {
+  position: sticky;
+  bottom: -12px;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 6px;
   margin-top: 24px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-chrome);
 }
-/* These two chrome layers are the only live blur surfaces. Reading, notes,
-   citations, cards and the full-screen scrim stay opaque or unfiltered. */
+#reader-position {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.reader-navigation button {
+  padding: 8px 10px;
+  white-space: nowrap;
+  min-width: 0;
+}
+/* rdev's layering keeps optical treatment on a separate background plane;
+   controls and their text sit above it. Reading surfaces stay stable. */
+.glass-filters {
+  position: fixed;
+  pointer-events: none;
+}
+.glass-surface {
+  isolation: isolate;
+  box-shadow: var(--shadow-chrome);
+}
+.glass-surface:not(.tabs) {
+  overflow: clip;
+}
+.glass-warp {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  border-radius: inherit;
+  background: var(--surface);
+  pointer-events: none;
+}
+.glass-surface::before,
+.glass-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.glass-surface::before {
+  z-index: 2;
+  padding: 1px;
+  background: linear-gradient(
+    var(--glass-angle, 125deg),
+    var(--material-edge),
+    transparent 34%,
+    var(--material-edge) 66%,
+    transparent
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.glass-surface::after {
+  z-index: -1;
+  background: radial-gradient(
+      ellipse at var(--glass-x, 22%) var(--glass-y, 0%),
+      var(--glass-glint),
+      transparent 65%
+    )
+    var(--chrome-tint);
+}
+.glass-surface > :not(.glass-warp, .selection-pill) {
+  position: relative;
+  z-index: 1;
+}
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  .topbar,
-  .dialog-head {
-    background: var(--chrome-tint);
+  .glass-surface {
+    background: transparent;
+  }
+  .glass-warp {
+    background: transparent;
     -webkit-backdrop-filter: var(--material-filter);
     backdrop-filter: var(--material-filter);
   }
+}
+.glass-surface[data-material='solid'] .glass-warp {
+  background: var(--surface);
+  filter: none !important;
+}
+.glass-surface[data-material='solid']::before,
+.glass-surface[data-material='solid']::after {
+  display: none;
+}
+.motion-segment {
+  position: relative;
+  isolation: isolate;
+}
+.browse-modes.motion-segment {
+  position: relative;
+}
+.selection-pill {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: linear-gradient(
+    145deg,
+    var(--glass-selection),
+    color-mix(in srgb, var(--glass-selection) 88%, var(--accent-weak))
+  );
+  box-shadow:
+    inset 0 1px 0 var(--material-edge),
+    0 2px 7px rgb(0 0 0 / 10%);
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.browse-modes .selection-pill {
+  border-radius: var(--r-pill);
+}
+.motion-segment[data-selection-ready='true'] > .selection-pill {
+  display: block;
+}
+.motion-segment > :is(a, button) {
+  position: relative;
+  z-index: 1;
+}
+#groups .selection-pill {
+  border-color: transparent;
+  background: var(--accent-weak);
+  box-shadow: none;
+}
+.motion-segment[data-selection-ready='true'] > :is([aria-pressed='true'], [aria-current='page']),
+#groups[data-selection-ready='true'] button.active {
+  background: transparent;
+  box-shadow: none;
 }
 .reader-doi {
   font-size: 11px;
@@ -1486,6 +1708,13 @@ dialog[open]::backdrop {
   }
 }
 @media (max-width: 1000px) {
+  #edition-label {
+    display: none;
+  }
+  .topbar .browse-modes a {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
   :root {
     --sidebar-w: 212px;
     --page-pad: 24px;
@@ -1571,9 +1800,11 @@ dialog[open]::backdrop {
     margin-left: 0;
   }
   .topbar {
-    padding: 0 18px;
+    padding: 6px 12px;
+    margin-right: 12px;
+    margin-left: 12px;
   }
-  .topbar > span {
+  #edition-label {
     display: none;
   }
   .topbar > div {
@@ -1581,7 +1812,7 @@ dialog[open]::backdrop {
     width: 100%;
   }
   main {
-    padding: 24px 18px 40px;
+    padding: 26px 18px calc(100px + env(safe-area-inset-bottom));
   }
   .hero {
     margin-bottom: 22px;
@@ -1607,6 +1838,48 @@ dialog[open]::backdrop {
   .browse-modes,
   .tabs {
     width: 100%;
+  }
+  .topbar .browse-modes {
+    position: fixed;
+    top: auto;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    left: 18px;
+    right: 18px;
+    width: auto;
+    z-index: 30;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    box-shadow: var(--shadow-chrome);
+    background: var(--surface);
+  }
+  .topbar .browse-modes a {
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11px;
+    line-height: 1.2;
+    padding: 7px 8px;
+  }
+  .topbar .browse-modes svg {
+    width: 20px;
+    height: 20px;
+  }
+  .topbar .browse-modes > .glass-warp,
+  .topbar .browse-modes::before,
+  .topbar .browse-modes::after {
+    display: block;
+  }
+  .topbar .browse-modes[data-material='solid']::before,
+  .topbar .browse-modes[data-material='solid']::after {
+    display: none;
+  }
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .topbar .browse-modes {
+      background: transparent;
+    }
+  }
+  #reader-position {
+    font-size: 11px;
   }
   .browse-modes a,
   .tabs button {
@@ -1675,8 +1948,8 @@ dialog[open]::backdrop {
     padding: 20px;
     width: calc(100% - 24px);
     max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-    --panel-distance: 18px;
-    --panel-scale: 0.99;
+    --panel-distance: 20px;
+    --panel-scale: 0.96;
   }
   .dialog-head {
     top: -20px;

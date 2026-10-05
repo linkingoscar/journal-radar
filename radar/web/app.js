@@ -10,6 +10,8 @@ JournalAppearance.bind({
   events: window,
   notify: toast,
 });
+const interfaceMotion = JournalMotion.connect(document);
+JournalMaterials.connect(document, interfaceMotion);
 const mobileLayout = matchMedia('(max-width: 700px)');
 function adaptControls() {
   $('#personal-tools').open = !mobileLayout.matches;
@@ -460,7 +462,17 @@ function applyRoute(focus = false, preferences = null) {
   if (focus) resumeScroll = null;
   render();
   ensureHistory();
-  if (focus) $('#group-title').focus({ preventScroll: false });
+  if (focus) {
+    $('#group-title').focus({ preventScroll: false });
+    interfaceMotion.reveal($('.hero'));
+    interfaceMotion.reveal(
+      browseMode === 'library'
+        ? $('#journal-library')
+        : journalId && archives.mode === 'archive'
+          ? $('#archive-content')
+          : $('#article-feed'),
+    );
+  }
   queuePreferences();
 }
 function renderCatalog(journals) {
@@ -753,7 +765,7 @@ function renderAbstract(article, journal, content) {
 const readerSequence = new JournalReading.Sequence();
 let readerCandidates = [],
   readerReturn = null;
-function openArticle(article, candidates = readerCandidates, navigating = false) {
+function openArticle(article, candidates = readerCandidates, navigating = false, direction = 0) {
   if (!navigating) {
     readerSequence.start(article, candidates);
     readerReturn = {
@@ -819,10 +831,11 @@ function openArticle(article, candidates = readerCandidates, navigating = false)
   if (!$('#reader').open) $('#reader').showModal();
   $('#reader').scrollTop = 0;
   readerTitle.focus({ preventScroll: true });
+  if (navigating) interfaceMotion.reveal(content, direction);
 }
 function moveReader(delta) {
   const next = readerSequence.move(delta);
-  if (next) openArticle(next, null, true);
+  if (next) openArticle(next, null, true, delta);
 }
 $('#reader-prev').addEventListener('click', () => moveReader(-1));
 $('#reader-next').addEventListener('click', () => moveReader(1));
@@ -1897,7 +1910,7 @@ window.addEventListener('message', async (event) => {
   }
 });
 async function boot() {
-  $('#edition-label').textContent = isDesktop ? '期刊雷达 · 本机增强版' : '期刊雷达 · 网页阅读版';
+  $('#edition-label').textContent = isDesktop ? '本机增强版' : '网页阅读版';
   $('#install').hidden = isDesktop;
   try {
     await stateSync.flush();
